@@ -6,28 +6,325 @@ LINK NUMBER 2
 Not enough lines
 
 LINK NUMBER 3
-Error fetching diff
+
+File path: Libman.Audit/LibmanPackage.cs
+"using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
+
+using Task = Microsoft.Build.Utilities.Task;
+
+namespace Libman.Audit
+{
+    public class LibmanAuditTask : Task
+    {
+        [Required]
+        public string LibmanJsonPath { get; set; }
+
+        [Output]
+        public ITaskItem[] VulnerablePackages { get; private set; }
+
+        private readonly HttpClient _httpClient;
+        private const string SonatypeApiBaseUrl = ""https://ossindex.sonatype.org/api/v3/component-report"";
+        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        public LibmanAuditTask()
+        {
+            _httpClient = new HttpClient();
+            // initialize non-null values
+            LibmanJsonPath = """";
+            VulnerablePackages = [];
+        }
+
+        public override bool Execute()
+        {
+            try
+            {
+                Log.LogMessage(MessageImportance.Normal, ""Starting Libman audit task..."");
+
+                if (!File.Exists(LibmanJsonPath))
+                {
+                    Log.LogError($""Libman.json file not found at: {LibmanJsonPath}"");
+                    return false;
+                }
+
+                string jsonContent = File.ReadAllText(LibmanJsonPath);
+                List<LibmanPackage> libmanPackages = ParseLibmanJson(jsonContent);
+
+                if (libmanPackages.Count == 0)
+                {
+                    Log.LogMessage(MessageImportance.Normal, ""No packages found in libman.json"");
+                    VulnerablePackages = new TaskItem[0];
+                    return true;
+                }
+
+                List<VulnerablePackage> vulnerablePackages = AuditPackagesAsync(libmanPackages).GetAwaiter().GetResult();
+                VulnerablePackages = ConvertToTaskItems(vulnerablePackages);
+
+                if (vulnerablePackages.Count > 0)
+                {
+                    Log.LogWarning($""Found {vulnerablePackages.Count} vulnerable packages in libman.json"");
+                    foreach (VulnerablePackage package in vulnerablePackages)
+                    {
+                        Log.LogWarning($""Vulnerable package: {package.Name} {package.Version}, Vulnerability count: {package.VulnerabilityCount}"");
+                    }
+                }
+                else
+                {
+                    Log.LogMessage(MessageImportance.Normal, ""No vulnerable packages found"");
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorFromException(ex);
+                return false;
+            }
+        }
+
+        private List<LibmanPackage> ParseLibmanJson(string jsonContent)
+        {
+            List<LibmanPackage> packages = new List<LibmanPackage>();
+
+            try
+            {
+                using (JsonDocument doc = JsonDocument.Parse(jsonContent))
+                {
+                    JsonElement root = doc.RootElement;
+
+                    if (!root.TryGetProperty(""libraries"", out JsonElement librariesElement) ||
+                        librariesElement.ValueKind != JsonValueKind.Array)
+                    {
+                        Log.LogMessage(MessageImportance.Normal, ""No libraries found in libman.json"");
+                        return packages;
+                    }
+
+                    foreach (JsonElement library in librariesElement.EnumerateArray())
+                    {
+                        if (!library.TryGetProperty(""provider"", out JsonElement providerElement) ||
+                            !library.TryGetProperty(""library"", out JsonElement nameElement))
+                        {
+                            continue;
+                        }
+
+                        string provider = providerElement.GetString() ?? string.Empty;
+                        string name = nameElement.GetString() ?? string.Empty;
+
+                        if (string.IsNullOrEmpty(provider) || string.IsNullOrEmpty(name))
+                        {
+                            continue;
+                        }
+
+                        // Parse package name and version (format varies by provider)
+                        string packageName;
+                        string packageVersion;
+
+                        if (name.Contains(""@""))
+                        {
+                            string[] parts = name.Split(new[] { '@' }, 2);
+                            packageName = parts[0];
+                            packageVersion = parts[1];
+                        }
+                        else
+                        {
+                            // If no version is specified, use the name as-is and leave version empty
+                            packageName = name;
+                            packageVersion = string.Empty;
+                        }
+
+                        packages.Add(new LibmanPackage
+                        {
+                            Name = packageName,
+                            Version = packageVersion,
+                            Provider = provider
+                        });
+
+                        Log.LogMessage(MessageImportance.Low, $""Found package: {packageName} {packageVersion} (Provider: {provider})"");
+                    }
+                }
+            }
+            catch (JsonException ex)
+            {
+                Log.LogError($""Failed to parse libman.json: {ex.Message}"");
+            }
+
+            return packages;
+        }
+
+        private async Task<List<VulnerablePackage>> AuditPackagesAsync(List<LibmanPackage> packages)
+        {
+            List<VulnerablePackage> vulnerablePackages = new List<VulnerablePackage>();
+
+            try
+            {
+                // Group packages in batches to avoid large requests
+                for (int i = 0; i < packages.Count; i += 20)
+                {
+                    List<LibmanPackage> batch = packages.Skip(i).Take(20).ToList();
+                    List<string> components = new List<string>();
+
+                    foreach (LibmanPackage package in batch)
+                    {
+                        string packageId = GetPackageCoordinates(package);
+                        if (!string.IsNullOrEmpty(packageId))
+                        {
+                            components.Add(packageId);
+                        }
+                    }
+
+                    if (components.Count > 0)
+                    {
+                        SonatypeRequest requestData = new SonatypeRequest
+                        {
+                            Coordinates = components.ToArray()
+                        };
+
+                        StringContent content = new StringContent(
+                            JsonSerializer.Serialize(requestData, _jsonOptions),
+                            Encoding.UTF8,
+                            ""application/json"");
+
+                        HttpResponseMessage response = await _httpClient.PostAsync(SonatypeApiBaseUrl, content);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string responseContent = await response.Content.ReadAsStringAsync();
+                            List<SonatypeResult>? results = JsonSerializer.Deserialize<List<SonatypeResult>>(responseContent, _jsonOptions);
+
+                            if (results != null)
+                            {
+                                foreach (SonatypeResult result in results)
+                                {
+                                    if (result.Vulnerabilities != null && result.Vulnerabilities.Count > 0)
+                                    {
+                                        LibmanPackage? package = batch.FirstOrDefault(p => GetPackageCoordinates(p) == result.Coordinates);
+                                        if (package != null)
+                                        {
+                                            vulnerablePackages.Add(new VulnerablePackage
+                                            {
+                                                Name = package.Name,
+                                                Version = package.Version,
+                                                Provider = package.Provider,
+                                                VulnerabilityCount = result.Vulnerabilities.Count,
+                                                Description = string.Join(""; "", result.Vulnerabilities.Select(v => v.Title))
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Log.LogWarning($""Failed to get vulnerability data: {response.StatusCode} {await response.Content.ReadAsStringAsync()}"");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.LogWarning($""Error checking for vulnerabilities: {ex.Message}"");
+            }
+
+            return vulnerablePackages;
+        }
+
+        private string GetPackageCoordinates(LibmanPackage package)
+        {
+            // Map libman providers to Sonatype coordinate formats
+            switch (package.Provider.ToLowerInvariant())
+            {
+                case ""cdnjs"":
+                    return $""pkg:npm/{package.Name}@{package.Version}"";
+                case ""unpkg"":
+                    return $""pkg:npm/{package.Name}@{package.Version}"";
+                case ""jsdelivr"":
+                    return $""pkg:npm/{package.Name}@{package.Version}"";
+                default:
+                    Log.LogWarning($""Unsupported provider: {package.Provider}"");
+                    return """";
+            }
+        }
+
+        private ITaskItem[] ConvertToTaskItems(List<VulnerablePackage> vulnerablePackages)
+        {
+            List<TaskItem> taskItems = new List<TaskItem>();
+
+            foreach (VulnerablePackage package in vulnerablePackages)
+            {
+                TaskItem taskItem = new TaskItem(package.Name);
+                taskItem.SetMetadata(""Version"", package.Version);
+                taskItem.SetMetadata(""Provider"", package.Provider);
+                taskItem.SetMetadata(""VulnerabilityCount"", package.VulnerabilityCount.ToString());
+                taskItem.SetMetadata(""Description"", package.Description);
+                taskItems.Add(taskItem);
+            }
+
+            return taskItems.ToArray();
+        }
+    }
+}"
 
 LINK NUMBER 4
 Not enough lines
 
 LINK NUMBER 5
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 6
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 7
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 8
-Error fetching diff
+
+File path: src/test/java/com/acme/basic/FibonacciControllerIT.java
+"package com.acme.basic;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class FibonacciControllerIT {
+
+    @LocalServerPort
+    private int port;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Test
+    public void testFibonacciEndpoint() {
+        String url = ""http://localhost:"" + port + ""/fibonacci?n=5"";
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).isEqualTo(""5"");
+    }
+}"
 
 LINK NUMBER 9
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 10
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 11
 
@@ -175,76 +472,31 @@ def run_job_application_system():
 run_job_application_system()"
 
 LINK NUMBER 12
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 13
-
-File path: ResnetV50ObjectClassificationHttpTriggerCoPilot/Function1.cs
-"   private static readonly InferenceSession session = new InferenceSession(""resnet50.onnx"");
-
-   [FunctionName(""ImageClassification"")]
-   public static IActionResult Run(
-       [HttpTrigger(AuthorizationLevel.Function, ""post"")] HttpRequest req,
-       ILogger log)
-   {
-      log.LogInformation(""Processing image classification request..."");
-
-      try
-      {
-         using var ms = new MemoryStream();
-         req.Body.CopyTo(ms);
-         using var image = Image.FromStream(ms);
-
-         var inputTensor = PreprocessImage(image);
-
-         var inputName = session.InputMetadata.Keys.First();
-         var outputName = session.OutputMetadata.Keys.First();
-         var result = session.Run(new Dictionary<string, NamedOnnxValue>
-            {
-                { inputName, NamedOnnxValue.CreateFromTensor(inputName, inputTensor) }
-            });
-
-         var predictions = result.First().AsTensor<float>().ToArray();
-
-         return new JsonResult(new { predictions });
-      }
-      catch (Exception ex)
-      {
-         log.LogError($""Error: {ex.Message}"");
-         return new BadRequestObjectResult(""Invalid image or request."");
-      }
-   }
-
-   private static Tensor<float> PreprocessImage(Image image)
-   {
-      var resized = new Bitmap(image, new Size(224, 224));
-      var tensorData = new float[1 * 3 * 224 * 224];
-
-      for (int y = 0; y < 224; y++)
-      {
-         for (int x = 0; x < 224; x++)
-         {
-            var pixel = resized.GetPixel(x, y);
-            tensorData[(0 * 3 * 224 * 224) + (0 * 224 * 224) + (y * 224) + x] = pixel.R / 255.0f;
-            tensorData[(0 * 3 * 224 * 224) + (1 * 224 * 224) + (y * 224) + x] = pixel.G / 255.0f;
-            tensorData[(0 * 3 * 224 * 224) + (2 * 224 * 224) + (y * 224) + x] = pixel.B / 255.0f;
-         }
-      }
-
-      return new DenseTensor<float>(tensorData, new[] { 1, 3, 224, 224 });
-   }"
+Error fetching diff
 
 LINK NUMBER 14
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 15
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 16
-Error fetching diff
+
+File path: mappi-api/src/services/fetchTideData.ts
+"/**
+ * Fetch tide data for a given location.
+ *
+ * @param locationName - The name of the location to fetch tide data for.
+ * @param apiKey - The API key for authenticating with the weather API.
+ * @returns A promise that resolves to the tide data for the specified location.
+ */
+"
 
 LINK NUMBER 17
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 18
 
@@ -356,62 +608,56 @@ File path: EightBit/EightBit.UnitTest/DeviceTests.cs
 }"
 
 LINK NUMBER 19
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 20
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 21
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 22
-Error fetching diff
+
+File path: backend/django_emqx/utils.py
+"    """"""
+    Send a data message via Firebase Cloud Messaging (FCM).
+
+    Args:
+        token (str): The recipient's FCM device token.
+        msg_id (str): The unique message ID.
+        title (str): The title of the message.
+        body (str): The body content of the message.
+
+    Returns:
+        str: The response from the Firebase messaging service.
+
+    Raises:
+        ImportError: If the Firebase Admin SDK is not installed.
+    """""""
 
 LINK NUMBER 23
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 24
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 25
 Not enough lines
 
 LINK NUMBER 26
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 27
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 28
-
-File path: tests/integration_test/test_utils_with_sqlite.py
-"        return connection
-
-def test_table_schema_includes_name_and_time(db_setup: sqlite3.Connection):
-    """""" Check if the table schema includes 'name' and 'time' columns """"""
-    cursor = db_setup.cursor()
-    cursor.execute(""PRAGMA table_info(Project)"")
-    columns = [column[1] for column in cursor.fetchall()]  # Extract column names
-    assert ""name"" in columns, ""'name' column MUST exist in the schema""
-    assert ""time"" in columns, ""'time' column MUST exist in the schema""
-
-def test_check_if_project_exists(db_setup: sqlite3.Connection, setup_data: list[tuple]):
-    """""" Check if the project exists in the database
-     
-    This test requires:
-    - There is a database we can connect to
-    - The database has the required tables created
-    - There is data in the tables
-    """"""
-    for element in setup_data:
-        does_exist = check_if_project_exists(element[0])
-        assert does_exist, ""This project MUST exist"""
+Error fetching diff
 
 LINK NUMBER 29
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 30
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 31
 
@@ -469,19 +715,19 @@ File path: main.go
 	}"
 
 LINK NUMBER 33
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 34
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 35
 Error fetching diff
 
 LINK NUMBER 36
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 37
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 38
 Not enough lines
@@ -498,19 +744,19 @@ File path: apps/admin/src/constants/attendance.ts
 "
 
 LINK NUMBER 40
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 41
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 42
 Error fetching diff
 
 LINK NUMBER 43
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 44
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 45
 
@@ -799,16 +1045,32 @@ namespace QuickQuiz.Tests
 }"
 
 LINK NUMBER 47
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 48
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 49
 Error fetching diff
 
 LINK NUMBER 50
-Error fetching diff
+
+File path: vue.config.js
+"<template>
+  <div>
+    <h1>Hello World</h1>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'MainView',
+};
+</script>
+
+<style scoped>
+/* Add any styles specific to MainView here */
+</style>"
 
 LINK NUMBER 51
 
@@ -961,7 +1223,7 @@ router.get('/:symbol', async (req, res) => {
 module.exports = router;"
 
 LINK NUMBER 54
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 55
 Error fetching diff
@@ -970,7 +1232,7 @@ LINK NUMBER 56
 Error fetching diff
 
 LINK NUMBER 57
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 58
 Not enough lines
@@ -982,41 +1244,7 @@ LINK NUMBER 60
 Not enough lines
 
 LINK NUMBER 61
-
-File path: packages/api/src/sessions/useGetSessionList.ts
-"import { CURRENT_GENERATION } from '@depromeet-makers/constant';
-import type { UseMutationOptions } from '@tanstack/react-query';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-
-import type { CustomError } from '../base';
-import { api } from '../base';
-import type { Session } from '../types';
-
-interface CreateSessionRequest extends Omit<Session, 'sessionId' | 'generation'> {}
-
-interface CreateSessionResponse extends Session {}
-
-const createSession = (request: CreateSessionRequest) => {
-  return api.post<CreateSessionResponse>('/v1/sessions', { ...request, generation: CURRENT_GENERATION });
-};
-
-export const useCreateSession = (
-  options?: UseMutationOptions<CreateSessionResponse, CustomError, CreateSessionRequest>,
-) => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createSession,
-    ...options,
-    onSuccess: (...params) => {
-      options?.onSuccess?.(...params);
-
-      queryClient.invalidateQueries({
-        queryKey: ['sessions'],
-      });
-    },
-  });
-};"
+Error fetching diff
 
 LINK NUMBER 62
 Error fetching diff
@@ -1025,7 +1253,7 @@ LINK NUMBER 63
 Error fetching diff
 
 LINK NUMBER 64
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 65
 Not enough lines
@@ -1190,7 +1418,7 @@ export const useKaKaoMap = () => {
 export default KaKaoMapProvider;"
 
 LINK NUMBER 68
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 69
 Error fetching diff
@@ -1199,7 +1427,38 @@ LINK NUMBER 70
 Error fetching diff
 
 LINK NUMBER 71
-Error fetching diff
+
+File path: packages/api/src/sessions/useDeleteSession.ts
+"import type { UseMutationOptions } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import type { CustomError } from '../base';
+import { api } from '../base';
+import type { Session } from '../types';
+
+interface DeleteSessionRequest extends Pick<Session, 'sessionId'> {}
+
+interface DeleteSessionResponse extends Session {}
+
+const deleteSession = ({ sessionId }: DeleteSessionRequest) => {
+  return api.delete<DeleteSessionResponse>(`/v1/sessions/${sessionId}`);
+};
+
+export const useDeleteSession = (
+  options?: UseMutationOptions<DeleteSessionResponse, CustomError, DeleteSessionRequest>,
+) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ sessionId }: DeleteSessionRequest) => deleteSession({ sessionId }),
+    ...options,
+    onSuccess: (...params) => {
+      options?.onSuccess?.(...params);
+
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+  });
+};"
 
 LINK NUMBER 72
 
@@ -1225,67 +1484,7 @@ LINK NUMBER 74
 Not enough lines
 
 LINK NUMBER 75
-
-File path: python/mandelbrot_set/mandelbrot.py
-"from mpi4py import MPI
-import numpy as np
-import matplotlib.pyplot as plt
-
-def mandelbrot(c, max_iter):
-    z = c
-    for n in range(max_iter):
-        if abs(z) > 2:
-            return n
-        z = z*z + c
-    return max_iter
-
-def mandelbrot_set(xmin, xmax, ymin, ymax, width, height, max_iter):
-    r1 = np.linspace(xmin, xmax, width)
-    r2 = np.linspace(ymin, ymax, height)
-    n3 = np.empty((width, height), dtype=int)
-    for i in range(width):
-        for j in range(height):
-            n3[i, j] = mandelbrot(r1[i] + 1j*r2[j], max_iter)
-    return n3
-
-def main():
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    # Parameters for the Mandelbrot set
-    xmin, xmax, ymin, ymax = -2.0, 1.0, -1.5, 1.5
-    width, height = 800, 800
-    max_iter = 256
-
-    # Divide the work among processes
-    local_width = width // size
-    local_xmin = xmin + rank * local_width * (xmax - xmin) / width
-    local_xmax = xmin + (rank + 1) * local_width * (xmax - xmin) / width
-
-    # Each process computes its part of the Mandelbrot set
-    local_mandelbrot = mandelbrot_set(local_xmin, local_xmax, ymin, ymax, local_width, height, max_iter)
-
-    # Gather the results to the root process
-    if rank == 0:
-        mandelbrot_image = np.empty((width, height), dtype=int)
-    else:
-        mandelbrot_image = None
-
-    comm.Gather(local_mandelbrot, mandelbrot_image, root=0)
-
-    # Root process visualizes the result
-    if rank == 0:
-        plt.imshow(mandelbrot_image.T, extent=[xmin, xmax, ymin, ymax], cmap='hot')
-        plt.colorbar()
-        plt.title(""Mandelbrot Set"")
-        plt.xlabel(""Re"")
-        plt.ylabel(""Im"")
-        plt.savefig(""mandelbrot_set.png"")
-        # plt.show()
-
-if __name__ == ""__main__"":
-    main()"
+Error fetching diff
 
 LINK NUMBER 76
 Error fetching diff
@@ -1294,7 +1493,23 @@ LINK NUMBER 77
 Error fetching diff
 
 LINK NUMBER 78
-Error fetching diff
+
+File path: src/classes/edge-of-the-empire-dice/proficiency-die.ts
+"	/**
+	 * Maps the value of the proficiency die to the corresponding array of `EdgeOfTheEmpireDiceSymbol` results.
+	 *
+	 * @returns {EdgeOfTheEmpireDiceSymbol[]} An array of `EdgeOfTheEmpireDiceSymbol` representing the result of the die roll.
+	 *
+	 * The mapping is as follows:
+	 * - 1: Blank
+	 * - 2, 3: Success
+	 * - 4, 5: Success, Success
+	 * - 6: Advantage
+	 * - 7, 8, 9: Success, Advantage
+	 * - 10, 11: Advantage, Advantage
+	 * - 12: Triumph
+	 * - Default: Empty array
+	 */"
 
 LINK NUMBER 79
 Not enough lines
@@ -1334,7 +1549,7 @@ LINK NUMBER 81
 Not enough lines
 
 LINK NUMBER 82
-Not enough lines
+Error fetching diff
 
 LINK NUMBER 83
 Error fetching diff
@@ -1343,7 +1558,7 @@ LINK NUMBER 84
 Error fetching diff
 
 LINK NUMBER 85
-Error fetching diff
+Not enough lines
 
 LINK NUMBER 86
 Not enough lines
@@ -1495,44 +1710,7 @@ public class PayrollSystem {
 }"
 
 LINK NUMBER 89
-
-File path: java/DepartmentTotal.java
-"/**
- * Represents the total salary for a department with attributes like department name and total salary.
- */
-public class DepartmentTotal {
-    // Attributes
-    private String departmentName;
-    private double totalSalary;
-
-    /**
-     * Initializes the department with the given name and sets the total salary to 0.
-     *
-     * @param departmentName the name of the department
-     */
-    public DepartmentTotal(String departmentName) {
-        this.departmentName = departmentName;
-        this.totalSalary = 0;
-    }
-
-    // Getters and setters for all attributes
-
-    public String getDepartmentName() {
-        return departmentName;
-    }
-
-    public void setDepartmentName(String departmentName) {
-        this.departmentName = departmentName;
-    }
-
-    public double getTotalSalary() {
-        return totalSalary;
-    }
-
-    public void setTotalSalary(double totalSalary) {
-        this.totalSalary = totalSalary;
-    }
-}"
+Error fetching diff
 
 LINK NUMBER 90
 Error fetching diff
@@ -1541,8 +1719,3973 @@ LINK NUMBER 91
 Error fetching diff
 
 LINK NUMBER 92
-Error fetching diff
+
+File path: multiple-file/java/Employee.java
+"package java;
+
+/**
+ * Represents an employee with attributes like ID, name, department, gross salary, bonus, deductions, net salary, and tax deduction.
+ */
+public class Employee {
+    // Attributes
+    private String id;
+    private String name;
+    private String department;
+    private double grossSalary;
+    private double bonus;
+    private double deductions;
+    private double netSalary;
+    private double taxDeduction;
+
+    /**
+     * Initializes the employee with the given ID, name, department, and gross salary.
+     * Other attributes are initialized to default values.
+     *
+     * @param id          the employee's ID
+     * @param name        the employee's name
+     * @param department  the department the employee belongs to
+     * @param grossSalary the employee's gross salary
+     */
+    public Employee(String id, String name, String department, double grossSalary) {
+        this.id = id;
+        this.name = name;
+        this.department = department;
+        this.grossSalary = grossSalary;
+        this.bonus = 0.0;
+        this.deductions = 0.0;
+        this.netSalary = 0.0;
+        this.taxDeduction = 0.0;
+    }
+
+    // Getters and setters for all attributes
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
+    public double getGrossSalary() {
+        return grossSalary;
+    }
+
+    public void setGrossSalary(double grossSalary) {
+        this.grossSalary = grossSalary;
+    }
+
+    public double getBonus() {
+        return bonus;
+    }
+
+    public void setBonus(double bonus) {
+        this.bonus = bonus;
+    }
+
+    public double getDeductions() {
+        return deductions;
+    }
+
+    public void setDeductions(double deductions) {
+        this.deductions = deductions;
+    }
+
+    public double getNetSalary() {
+        return netSalary;
+    }
+
+    public void setNetSalary(double netSalary) {
+        this.netSalary = netSalary;
+    }
+
+    public double getTaxDeduction() {
+        return taxDeduction;
+    }
+
+    public void setTaxDeduction(double taxDeduction) {
+        this.taxDeduction = taxDeduction;
+    }
+}"
 
 LINK NUMBER 93
 
 File path: src/test/java/sa/com/cloudsolutions/antikythera/generator/UnitTestGeneratorTest.java
+"
+
+class VariableInitializationModifierTest {
+
+    @Test
+    void shouldModifySimpleVariableInitialization() {
+        String code = """"""
+            public void testMethod() {
+                String test = ""old"";
+                int other = 5;
+            }
+            """""";
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(code);
+        StringLiteralExpr newValue = new StringLiteralExpr(""new"");
+
+        VariableInitializationModifier modifier = new VariableInitializationModifier(""test"", newValue);
+        MethodDeclaration result = (MethodDeclaration) modifier.visit(method, null);
+
+        assertTrue(result.toString().contains(""String test = \""new\""""));
+        assertTrue(result.toString().contains(""int other = 5""));
+    }
+
+    @Test
+    void shouldNotModifyWhenVariableNotFound() {
+        String code = """"""
+            public void testMethod() {
+                String existingVar = ""old"";
+            }
+            """""";
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(code);
+        IntegerLiteralExpr newValue = new IntegerLiteralExpr(""42"");
+
+        VariableInitializationModifier modifier = new VariableInitializationModifier(""nonexistentVar"", newValue);
+        MethodDeclaration result = (MethodDeclaration) modifier.visit(method, null);
+
+        assertEquals(method.toString(), result.toString());
+    }
+
+    @Test
+    void shouldModifyFirstOccurrenceOnly() {
+        String code = """"""
+            public void testMethod() {
+                int target = 1;
+                String other = ""middle"";
+                int target = 3;
+            }
+            """""";
+        MethodDeclaration method = StaticJavaParser.parseMethodDeclaration(code);
+        IntegerLiteralExpr newValue = new IntegerLiteralExpr(""42"");
+
+        VariableInitializationModifier modifier = new VariableInitializationModifier(""target"", newValue);
+        MethodDeclaration result = (MethodDeclaration) modifier.visit(method, null);
+
+        String modifiedCode = result.toString();
+        assertTrue(modifiedCode.contains(""int target = 42""));
+        assertTrue(modifiedCode.contains(""int target = 3""));
+        assertEquals(1, modifiedCode.split(""42"").length - 1);
+    }
+}"
+
+LINK NUMBER 94
+Not enough lines
+
+LINK NUMBER 95
+Not enough lines
+
+LINK NUMBER 96
+Error fetching diff
+
+LINK NUMBER 97
+Error fetching diff
+
+LINK NUMBER 98
+Error fetching diff
+
+LINK NUMBER 99
+
+File path: src/static/main.js
+"// This file contains the JavaScript code for client-side interactions in the todo tracker app.
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addTodoForm = document.getElementById('add-todo-form');
+    const todoList = document.getElementById('todo-list');
+
+    addTodoForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const title = document.getElementById('todo-title').value;
+        const body = document.getElementById('todo-body').value;
+        const dueDate = document.getElementById('todo-due-date').value;
+
+        // Add new todo item
+        fetch('/todos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title, body, due_date: dueDate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Append new todo item to the list
+            const todoItem = document.createElement('li');
+            todoItem.textContent = `${data.title} - ${data.body}`;
+            todoList.appendChild(todoItem);
+            addTodoForm.reset();
+        });
+    });
+
+    // Function to filter todos by completion status
+    document.getElementById('filter-completed').addEventListener('change', function() {
+        const showCompleted = this.checked;
+        const todos = todoList.getElementsByTagName('li');
+        for (let todo of todos) {
+            if (showCompleted && !todo.classList.contains('completed')) {
+                todo.style.display = 'none';
+            } else {
+                todo.style.display = 'list-item';
+            }
+        }
+    });
+
+    // Function to sort todos by creation date or due date
+    document.getElementById('sort-todos').addEventListener('change', function() {
+        const sortBy = this.value;
+        const todosArray = Array.from(todoList.getElementsByTagName('li'));
+        todosArray.sort((a, b) => {
+            const aDate = new Date(a.dataset.creationTime);
+            const bDate = new Date(b.dataset.creationTime);
+            return sortBy === 'due_date' ? aDate - bDate : bDate - aDate;
+        });
+        todoList.innerHTML = '';
+        todosArray.forEach(todo => todoList.appendChild(todo));
+    });
+});"
+
+LINK NUMBER 100
+Not enough lines
+
+LINK NUMBER 101
+
+File path: go-base64/go-base64.go
+"package main
+
+import (
+    ""encoding/base64""
+    ""fmt""
+    ""io/ioutil""
+    ""os""
+)
+
+// EncodeFile encodes the content of the input file and writes it to the output file
+func EncodeFile(inputFile, outputFile string) error {
+    data, err := ioutil.ReadFile(inputFile)
+    if err != nil {
+        return fmt.Errorf(""failed to read file: %w"", err)
+    }
+
+    encodedData := base64.StdEncoding.EncodeToString(data)
+
+    err = ioutil.WriteFile(outputFile, []byte(encodedData), 0644)
+    if err != nil {
+        return fmt.Errorf(""failed to write file: %w"", err)
+    }
+
+    return nil
+}
+
+// DecodeFile decodes the base64 content of the input file and writes it to the output file
+func DecodeFile(inputFile, outputFile string) error {
+    data, err := ioutil.ReadFile(inputFile)
+    if err != nil {
+        return fmt.Errorf(""failed to read file: %w"", err)
+    }
+
+    decodedData, err := base64.StdEncoding.DecodeString(string(data))
+    if err != nil {
+        return fmt.Errorf(""failed to decode base64 data: %w"", err)
+    }
+
+    err = ioutil.WriteFile(outputFile, decodedData, 0644)
+    if err != nil {
+        return fmt.Errorf(""failed to write file: %w"", err)
+    }
+
+    return nil
+}
+
+func ShowUsage() {
+    fmt.Println(""Usage:"")
+    fmt.Println(""  go-base64 encode <input file> <output file>"")
+    fmt.Println(""  go-base64 decode <input file> <output file>"")
+}
+
+func main() {
+    if len(os.Args) < 4 {
+        ShowUsage()
+        return
+    }
+
+    command := os.Args[1]
+    inputFile := os.Args[2]
+    outputFile := os.Args[3]
+
+    var err error
+    switch command {
+    case ""encode"":
+        err = EncodeFile(inputFile, outputFile)
+    case ""decode"":
+        err = DecodeFile(inputFile, outputFile)
+    default:
+        ShowUsage()
+        return
+    }
+
+    if err != nil {
+        fmt.Printf(""Error: %v\n"", err)
+    } else {
+        fmt.Printf(""Success: %s completed\n"", command)
+    }
+}"
+
+LINK NUMBER 102
+Not enough lines
+
+LINK NUMBER 103
+Error fetching diff
+
+LINK NUMBER 104
+Error fetching diff
+
+LINK NUMBER 105
+Error fetching diff
+
+LINK NUMBER 106
+
+File path: bimbink-web-app/src/firebase.js
+"import { initializeApp } from ""firebase/app"";
+import { getFirestore } from ""firebase/firestore"";
+import { getAuth } from ""firebase/auth"";
+import { getAnalytics } from ""firebase/analytics"";
+
+const firebaseConfig = {
+    apiKey: ""YOUR_API_KEY"",
+    authDomain: ""YOUR_PROJECT_ID.firebaseapp.com"",
+    projectId: ""YOUR_PROJECT_ID"",
+    storageBucket: ""YOUR_PROJECT_ID.appspot.com"",
+    messagingSenderId: ""YOUR_MESSAGING_SENDER_ID"",
+    appId: ""YOUR_APP_ID""
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const analytics = getAnalytics(app);
+
+export { db, auth };"
+
+LINK NUMBER 107
+
+File path: app/src/models/commit.ts
+"  /**
+   * Whether or not the message was generated by Copilot
+   * (optional, default: false)
+   */
+  readonly messageGeneratedByCopilot?: boolean"
+
+LINK NUMBER 108
+Not enough lines
+
+LINK NUMBER 109
+Not enough lines
+
+LINK NUMBER 110
+Error fetching diff
+
+LINK NUMBER 111
+Error fetching diff
+
+LINK NUMBER 112
+Error fetching diff
+
+LINK NUMBER 113
+Not enough lines
+
+LINK NUMBER 114
+Not enough lines
+
+LINK NUMBER 115
+
+File path: test_sqlite/populate_database.py
+"import json
+import sqlite3
+import os
+from tqdm import tqdm  # For progress bars
+
+def populate_test_database(json_file, db_file):
+    """"""Populate SQLite database from the repeat domain JSON file""""""
+    print(f""Creating database from {json_file}..."")
+    
+    # Connect to SQLite DB
+    conn = sqlite3.connect(db_file)
+    cursor = conn.cursor()
+    
+    # Create tables using schema file
+    # Get the directory of the script to find the schema file
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    schema_file_path = os.path.join(script_dir, ""database_schema.sql"")
+    
+    with open(schema_file_path, ""r"") as schema_file:
+        schema = schema_file.read()
+        conn.executescript(schema)
+    
+    # Load JSON data
+    with open(json_file, ""r"") as f:
+        data = json.load(f)
+    
+    # Track processed IDs to avoid duplicates
+    processed_genes = {}
+    processed_proteins = {}
+    processed_transcripts = {}
+    processed_exons = {}
+
+    # Process each repeat entry
+    for repeat in tqdm(data, desc=""Processing repeats""):
+        if not isinstance(repeat, dict) or not repeat:
+            continue  # Skip empty entries
+        
+        # Get gene info
+        gene_name = repeat.get(""geneName"", """")
+        if not gene_name:
+            continue
+        
+        # Insert gene if not already processed
+        if gene_name not in processed_genes:
+            aliases = repeat.get(""aliases"", """")
+            if isinstance(aliases, list):
+                aliases = "","".join(aliases)
+            
+            cursor.execute(""""""
+                INSERT INTO genes (gene_name, aliases, chromosome, location)
+                VALUES (?, ?, ?, ?)
+            """""", (
+                gene_name,
+                aliases,
+                repeat.get(""chrom"", """"),
+                f""{repeat.get('chrom', '')}:{repeat.get('chromStart', '')}_{repeat.get('chromEnd', '')}""
+            ))
+            processed_genes[gene_name] = cursor.lastrowid
+        
+        gene_id = processed_genes[gene_name]
+        
+        # Process protein
+        uniprot_id = repeat.get(""uniProtId"", """")
+        if uniprot_id and uniprot_id not in processed_proteins:
+            status = repeat.get(""status"", """")
+            
+            # Extract length from position if possible: ""amino acids 343-389 on protein Q6TDP4""
+            position = repeat.get(""position"", """")
+            length = 0
+            if position and isinstance(position, str):
+                try:
+                    parts = position.split()
+                    if len(parts) >= 3:
+                        pos = parts[2].split(""-"")
+                        if len(pos) == 2:
+                            length = int(pos[1]) - int(pos[0]) + 1
+                except:
+                    pass
+            
+            cursor.execute(""""""
+                INSERT INTO proteins (protein_id, gene_id, length, description, status)
+                VALUES (?, ?, ?, ?, ?)
+            """""", (
+                uniprot_id,
+                gene_id,
+                length,
+                f""Protein for {gene_name}"",
+                status
+            ))
+            processed_proteins[uniprot_id] = uniprot_id
+        
+        # Process repeat domain
+        amino_start = None
+        amino_end = None
+        if repeat.get(""position"") and isinstance(repeat.get(""position""), str):
+            position = repeat.get(""position"")
+            try:
+                # Extract positions from ""amino acids 343-389 on protein Q6TDP4""
+                parts = position.split()
+                if len(parts) >= 3:
+                    pos = parts[2].split(""-"")
+                    if len(pos) == 2:
+                        amino_start = int(pos[0])
+                        amino_end = int(pos[1])
+            except:
+                pass
+        
+        # Calculate sequence length from blockSizes
+        sequence_length = 0
+        block_sizes = repeat.get(""blockSizes"", [])
+        if isinstance(block_sizes, list):
+            for size in block_sizes:
+                try:
+                    sequence_length += int(size)
+                except:
+                    pass
+        
+        # Insert repeat
+        cursor.execute(""""""
+            INSERT INTO repeats (protein_id, repeat_type, start_pos, end_pos, sequence)
+            VALUES (?, ?, ?, ?, ?)
+        """""", (
+            uniprot_id,
+            repeat.get(""repeatType"", """"),
+            amino_start,
+            amino_end,
+            ""N"" * sequence_length  # Placeholder sequence of Ns
+        ))
+        repeat_id = cursor.lastrowid
+        
+        # Process exon information if available
+        if ""ensembl_exon_info"" not in repeat:
+            continue
+            
+        exon_info = repeat.get(""ensembl_exon_info"", {})
+        if not exon_info or ""transcripts"" not in exon_info:
+            continue
+            
+        # Process each transcript
+        for transcript_data in exon_info.get(""transcripts"", []):
+            transcript_id = transcript_data.get(""transcript_id"")
+            if not transcript_id:
+                continue
+                
+            # Insert transcript if not already processed
+            if transcript_id not in processed_transcripts:
+                cursor.execute(""""""
+                    INSERT INTO transcripts (transcript_id, gene_id, description)
+                    VALUES (?, ?, ?)
+                """""", (
+                    transcript_id,
+                    gene_id,
+                    f""{transcript_data.get('transcript_name', '')} ({transcript_data.get('biotype', '')})""
+                ))
+                processed_transcripts[transcript_id] = transcript_id
+            
+            # Create repeat_transcript relationship
+            genomic_start = repeat.get(""chromStart"", 0)
+            genomic_end = repeat.get(""chromEnd"", 0)
+            
+            # Convert exon mapping to JSON string
+            exon_mapping = json.dumps([
+                {
+                    ""exon_id"": exon.get(""exon_id"", """"),
+                    ""exon_number"": exon.get(""exon_number"", 0),
+                    ""overlap_bp"": exon.get(""overlap_bp"", 0),
+                    ""overlap_percentage"": exon.get(""overlap_percentage"", 0),
+                    ""coding_percentage"": exon.get(""coding_percentage"", 0)
+                } for exon in transcript_data.get(""containing_exons"", [])
+            ])
+            
+            cursor.execute(""""""
+                INSERT INTO repeat_transcripts (
+                    repeat_id, transcript_id, genomic_start, genomic_end, exon_mapping
+                ) VALUES (?, ?, ?, ?, ?)
+            """""", (
+                repeat_id, 
+                transcript_id, 
+                genomic_start, 
+                genomic_end, 
+                exon_mapping
+            ))
+            
+            # Process exons in this transcript
+            for exon_data in transcript_data.get(""containing_exons"", []):
+                exon_id = exon_data.get(""exon_id"")
+                if not exon_id or exon_id in processed_exons:
+                    continue
+                    
+                # Estimate exon size from overlap percentage
+                exon_size = 0
+                if exon_data.get(""overlap_percentage"") and exon_data.get(""overlap_bp""):
+                    try:
+                        exon_size = int(exon_data.get(""overlap_bp"") * 100 / exon_data.get(""overlap_percentage""))
+                    except:
+                        pass
+                
+                # Calculate if skipping would preserve reading frame
+                frame_preserving = exon_size % 3 == 0
+                
+                cursor.execute(""""""
+                    INSERT INTO exons (
+                        exon_id, gene_id, length, frame_preserving
+                    ) VALUES (?, ?, ?, ?)
+                """""", (
+                    exon_id,
+                    gene_id,
+                    exon_size,
+                    frame_preserving
+                ))
+                processed_exons[exon_id] = exon_id
+                
+                # Create transcript_exon relationship
+                cursor.execute(""""""
+                    INSERT INTO transcript_exons (
+                        transcript_id, exon_id, exon_number
+                    ) VALUES (?, ?, ?)
+                """""", (
+                    transcript_id,
+                    exon_id,
+                    exon_data.get(""exon_number"", 0)
+                ))
+                
+                # Create repeat_exon relationship
+                cursor.execute(""""""
+                    INSERT INTO repeat_exons (
+                        repeat_id, exon_id, overlap_bp, overlap_percentage
+                    ) VALUES (?, ?, ?, ?)
+                """""", (
+                    repeat_id,
+                    exon_id,
+                    exon_data.get(""overlap_bp"", 0),
+                    exon_data.get(""overlap_percentage"", 0)
+                ))
+    
+    # Commit all changes
+    conn.commit()
+    
+    # Print some statistics
+    cursor.execute(""SELECT COUNT(*) FROM genes"")
+    gene_count = cursor.fetchone()[0]
+    
+    cursor.execute(""SELECT COUNT(*) FROM proteins"")
+    protein_count = cursor.fetchone()[0]
+    
+    cursor.execute(""SELECT COUNT(*) FROM repeats"")
+    repeat_count = cursor.fetchone()[0]
+    
+    cursor.execute(""SELECT COUNT(*) FROM exons"")
+    exon_count = cursor.fetchone()[0]
+    
+    print(f""\nDatabase populated successfully:"")
+    print(f""  - {gene_count} genes"")
+    print(f""  - {protein_count} proteins"")
+    print(f""  - {repeat_count} repeat domains"")
+    print(f""  - {exon_count} exons"")
+    
+    conn.close()
+    
+    print(f""\nDatabase created at: {db_file}"")
+
+if __name__ == ""__main__"":
+    # Define file paths - simplified to use the same directory as the script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    json_file = os.path.join(script_dir, ""1000_test_exons_hg38_repeats.json"")
+    db_file = os.path.join(script_dir, ""tandem_repeats.db"")
+    
+    # Create the database
+    populate_test_database(json_file, db_file)"
+
+LINK NUMBER 116
+Not enough lines
+
+LINK NUMBER 117
+Error fetching diff
+
+LINK NUMBER 118
+Error fetching diff
+
+LINK NUMBER 119
+Error fetching diff
+
+LINK NUMBER 120
+
+File path: scripts/checkAllowance.ts
+"/** 
+ * Use environment variables to provide arguments 
+ * export contractAddress=""""
+ * export spender=""""
+ * export amount=""""
+ * Run the script with hardhat run 
+ * npx hardhat run scripts/approveTokens.ts --network sepolia 
+ */
+import { ethers } from ""hardhat"";
+
+async function approveTokens(contractAddress: string, spender: string, amount: string) {
+  const GLDToken = await ethers.getContractFactory(""GLDToken"");
+  const token = GLDToken.attach(contractAddress);
+
+  const tx = await token.approve(spender, ethers.utils.parseUnits(amount, 18));
+  console.log(`Approved ${amount} GLD for ${spender}. Transaction hash: ${tx.hash}`);
+}
+
+const contractAddress = process.env.contractAddress as string;
+const spender = process.env.spender as string;
+const amount = process.env.amount as string;
+
+approveTokens(contractAddress, spender, amount)
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });"
+
+LINK NUMBER 121
+Not enough lines
+
+LINK NUMBER 122
+Not enough lines
+
+LINK NUMBER 123
+Not enough lines
+
+LINK NUMBER 124
+Error fetching diff
+
+LINK NUMBER 125
+Error fetching diff
+
+LINK NUMBER 126
+Error fetching diff
+
+LINK NUMBER 127
+Not enough lines
+
+LINK NUMBER 128
+Not enough lines
+
+LINK NUMBER 129
+
+File path: src/index.ts
+"{
+  ""name"": ""@zereight/mcp-confluence"",
+  ""version"": ""1.0.1"",
+  ""description"": ""MCP server for using the Confluence API"",
+  ""license"": ""MIT"",
+  ""author"": ""zereight"",
+  ""type"": ""module"",
+  ""private"": false,
+  ""bin"": ""./build/index.js"",
+  ""files"": [
+    ""build""
+  ],
+  ""publishConfig"": {
+    ""access"": ""public""
+  },
+  ""engines"": {
+    ""node"": "">=14""
+  },
+  ""scripts"": {
+    ""build"": ""tsc && node -e \""require('fs').chmodSync('build/index.js', '755')\"""",
+    ""prepare"": ""npm run build"",
+    ""watch"": ""tsc --watch"",
+    ""inspector"": ""npx @modelcontextprotocol/inspector build/index.js"",
+    ""start"": ""node build/index.js""
+  },
+  ""dependencies"": {
+    ""@modelcontextprotocol/sdk"": ""0.6.0"",
+    ""axios"": ""^1.7.9"",
+    ""mcp-framework"": ""^0.1.12"",
+    ""okhttp"": ""^1.1.0""
+  },
+  ""devDependencies"": {
+    ""@types/node"": ""^20.11.24"",
+    ""typescript"": ""^5.7.2""
+  }
+}"
+
+LINK NUMBER 130
+Not enough lines
+
+LINK NUMBER 131
+Error fetching diff
+
+LINK NUMBER 132
+Error fetching diff
+
+LINK NUMBER 133
+Error fetching diff
+
+LINK NUMBER 134
+
+File path: tests/utils/date.test.ts
+"import { describe, it, expect } from ""vitest"";
+
+import { SmartIterator, ValueException } from ""../../src/index.js"";
+import { Curve } from ""../../src/index.js"";
+
+describe(""Curve"", () =>
+{
+    describe(""Linear"", () =>
+    {
+        it(""Should return an instance of `SmartIterator`"", () =>
+        {
+            const iterator = Curve.Linear(5);
+
+            expect(iterator).toBeInstanceOf(SmartIterator);
+        });
+        it(""Should generate a linear sequence of values"", () =>
+        {
+            const values = Array.from(Curve.Linear(5));
+
+            expect(values).toEqual([0, 0.25, 0.5, 0.75, 1]);
+        });
+    });
+
+    describe(""Exponential"", () =>
+    {
+        it(""Should return an instance of `SmartIterator`"", () =>
+        {
+            const iterator = Curve.Exponential(6);
+
+            expect(iterator).toBeInstanceOf(SmartIterator);
+        });
+
+        it(""Should generate an exponential sequence of values with default base"", () =>
+        {
+            const values = Array.from(Curve.Exponential(6));
+
+            expect(values).toEqual([0, 0.04000000000000001, 0.16000000000000003, 0.36, 0.6400000000000001, 1]);
+        });
+        it(""Should generate an exponential sequence of values with custom base"", () =>
+        {
+            const values = Array.from(Curve.Exponential(6, 3));
+
+            expect(values).toEqual(
+                [0, Math.pow(1 / 5, 3), Math.pow(2 / 5, 3), Math.pow(3 / 5, 3), Math.pow(4 / 5, 3), 1]
+            );
+        });
+
+        it(""Should throw a `ValueException` if base is negative"", () =>
+        {
+            expect(() => Curve.Exponential(6, -1)).toThrow(ValueException);
+        });
+    });
+});"
+
+LINK NUMBER 135
+Too many lines
+
+LINK NUMBER 136
+
+File path: src/classes/edge-of-the-empire-dice/proficiency-die.ts
+"	/**
+	 * Maps the value of the proficiency die to the corresponding array of `EdgeOfTheEmpireDiceSymbol` results.
+	 *
+	 * @returns {EdgeOfTheEmpireDiceSymbol[]} An array of `EdgeOfTheEmpireDiceSymbol` representing the result of the die roll.
+	 *
+	 * The mapping is as follows:
+	 * - 1: Blank
+	 * - 2, 3: Success
+	 * - 4, 5: Success, Success
+	 * - 6: Advantage
+	 * - 7, 8, 9: Success, Advantage
+	 * - 10, 11: Advantage, Advantage
+	 * - 12: Triumph
+	 * - Default: Empty array
+	 */"
+
+LINK NUMBER 137
+
+File path: js/timers.js
+"document.getElementById('createTimers').addEventListener('click', function() {
+    const numTimers = parseInt(document.getElementById('numTimers').value);
+    const defaultTime = parseInt(document.getElementById('defaultTime').value);
+    const timersContainer = document.getElementById('timersContainer');
+    timersContainer.innerHTML = '';
+
+    for (let i = 1; i <= numTimers; i++) {
+        const timerDiv = document.createElement('div');
+        timerDiv.className = 'timer';
+        timerDiv.innerHTML = `
+            <input type=""text"" value=""${i}"">
+            <div class=""time"">${defaultTime}</div>
+            <div class=""buttons"">
+                <button class=""start"">Start</button>
+                <button class=""pause"">Pause</button>
+                <button class=""reset"">Reset</button>
+            </div>
+        `;
+        timersContainer.appendChild(timerDiv);
+
+        const timeDisplay = timerDiv.querySelector('.time');
+        let timeLeft = defaultTime;
+        let interval;
+
+        timerDiv.querySelector('.start').addEventListener('click', function() {
+            if (interval) return;
+            interval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    timeDisplay.textContent = timeLeft;
+                    if (timeLeft <= 10) {
+                        timeDisplay.classList.add('warning');
+                    }
+                } else {
+                    clearInterval(interval);
+                    timeDisplay.textContent = 'Times Up!';
+                }
+            }, 1000);
+        });
+
+        timerDiv.querySelector('.pause').addEventListener('click', function() {
+            clearInterval(interval);
+            interval = null;
+        });
+
+        timerDiv.querySelector('.reset').addEventListener('click', function() {
+            clearInterval(interval);
+            interval = null;
+            timeLeft = defaultTime;
+            timeDisplay.textContent = timeLeft;
+            timeDisplay.classList.remove('warning');
+        });
+    }
+});"
+
+LINK NUMBER 138
+Error fetching diff
+
+LINK NUMBER 139
+Error fetching diff
+
+LINK NUMBER 140
+Error fetching diff
+
+LINK NUMBER 141
+
+File path: src/common/middleware/auth.middleware.ts
+"
+    req.user = {
+      userId: decoded.userId,
+      role: decoded.role,
+    };
+
+    next();
+  } catch (error) {
+    logger.error(""JWT verification failed"", { error });
+    return next(new UnauthorizedError(""Invalid or expired token""));
+  }"
+
+LINK NUMBER 142
+Not enough lines
+
+LINK NUMBER 143
+
+File path: hilbert12.py
+"import numpy as np
+
+def generate_hilbert_matrix(size):
+    """"""Generates a Hilbert matrix of given size.""""""
+    hilbert_matrix = np.array([[1 / (i + j + 1) for j in range(size)] for i in range(size)])
+    return hilbert_matrix
+
+if __name__ == ""__main__"":
+    size = 12
+    hilbert_matrix = generate_hilbert_matrix(size)
+    print(hilbert_matrix)"
+
+LINK NUMBER 144
+Not enough lines
+
+LINK NUMBER 145
+Error fetching diff
+
+LINK NUMBER 146
+Error fetching diff
+
+LINK NUMBER 147
+Error fetching diff
+
+LINK NUMBER 148
+
+File path: calc2.py
+"import math
+
+def text_based_calculator():
+    while True:
+        print(""\nSelect operation:"")
+        print(""1. Addition (+)"")
+        print(""2. Subtraction (-)"")
+        print(""3. Multiplication (*)"")
+        print(""4. Division (/)"")
+        print(""5. Trigonometry (sin, cos, tan)"")
+        print(""6. Square Root (sqrt)"")
+        print(""7. Square (sq)"")
+        print(""8. Exponential (exp)"")
+        print(""9. Exit"")
+
+        choice = input(""Enter choice: "")
+
+        if choice == '9':
+            break
+
+        if choice in ['1', '2', '3', '4']:
+            num1 = float(input(""Enter first number: ""))
+            num2 = float(input(""Enter second number: ""))
+
+            if choice == '1':
+                print(""Result:"", num1 + num2)
+            elif choice == '2':
+                print(""Result:"", num1 - num2)
+            elif choice == '3':
+                print(""Result:"", num1 * num2)
+            elif choice == '4':
+                if num2 != 0:
+                    print(""Result:"", num1 / num2)
+                else:
+                    print(""Error: Division by zero"")
+
+        elif choice in ['5']:
+            trig_operation = input(""Enter trigonometric function (sin, cos, tan): "")
+            angle = float(input(""Enter angle in radians: ""))
+            if trig_operation == 'sin':
+                print(""Result:"", math.sin(angle))
+            elif trig_operation == 'cos':
+                print(""Result:"", math.cos(angle))
+            elif trig_operation == 'tan':
+                print(""Result:"", math.tan(angle))
+            else:
+                print(""Invalid trigonometric function"")
+
+        elif choice == '6':
+            num = float(input(""Enter number: ""))
+            print(""Result:"", math.sqrt(num))
+
+        elif choice == '7':
+            num = float(input(""Enter number: ""))
+            print(""Result:"", num * num)
+
+        elif choice == '8':
+            num = float(input(""Enter number: ""))
+            print(""Result:"", math.exp(num))
+
+        else:
+            print(""Invalid choice"")
+
+if __name__ == ""__main__"":
+    text_based_calculator()"
+
+LINK NUMBER 149
+Not enough lines
+
+LINK NUMBER 150
+Not enough lines
+
+LINK NUMBER 151
+
+File path: static/music.js
+"        ['e2', 8], ['e2', 8], ['p', 8], ['e2', 8], ['p', 8], ['c2', 8], ['e2', 8],
+        ['g2', 4], ['p', 4], ['g1', 4], ['p', 4],
+        ['c2', 4], ['p', 8], ['g1', 8], ['g1', 8], ['p', 8], ['e1', 4],
+        ['p', 8], ['a1', 4], ['h1', 8], ['h1', 8], ['ais1', 8], ['ais1', 4],
+        ['g1', 6], ['e2', 6], ['g2', 6], ['a2', 4], ['f2', 8], ['g2', 8],
+        ['p', 8], ['e2', 4], ['c2', 8], ['d2', 8], ['h1', 4], ['p', 8],
+        ['c2', 4], ['p', 8], ['g1', 8], ['g1', 8], ['p', 8], ['e1', 4],
+        ['p', 4], ['a1', 4], ['h1', 8], ['h1', 8], ['ais1', 8], ['ais1', 4],
+        ['g1', 6], ['e2', 6], ['g2', 6], ['a2', 4], ['f2', 8], ['g2', 8],
+        ['p', 8], ['e2', 4], ['c2', 8], ['d2', 8], ['h1', 4], ['p', 8],
+        ['p', 4], ['g2', 8], ['fis2', 8], ['fis2', 8], ['dis2', 4], ['e2', 8],
+        ['p', 8], ['gis1', 8], ['a1', 8], ['c2', 8], ['p', 8], ['a1', 8], ['c2', 8], ['d2', 8],
+        ['p', 4], ['g2', 8], ['fis2', 8], ['fis2', 8], ['dis2', 4], ['e2', 8],
+        ['p', 8], ['c3', 4], ['c3', 8], ['c3', 4], ['p', 4],
+        ['p', 4], ['g2', 8], ['fis2', 8], ['fis2', 8], ['dis2', 4], ['e2', 8],
+        ['p', 8], ['gis1', 8], ['a1', 8], ['c2', 8], ['p', 8], ['a1', 8], ['c2', 8], ['d2', 8],"
+
+LINK NUMBER 152
+Error fetching diff
+
+LINK NUMBER 153
+Error fetching diff
+
+LINK NUMBER 154
+Too many lines
+
+LINK NUMBER 155
+Not enough lines
+
+LINK NUMBER 156
+Not enough lines
+
+LINK NUMBER 157
+Not enough lines
+
+LINK NUMBER 158
+Error fetching diff
+
+LINK NUMBER 159
+Error fetching diff
+
+LINK NUMBER 160
+Not enough lines
+
+LINK NUMBER 161
+Not enough lines
+
+LINK NUMBER 162
+Not enough lines
+
+LINK NUMBER 163
+Not enough lines
+
+LINK NUMBER 164
+Error fetching diff
+
+LINK NUMBER 165
+Error fetching diff
+
+LINK NUMBER 166
+Not enough lines
+
+LINK NUMBER 167
+
+File path: TestArena/Blog/Common/NavigationUtils/SiteMap.cs
+"        new(""Understanding the Single Responsibility Principle"",
+            ""/blog/software-practices-solid-srp"",
+            new DateTime(2025, 5, 10),
+            ""images/blog/software-practices/solid-srp/banner.png"",
+            [""Software Practices"", ""SOLID"", ""SRP""], false),"
+
+LINK NUMBER 168
+Not enough lines
+
+LINK NUMBER 169
+
+File path: src/features/follow/index.ts
+"import { NextFunction, Request, Response } from ""express"";
+import { FollowService } from ""../services/follow.service"";
+import { followUserSchema } from ""../validations/follow.schema"";
+import { UnauthorizedError, ValidationError } from ""@/utils/errors.utils"";
+
+export class FollowController {
+  private followService = new FollowService();
+
+  /**
+   * Follow a user
+   */
+  followUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new UnauthorizedError(""Not authenticated"");
+      }
+
+      const validationResult = followUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        throw new ValidationError(validationResult.error.format());
+      }
+
+      const result = await this.followService.followUser(
+        req.user.id,
+        validationResult.data.username
+      );
+
+      res.status(200).json({
+        message: ""Successfully followed user"",
+        ...result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Unfollow a user
+   */
+  unfollowUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new UnauthorizedError(""Not authenticated"");
+      }
+
+      const { username } = req.params;
+
+      const result = await this.followService.unfollowUser(
+        req.user.id,
+        username
+      );
+
+      res.status(200).json({
+        message: ""Successfully unfollowed user"",
+        ...result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Check follow status
+   */
+  checkFollowStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new UnauthorizedError(""Not authenticated"");
+      }
+
+      const { username } = req.params;
+
+      const result = await this.followService.checkFollowStatus(
+        req.user.id,
+        username
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get followers of a user
+   */
+  getFollowers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { username } = req.params;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+
+      const result = await this.followService.getFollowers(
+        username,
+        page,
+        limit
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get users that a user is following
+   */
+  getFollowing = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { username } = req.params;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+
+      const result = await this.followService.getFollowing(
+        username,
+        page,
+        limit
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get follow counts
+   */
+  getFollowCounts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { username } = req.params;
+
+      const result = await this.followService.getFollowCounts(username);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+}"
+
+LINK NUMBER 170
+Error fetching diff
+
+LINK NUMBER 171
+Error fetching diff
+
+LINK NUMBER 172
+Error fetching diff
+
+LINK NUMBER 173
+Not enough lines
+
+LINK NUMBER 174
+Not enough lines
+
+LINK NUMBER 175
+Too many lines
+
+LINK NUMBER 176
+Not enough lines
+
+LINK NUMBER 177
+Error fetching diff
+
+LINK NUMBER 178
+Error fetching diff
+
+LINK NUMBER 179
+Error fetching diff
+
+LINK NUMBER 180
+Not enough lines
+
+LINK NUMBER 181
+
+File path: src/features/follow/validations/follow.schema.ts
+"import { AppDataSource } from ""@/config/database"";
+import { Follow } from ""@/entities/Follow.entity"";
+import { User } from ""@/entities/User.entity"";
+import { ForbiddenError, NotFoundError } from ""@/utils/errors.utils"";
+
+export class FollowService {
+  private followRepository = AppDataSource.getRepository(Follow);
+  private userRepository = AppDataSource.getRepository(User);
+
+  /**
+   * Follow user
+   */
+  async followUser(followerUserId: string, usernameToFollow: string) {
+    // Find follower
+    const follower = await this.userRepository.findOneBy({
+      id: followerUserId,
+    });
+    if (!follower) {
+      throw new NotFoundError(""User not found"");
+    }
+
+    // Find user to follow
+    const userToFollow = await this.userRepository.findOneBy({
+      username: usernameToFollow,
+    });
+    if (!userToFollow) {
+      throw new NotFoundError(""User to follow not found"");
+    }
+
+    // Cannot follow yourself
+    if (follower.id === userToFollow.id) {
+      throw new ForbiddenError(""You cannot follow yourself"");
+    }
+
+    // Check if already following
+    const existingFollow = await this.followRepository.findOne({
+      where: {
+        follower: { id: followerUserId },
+        following: { id: userToFollow.id },
+      },
+    });
+
+    if (existingFollow) {
+      throw new ForbiddenError(""You are already following this user"");
+    }
+
+    // Create follow relation
+    const follow = this.followRepository.create({
+      follower,
+      following: userToFollow,
+    });
+
+    await this.followRepository.save(follow);
+
+    return { success: true };
+  }
+
+  /**
+   * Unfollow a user
+   */
+  async unfollowUser(followerUserId: string, usernameToUnfollow: string) {
+    // Find user to unfollow
+    const userToUnfollow = await this.userRepository.findOneBy({
+      username: usernameToUnfollow,
+    });
+    if (!userToUnfollow) {
+      throw new NotFoundError(""User to unfollow not found"");
+    }
+
+    // Check if following
+    const follow = await this.followRepository.findOne({
+      where: {
+        follower: { id: followerUserId },
+        following: { id: userToUnfollow.id },
+      },
+    });
+
+    if (!follow) {
+      throw new ForbiddenError(""You are not following this user"");
+    }
+
+    // Remove follow relationship
+    await this.followRepository.remove(follow);
+
+    return { success: true };
+  }
+
+  /**
+   * Check if one user follows another
+   */
+  async checkFollowStatus(followerUserId: string, usernameToCheck: string) {
+    const userToCheck = await this.userRepository.findOneBy({
+      username: usernameToCheck,
+    });
+    if (!userToCheck) {
+      throw new NotFoundError(""User not found"");
+    }
+
+    const follow = await this.followRepository.findOne({
+      where: {
+        follower: { id: followerUserId },
+        following: { id: userToCheck.id },
+      },
+    });
+
+    return { following: !!follow };
+  }
+
+  /**
+   * Get followers of a user
+   */
+  async getFollowers(username: string, page = 1, limit = 20) {
+    const user = await this.userRepository.findOneBy({ username });
+    if (!user) {
+      throw new NotFoundError(""User not found"");
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [follows, total] = await this.followRepository
+      .createQueryBuilder(""follow"")
+      .leftJoinAndSelect(""follow.follower"", ""follower"")
+      .where(""follow.following.id = :userId"", { userId: user.id })
+      .skip(skip)
+      .take(limit)
+      .orderBy(""follow.createdAt"", ""DESC"")
+      .getManyAndCount();
+
+    // Extract follower users only
+    const followers = follows.map((follow) => follow.follower);
+
+    return {
+      followers,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get users that a user is following
+   */
+  async getFollowing(username: string, page = 1, limit = 20) {
+    const user = await this.userRepository.findOneBy({ username });
+    if (!user) {
+      throw new NotFoundError(""User not found"");
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [follows, total] = await this.followRepository
+      .createQueryBuilder(""follow"")
+      .leftJoinAndSelect(""follow.following"", ""following"")
+      .where(""follow.follower.id = :userId"", { userId: user.id })
+      .skip(skip)
+      .take(limit)
+      .orderBy(""follow.createdAt"", ""DESC"")
+      .getManyAndCount();
+
+    // Extract following users only
+    const following = follows.map((follow) => follow.following);
+
+    return {
+      following,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get follower/following counts
+   */
+  async getFollowCounts(username: string) {
+    const user = await this.userRepository.findOneBy({ username });
+    if (!user) {
+      throw new NotFoundError(""User not found"");
+    }
+
+    const followersCount = await this.followRepository.count({
+      where: { following: { id: user.id } },
+    });
+
+    const followingCount = await this.followRepository.count({
+      where: { follower: { id: user.id } },
+    });
+
+    return {
+      username,
+      followersCount,
+      followingCount,
+    };
+  }
+}"
+
+LINK NUMBER 182
+
+File path: src/features/user/index.ts
+"import { NextFunction, Request, Response } from ""express"";
+
+import {
+  ValidationError,
+  UnauthorizedError,
+  NotFoundError,
+} from ""@/utils/errors.utils"";
+import { updateProfileSchema } from ""../validations/user.schema"";
+import { UserService } from ""../services/user.service"";
+
+export class UserController {
+  private userService = new UserService();
+
+  /**
+   * Get user profile by username
+   */
+  getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { username } = req.params;
+
+      const user = await this.userService.getUserByUsername(username);
+
+      if (!user) {
+        throw new NotFoundError(""User not found"");
+      }
+
+      res.status(200).json({
+        user: user.toJSON(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Update user profile
+   */
+  updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user || !req.user.id) {
+        throw new UnauthorizedError(""Not authenticated"");
+      }
+
+      // Validate request
+      const validationResult = updateProfileSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        throw new ValidationError(validationResult.error.format());
+      }
+
+      const updatedUser = await this.userService.updateProfile(
+        req.user.id,
+        validationResult.data
+      );
+
+      res.status(200).json({
+        message: ""Profile updated successfully"",
+        user: updatedUser.toJSON(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get posts by username
+   */
+  getUserPosts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { username } = req.params;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+      const result = await this.userService.getUserPosts(username, page, limit);
+
+      res.status(200).json({
+        posts: result.posts,
+        meta: {
+          total: result.total,
+          totalPages: result.totalPages,
+          page,
+          limit,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Search users by username or fullName
+   */
+  searchUsers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { query } = req.query;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+      if (!query || typeof query !== ""string"") {
+        throw new ValidationError({ message: ""Search query is required"" });
+      }
+
+      const { users, total, totalPages } = await this.userService.searchUsers(
+        query,
+        page,
+        limit
+      );
+
+      res.status(200).json({
+        users,
+        meta: {
+          total,
+          totalPages,
+          page,
+          limit,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+}"
+
+LINK NUMBER 183
+Not enough lines
+
+LINK NUMBER 184
+Error fetching diff
+
+LINK NUMBER 185
+Error fetching diff
+
+LINK NUMBER 186
+Error fetching diff
+
+LINK NUMBER 187
+Not enough lines
+
+LINK NUMBER 188
+
+File path: UITests/Components/Navigation/NavigationTests.cs
+"                                <a class=""[ flex flex-col items-center ]"" href=""/career"">
+                                    <svg xmlns=""http://www.w3.org/2000/svg"" class=""[ icon icon-tabler icons-tabler-outline icon-tabler-briefcase ]""
+                                        width=""30"" height=""30"" viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2""
+                                        stroke-linecap=""round"" stroke-linejoin=""round"">
+                                        <path stroke=""none"" d=""M0 0h24v24H0z"" fill=""none"" />
+                                        <path d=""M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"" />
+                                        <path d=""M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"" />
+                                        <path d=""M12 12l0 .01"" />
+                                        <path d=""M3 13a20 20 0 0 0 18 0"" />
+                                    </svg>
+                                    <span class=""[ text-xs text-center ]"">Career</span>
+                                </a>"
+
+LINK NUMBER 189
+Not enough lines
+
+LINK NUMBER 190
+
+File path: src/store/mediaStore.ts
+"  // Add preview
+  addPreview: (files: File[]) => {
+    const newPreviews = files.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      isUploaded: false,
+    }));
+
+    set((state) => ({
+      previewMedia: [...state.previewMedia, ...newPreviews],
+    }));
+  },
+
+  // Delete preview
+  removePreview: (previewId: string) => {
+    set((state) => {
+      // delete preview url
+      const previewToRemove = state.previewMedia.find(
+        (p) => p.id === previewId
+      );
+      if (previewToRemove) {
+        URL.revokeObjectURL(previewToRemove.previewUrl);
+      }
+
+      return {
+        previewMedia: state.previewMedia.filter((p) => p.id !== previewId),
+      };
+    });
+  },
+
+  // Delete all previews
+  clearPreviews: () => {
+    const { previewMedia } = get();
+
+    // delete all preview urls
+    previewMedia.forEach((preview) => {
+      URL.revokeObjectURL(preview.previewUrl);
+    });
+
+    set({ previewMedia: [] });
+  },
+
+  // Upload all previews to server
+  uploadAllPreviews: async (options: MediaUploadOptions) => {
+    const { previewMedia } = get();
+    set({ isUploading: true, uploadProgress: 0 });
+
+    const uploadedItems: Media[] = [];
+    const totalFiles = previewMedia.length;
+    let processedCount = 0;
+
+    try {
+      for (const preview of previewMedia) {
+        if (!preview.isUploaded) {
+          const media = await get().uploadMedia(preview.file, options);
+          if (media) {
+            uploadedItems.push(media);
+
+            // change states to uploaded
+            set((state) => ({
+              previewMedia: state.previewMedia.map((p) =>
+                p.id === preview.id ? { ...p, isUploaded: true } : p
+              ),
+            }));
+          }
+        }
+
+        processedCount++;
+        const percentCompleted = Math.round(
+          (processedCount * 100) / totalFiles
+        );
+        set({ uploadProgress: percentCompleted });
+      }
+
+      // Clear preview after uploaded
+      get().clearPreviews();
+
+      set({ isUploading: false, uploadProgress: 100 });
+      return uploadedItems;
+    } catch (error) {
+      console.error(""Failed to upload previews:"", error);
+      set({
+        isUploading: false,
+        error: error instanceof Error ? error.message : ""Upload failed"",
+      });
+      return [];
+    }
+  },
+"
+
+LINK NUMBER 191
+Error fetching diff
+
+LINK NUMBER 192
+Error fetching diff
+
+LINK NUMBER 193
+Error fetching diff
+
+LINK NUMBER 194
+Not enough lines
+
+LINK NUMBER 195
+Not enough lines
+
+LINK NUMBER 196
+Not enough lines
+
+LINK NUMBER 197
+Not enough lines
+
+LINK NUMBER 198
+Error fetching diff
+
+LINK NUMBER 199
+Error fetching diff
+
+LINK NUMBER 200
+Error fetching diff
+
+LINK NUMBER 201
+
+File path: tests/test_user_manager.py
+"import unittest
+from unittest.mock import patch, mock_open, MagicMock
+
+from user_manager import get_all_users, new_user, get_user_info, delete_user, update_username, add_win, add_played_game, \
+    add_fail, find_user, save_user, merge_json_files
+
+
+class TestUserManager(unittest.TestCase):
+
+    @patch('user_manager.glob.glob', return_value=['user1.json', 'user2.json', 'users.json'])
+    @patch('builtins.open', new_callable=mock_open, read_data='[{""username"": ""user1""}, {""username"": ""user2""}]')
+    def test_get_all_users(self, mock_file, mock_glob):
+        users = get_all_users()
+        self.assertIn('user1.json', users)
+        self.assertIn('user2.json', users)
+        self.assertNotIn('users.json', users)
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    @patch('builtins.open', new_callable=mock_open)
+    def test_new_user(self, mock_file, mock_glob):
+        new_user('user2')
+        mock_file.assert_called_with('user2.json', 'w')
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    @patch('builtins.open', new_callable=mock_open,
+           read_data='{""username"": ""user1"", ""played_games"": 0, ""nbfail"": 0, ""nbwin"": 0}')
+    def test_get_user_info(self, mock_file, mock_glob):
+        with patch('builtins.print') as mocked_print:
+            get_user_info('user1')
+            mocked_print.assert_called_with('User user1 have never played')
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    @patch('os.remove')
+    def test_delete_user(self, mock_remove, mock_glob):
+        with patch('builtins.print') as mocked_print:
+            delete_user('user1')
+            mock_remove.assert_called_with('user1.json')
+            mocked_print.assert_called_with('User user1 has been successfully deleted')
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    @patch('builtins.open', new_callable=mock_open, read_data='{""username"": ""user1""}')
+    @patch('os.rename')
+    def test_update_username(self, mock_rename, mock_file, mock_glob):
+        with patch('builtins.print') as mocked_print:
+            update_username('user1', 'user2')
+            mock_rename.assert_called_with('user1.json', 'user2.json')
+            mocked_print.assert_called_with(' The username user1 has been changed to user2')
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    @patch('builtins.open', new_callable=mock_open, read_data='{""username"": ""user1"", ""nbwin"": 0}')
+    def test_add_win(self, mock_file, mock_glob):
+        add_win('user1')
+        mock_file().write.assert_called()
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    @patch('builtins.open', new_callable=mock_open, read_data='{""username"": ""user1"", ""played_games"": 0}')
+    def test_add_played_game(self, mock_file, mock_glob):
+        add_played_game('user1')
+        mock_file().write.assert_called()
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    @patch('builtins.open', new_callable=mock_open, read_data='{""username"": ""user1"", ""nbfail"": 0}')
+    def test_add_fail(self, mock_file, mock_glob):
+        add_fail('user1')
+        mock_file().write.assert_called()
+
+    @patch('user_manager.glob.glob', return_value=['user1.json'])
+    def test_find_user(self, mock_glob):
+        self.assertTrue(find_user('user1'))
+        self.assertFalse(find_user('user2'))
+
+    @patch('builtins.open', new_callable=mock_open)
+    def test_save_user(self, mock_file):
+        user = MagicMock()
+        user.username = 'user1'
+        user.played_games = 0
+        user.nbfail = 0
+        user.nbwin = 0
+        user.greatest_score = 0
+        save_user(user)
+        mock_file.assert_called_with('user1.json', 'w')
+
+    @patch('builtins.open', new_callable=mock_open, read_data='{""username"": ""user1""}')
+    def test_merge_json_files(self, mock_file):
+        merge_json_files(['user1.json'])
+        mock_file.assert_called_with('users.json', 'w')
+
+
+if __name__ == '__main__':
+    unittest.main()"
+
+LINK NUMBER 202
+
+File path: src/features/auth/auth.controller.ts
+"import { NextFunction, Request, Response } from ""express"";
+import { authService } from ""./auth.service"";
+import {
+  UnauthorizedError,
+  ValidationError,
+} from ""@/common/middleware/error.middleware"";
+import { logger } from ""@/common/utils/logger.utils"";
+
+export class AuthController {
+  /**
+   * Login
+   */
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        throw new ValidationError({
+          message: ""Email and Password are required"",
+        });
+      }
+
+      const result = await authService.login({ email, password });
+
+      return res.status(200).json({
+        message: ""Login successful"",
+        ...result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Refresh Token
+   */
+  async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { refreshToken } = req.body;
+
+      if (!refreshToken) {
+        throw new UnauthorizedError(""Refresh token is required"");
+      }
+    } catch (error) {}
+  }
+
+  /**
+   * Request Password reset
+   */
+  async requestPasswordReset(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        throw new ValidationError({ message: ""Email is required"" });
+      }
+
+      const result = await authService.requestPasswordReset({ email });
+
+      return res.status(200).json(result);
+    } catch (error) {
+      logger.error(""Password reset request error: "", error);
+      next(error);
+    }
+  }
+
+  /**
+   * Reset Password
+   * */
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        throw new ValidationError({
+          message: ""Token and new password are required"",
+        });
+      }
+
+      const result = await authService.resetPassword({ token, password });
+
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+export const authController = new AuthController();"
+
+LINK NUMBER 203
+
+File path: pkg/https_sni.go
+"// isValidFQDN validates if the given hostname is a valid FQDN
+func isValidFQDN(hostname string) bool {
+	// Regular expression to match a valid FQDN
+	var fqdnRegex = regexp.MustCompile(`^(?i:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,})$`)
+	return fqdnRegex.MatchString(hostname)
+}
+"
+
+LINK NUMBER 204
+Not enough lines
+
+LINK NUMBER 205
+Error fetching diff
+
+LINK NUMBER 206
+Error fetching diff
+
+LINK NUMBER 207
+Error fetching diff
+
+LINK NUMBER 208
+
+File path: src/utils/__init__.py
+"import os
+import hashlib
+import threading
+
+from pyftpdlib.authorizers import DummyAuthorizer
+from pyftpdlib.handlers import FTPHandler
+from pyftpdlib.servers import FTPServer
+
+from src.config.settings import (
+    HOME_DIRECTORY,
+    PASSWORD,
+    SERVER_ADDRESS,
+    SERVER_PORT,
+    USER,
+)
+
+
+class FTPServerHandler:
+    def __init__(self):
+        self.server = None
+        self.server_thread = None
+
+    def init_server(self):
+        # Check and create working directory if not exists
+        if not os.path.exists(HOME_DIRECTORY):
+            os.makedirs(HOME_DIRECTORY)
+            print(f""Created working directory: {HOME_DIRECTORY}"")
+
+        # Create an authorizer
+        authorizer = DummyAuthorizer()
+
+        # Add user with settings from config
+        authorizer.add_user(USER, PASSWORD, HOME_DIRECTORY, perm=""elradfmwMT"")
+
+        # Create FTP handler
+        handler = FTPHandler
+        handler.authorizer = authorizer
+
+        # Set IPv6 address and port
+        address = (SERVER_ADDRESS, SERVER_PORT)
+
+        # Create FTP server
+        self.server = FTPServer(address, handler)
+
+    def start(self):
+        """"""Start FTP server in a separate thread""""""
+        if self.server is None:
+            self.init_server()
+
+        self.server_thread = threading.Thread(
+            target=self.server.serve_forever,
+            daemon=True,  # Set as daemon thread so it will exit when main program exits
+        )
+        self.server_thread.start()
+        print(f""FTP server is running at [{SERVER_ADDRESS}]:{SERVER_PORT}"")
+
+    def stop(self):
+        """"""Stop the FTP server""""""
+        if self.server:
+            self.server.close_all()
+            print(""FTP server stopped"")
+
+    def add_binary_file(self, filename: str, content: bytes) -> bool:
+        """"""Add a binary file to the FTP server's home directory
+        
+        Args:
+            filename: Name of the file to create
+            content: Binary content to write
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """"""
+        try:
+            filepath = os.path.join(HOME_DIRECTORY, filename)
+            with open(filepath, 'wb') as f:
+                f.write(content)
+            return True
+        except Exception as e:
+            print(f""Error adding file: {e}"")
+            return False
+
+    def get_file_sha256(self, filename: str) -> str:
+        """"""Get SHA256 hash of a file in the FTP server's home directory
+        
+        Args:
+            filename: Name of the file to hash
+            
+        Returns:
+            str: SHA256 hash of the file, or empty string if file not found
+        """"""
+        try:
+            filepath = os.path.join(HOME_DIRECTORY, filename)
+            sha256_hash = hashlib.sha256()
+            with open(filepath, 'rb') as f:
+                for byte_block in iter(lambda: f.read(4096), b''):
+                    sha256_hash.update(byte_block)
+            return sha256_hash.hexdigest()
+        except Exception as e:
+            print(f""Error calculating hash: {e}"")
+            return ''
+
+
+def main():
+    # Usage example
+    ftp_server = FTPServerHandler()
+    try:
+        ftp_server.start()
+        # Keep main thread running
+        while True:
+            input(""Press Enter to stop the server..."")
+            break
+    except KeyboardInterrupt:
+        print(""\nReceived exit signal"")
+    finally:
+        ftp_server.stop()
+
+
+if __name__ == ""__main__"":
+    main()"
+
+LINK NUMBER 209
+
+File path: src/features/users/users.service.ts
+"import {
+  ConflictError,
+  NotFoundError,
+} from ""@/common/middleware/error.middleware"";
+import { dateUtils, getPaginationParams } from ""@/common/utils/helpers.utils"";
+import { logger } from ""@/common/utils/logger.utils"";
+import prisma from ""@/entities/prisma"";
+import bcrypt from ""bcryptjs"";
+import {
+  CreateUserDto,
+  PaginatedUserResponse,
+  UpdateUserDto,
+  UpdateUserProfileDto,
+  UserQueryParams,
+} from ""./dto/user.dto"";
+import { Prisma, UserProfile } from ""@prisma/client"";
+import {
+  defaultUserSelect,
+  UserListSelect,
+  userListSelect,
+  userWithRelationsSelect,
+  UserWithRelationsSelect,
+} from ""./users.selections"";
+
+export class UsersService {
+  /**
+   * Find all users with pagination and filtering
+   */
+  async findAll(queryParams: UserQueryParams): Promise<PaginatedUserResponse> {
+    const { page, limit, search, departmentId, role, isActive } = queryParams;
+    const pagination = getPaginationParams(page, limit);
+
+    // Build where clause
+    const where: Prisma.UserWhereInput = {};
+
+    // Search filter
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: ""insensitive"" } },
+        { lastName: { contains: search, mode: ""insensitive"" } },
+        { email: { contains: search, mode: ""insensitive"" } },
+      ];
+    }
+
+    // Department filter
+    if (departmentId) {
+      where.departmentId = departmentId;
+    }
+
+    // Role filter
+    if (role) {
+      where.role = role;
+    }
+
+    // Active/Inactive filter
+    if (isActive !== undefined) {
+      const active = isActive === ""true"";
+      where.terminationDate = active ? null : { not: null };
+    }
+
+    // Count total matching records
+    const total = await prisma.user.count({ where });
+
+    // Get users with safe fields
+    const users = await prisma.user.findMany({
+      where,
+      select: userListSelect,
+      skip: pagination.skip,
+      take: pagination.limit,
+      orderBy: {
+        lastName: ""asc"",
+      },
+    });
+
+    return {
+      data: users,
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      totalPages: Math.ceil(total / pagination.limit),
+    };
+  }
+
+  /**
+   * Find a single user by ID
+   */
+  async findById(id: string): Promise<UserWithRelationsSelect> {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: userWithRelationsSelect,
+    });
+
+    if (!user) {
+      throw new NotFoundError(""User"");
+    }
+
+    return user;
+  }
+
+  /**
+   * Create a new user
+   */
+  async create(createUserDto: CreateUserDto): Promise<UserWithRelationsSelect> {
+    const { email, password, profile, ...userData } = createUserDto;
+
+    // Check if user with this email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new ConflictError(""email"");
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user with profile in a transaction
+    try {
+      const user = await prisma.$transaction(async (tx) => {
+        // Create user
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            ...userData,
+          },
+          select: defaultUserSelect,
+        });
+
+        // Create profile if provided
+        if (profile) {
+          await tx.userProfile.create({
+            data: {
+              ...profile,
+              userId: newUser.id,
+            },
+          });
+        }
+
+        return tx.user.findUnique({
+          where: { id: newUser.id },
+          select: userWithRelationsSelect,
+        });
+      });
+
+      if (!user) {
+        throw new Error(""Failed to create user"");
+      }
+
+      return user;
+    } catch (error) {
+      logger.error(""Error creating user:"", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing user
+   */
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto
+  ): Promise<UserWithRelationsSelect> {
+    const { profile, password, ...userData } = updateUserDto;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundError(""User"");
+    }
+
+    // If email is being updated, check for duplicates
+    if (userData.email && userData.email !== existingUser.email) {
+      const duplicateEmail = await prisma.user.findUnique({
+        where: { email: userData.email },
+      });
+
+      if (duplicateEmail) {
+        throw new ConflictError(""email"");
+      }
+    }
+
+    // Prepare update data
+    const updateData: Prisma.UserUpdateInput = { ...userData };
+
+    // Hash password if provided
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    // Update user and profile in a transaction
+    try {
+      const user = await prisma.$transaction(async (tx) => {
+        // Update user
+        const updatedUser = await tx.user.update({
+          where: { id },
+          data: updateData,
+          select: defaultUserSelect,
+        });
+
+        // Update profile if provided
+        if (profile) {
+          // Check if profile exists
+          const existingProfile = await tx.userProfile.findUnique({
+            where: { userId: id },
+          });
+
+          if (existingProfile) {
+            await tx.userProfile.update({
+              where: { userId: id },
+              data: profile,
+            });
+          } else {
+            await tx.userProfile.create({
+              data: {
+                ...profile,
+                userId: id,
+              },
+            });
+          }
+        }
+
+        return tx.user.findUnique({
+          where: { id },
+          select: userWithRelationsSelect,
+        });
+      });
+
+      if (!user) {
+        throw new Error(""Failed to update user"");
+      }
+
+      return user;
+    } catch (error) {
+      logger.error(""Error updating user:"", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateUserProfileDto
+  ): Promise<UserProfile> {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundError(""User"");
+    }
+
+    // Check if profile exists
+    const existingProfile = await prisma.userProfile.findUnique({
+      where: { userId },
+    });
+
+    // Update or create profile
+    if (existingProfile) {
+      return prisma.userProfile.update({
+        where: { userId },
+        data: updateProfileDto,
+      });
+    } else {
+      return prisma.userProfile.create({
+        data: {
+          ...updateProfileDto,
+          userId,
+        },
+      });
+    }
+  }
+
+  /**
+   * Delete a user
+   */
+  async delete(id: string): Promise<void> {
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundError(""User"");
+    }
+
+    // Delete user and related data in a transaction
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Delete profile if exists
+        const profile = await tx.userProfile.findUnique({
+          where: { userId: id },
+        });
+
+        if (profile) {
+          await tx.userProfile.delete({
+            where: { userId: id },
+          });
+        }
+
+        // Delete user
+        await tx.user.delete({
+          where: { id },
+        });
+      });
+    } catch (error) {
+      logger.error(""Error deleting user:"", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get new employees (hired in the last 30 days)
+   */
+  async getNewEmployees(): Promise<UserListSelect[]> {
+    const thirtyDaysAgo = dateUtils.daysAgo(30);
+
+    const newUsers = await prisma.user.findMany({
+      where: {
+        hireDate: {
+          gte: thirtyDaysAgo,
+        },
+        terminationDate: null,
+      },
+      select: userListSelect,
+      orderBy: {
+        hireDate: ""desc"",
+      },
+    });
+
+    return newUsers;
+  }
+
+  /**
+   * Get resigned employees
+   */
+  async getResignedEmployees(): Promise<UserListSelect[]> {
+    const resignedUsers = await prisma.user.findMany({
+      where: {
+        terminationDate: {
+          not: null,
+        },
+      },
+      select: userListSelect,
+      orderBy: {
+        terminationDate: ""desc"",
+      },
+    });
+
+    return resignedUsers;
+  }
+}
+
+export const usersService = new UsersService();"
+
+LINK NUMBER 210
+
+File path: lumigator/jobs/inference/tests/test_huggingface_clients.py
+"from unittest.mock import MagicMock, patch
+
+import pytest
+from inference_config import InferenceJobConfig
+from model_clients.huggingface_clients import (
+    HuggingFaceCausalLMClient,
+    HuggingFaceSeq2SeqSummarizationClient,
+)
+
+from schemas import PredictionResult, TaskType
+
+
+class TestHuggingFaceSeq2SeqSummarizationClient:
+    @pytest.fixture
+    def mock_config(self):
+        """"""Create a mock InferenceJobConfig for testing seq2seq client.""""""
+        config = MagicMock(spec=InferenceJobConfig)
+        config.hf_pipeline = MagicMock()
+        config.hf_pipeline.model_name_or_path = ""mock-seq2seq-model""
+        config.hf_pipeline.task = TaskType.SUMMARIZATION
+        config.hf_pipeline.use_fast = True
+        config.hf_pipeline.trust_remote_code = False
+        config.hf_pipeline.torch_dtype = ""float32""
+        config.hf_pipeline.revision = ""main""
+        config.hf_pipeline.device = ""cpu""
+
+        config.generation_config = MagicMock()
+        config.generation_config.max_new_tokens = 100
+
+        return config
+
+    @patch(""model_clients.huggingface_clients.AutoTokenizer"")
+    @patch(""model_clients.huggingface_clients.AutoModelForSeq2SeqLM"")
+    @patch(""model_clients.huggingface_clients.pipeline"")
+    def test_initialization(self, mock_pipeline, mock_automodel, mock_tokenizer, mock_config):
+        """"""Test initialization of the seq2seq client.""""""
+        # Setup mocks
+        mock_model = MagicMock()
+        mock_model.config.max_position_embeddings = 512
+        mock_automodel.from_pretrained.return_value = mock_model
+
+        mock_tokenizer_instance = MagicMock()
+        mock_tokenizer_instance.model_max_length = 512
+        mock_tokenizer.from_pretrained.return_value = mock_tokenizer_instance
+
+        mock_pipeline_instance = MagicMock()
+        mock_pipeline_instance.model = mock_model
+        mock_pipeline_instance.tokenizer = mock_tokenizer_instance
+        mock_pipeline.return_value = mock_pipeline_instance
+
+        # Initialize client
+        client = HuggingFaceSeq2SeqSummarizationClient(mock_config)
+
+        # Verify initialization
+        mock_tokenizer.from_pretrained.assert_called_once()
+        mock_automodel.from_pretrained.assert_called_once()
+        mock_pipeline.assert_called_once()
+        assert client._pipeline == mock_pipeline_instance
+
+    @patch(""model_clients.huggingface_clients.AutoTokenizer"")
+    @patch(""model_clients.huggingface_clients.AutoModelForSeq2SeqLM"")
+    @patch(""model_clients.huggingface_clients.pipeline"")
+    def test_predict(self, mock_pipeline, mock_automodel, mock_tokenizer, mock_config):
+        """"""Test the predict method of the seq2seq client.""""""
+        # Setup mocks
+        mock_model = MagicMock()
+        mock_model.config.max_position_embeddings = 512
+        mock_automodel.from_pretrained.return_value = mock_model
+
+        mock_tokenizer_instance = MagicMock()
+        mock_tokenizer_instance.model_max_length = 512
+        mock_tokenizer.from_pretrained.return_value = mock_tokenizer_instance
+
+        mock_pipeline_instance = MagicMock()
+        mock_pipeline_instance.model = mock_model
+        mock_pipeline_instance.tokenizer = mock_tokenizer_instance
+        mock_pipeline_instance.return_value = [{""summary_text"": ""This is a summary.""}]
+        mock_pipeline.return_value = mock_pipeline_instance
+
+        # Initialize client and call predict
+        client = HuggingFaceSeq2SeqSummarizationClient(mock_config)
+        result = client.predict(""This is a test prompt."")
+
+        # Verify prediction
+        assert isinstance(result, PredictionResult)
+        assert result.prediction == ""This is a summary.""
+        mock_pipeline_instance.assert_called_once_with(""This is a test prompt."", max_new_tokens=100, truncation=True)
+
+    @patch(""model_clients.huggingface_clients.AutoTokenizer"")
+    @patch(""model_clients.huggingface_clients.AutoModelForSeq2SeqLM"")
+    @patch(""model_clients.huggingface_clients.pipeline"")
+    def test_max_token_adjustment(self, mock_pipeline, mock_automodel, mock_tokenizer, mock_config):
+        """"""Test that the client adjusts max tokens if over model limits.""""""
+        # Setup mocks with limited max position embeddings
+        mock_model = MagicMock()
+        mock_model.config.max_position_embeddings = 50  # Lower than config.max_new_tokens
+        mock_automodel.from_pretrained.return_value = mock_model
+
+        mock_tokenizer_instance = MagicMock()
+        mock_tokenizer_instance.model_max_length = 512
+        mock_tokenizer.from_pretrained.return_value = mock_tokenizer_instance
+
+        mock_pipeline_instance = MagicMock()
+        mock_pipeline_instance.model = mock_model
+        mock_pipeline_instance.tokenizer = mock_tokenizer_instance
+        mock_pipeline.return_value = mock_pipeline_instance
+
+        # Set the initial max_new_tokens to a value higher than model's max_position_embeddings
+        mock_config.generation_config.max_new_tokens = 100
+        # Initialize client - which should trigger the token adjustment
+        client = HuggingFaceSeq2SeqSummarizationClient(mock_config)
+        # Verify the max_new_tokens was adjusted down to the model's max_position_embeddings
+        assert client._config.generation_config.max_new_tokens == 50
+
+        # Now test with a value that's already within limits
+        mock_config.generation_config.max_new_tokens = 30  # Less than max_position_embeddings
+        # Initialize a new client
+        client = HuggingFaceSeq2SeqSummarizationClient(mock_config)
+        # Verify max_new_tokens was NOT adjusted since it was already within limits
+        assert client._config.generation_config.max_new_tokens == 30
+
+
+class TestHuggingFaceCausalLMClient:
+    @pytest.fixture
+    def mock_config(self):
+        """"""Create a mock InferenceJobConfig for testing causal LM client.""""""
+        config = MagicMock(spec=InferenceJobConfig)
+        config.hf_pipeline = MagicMock()
+        config.hf_pipeline.model_name_or_path = ""mock-causal-model""
+        config.hf_pipeline.task = TaskType.TEXT_GENERATION
+        config.hf_pipeline.model_dump.return_value = {
+            ""model_name_or_path"": ""mock-causal-model"",
+            ""task"": TaskType.TEXT_GENERATION,
+        }
+
+        config.system_prompt = ""You are a helpful assistant.""
+        config.generation_config = MagicMock()
+        config.generation_config.max_new_tokens = 100
+
+        return config
+
+    @patch(""model_clients.huggingface_clients.pipeline"")
+    def test_initialization(self, mock_pipeline, mock_config):
+        """"""Test initialization of the causal LM client.""""""
+        # Setup mocks
+        mock_pipeline_instance = MagicMock()
+        mock_pipeline.return_value = mock_pipeline_instance
+
+        # Initialize client
+        client = HuggingFaceCausalLMClient(mock_config)
+
+        # Verify initialization
+        mock_pipeline.assert_called_once()
+        assert client._pipeline == mock_pipeline_instance
+        assert client._system_prompt == ""You are a helpful assistant.""
+
+    @patch(""model_clients.huggingface_clients.pipeline"")
+    def test_with_summarization_task(self, mock_pipeline, mock_config):
+        """"""Test the causal LM client with a summarization task through system prompt.""""""
+        # Set task to summarization and use appropriate system prompt
+        mock_config.hf_pipeline.task = TaskType.SUMMARIZATION
+        mock_config.system_prompt = ""Summarize the following text.""
+
+        # Ensure pipeline config is still set to text-generation (overridden in client init)
+        mock_config.hf_pipeline.model_dump.return_value = {
+            ""model_name_or_path"": ""mock-causal-model"",
+            ""task"": TaskType.TEXT_GENERATION,  # Should still be text-generation in dumped config
+        }
+
+        # Setup mock pipeline response
+        mock_response = [
+            {
+                ""generated_text"": [
+                    {""role"": ""system"", ""content"": ""Summarize the following text.""},
+                    {""role"": ""user"", ""content"": ""Long article about climate change...""},
+                    {""role"": ""assistant"", ""content"": ""Climate change is affecting the planet in various ways.""},
+                ]
+            }
+        ]
+        mock_pipeline_instance = MagicMock()
+        mock_pipeline_instance.return_value = mock_response
+        mock_pipeline.return_value = mock_pipeline_instance
+
+        # Initialize client and call predict
+        client = HuggingFaceCausalLMClient(mock_config)
+        result = client.predict(""Long article about climate change..."")
+
+        # Verify prediction
+        assert isinstance(result, PredictionResult)
+        assert result.prediction == ""Climate change is affecting the planet in various ways.""
+
+        # Verify pipeline task was correctly overridden to text-generation
+        mock_pipeline.assert_called_once()
+        pipeline_args = mock_pipeline.call_args[1]
+        assert pipeline_args[""task""] == TaskType.TEXT_GENERATION"
+
+LINK NUMBER 211
+
+File path: src/common/utils/helpers.utils.ts
+"/**
+ * Utility function to remove password field from data
+ */
+export function excludePassword<T extends { password: string }>(
+  user: T
+): Omit<T, ""password""> {
+  const { password, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+}
+
+/**
+ * Utility function to remove password fields from an array of objects
+ */
+export function excludePasswordFromArray<T extends { password: string }>(
+  users: T[]
+): Omit<T, ""password"">[] {
+  return users.map((user) => excludePassword(user));
+}
+
+/**
+ * Date utility functions with date range capabilities
+ */
+export const dateUtils = {
+  /**
+   * Returns current date
+   */
+  now(): Date {
+    return new Date();
+  },
+
+  /**
+   * Returns date from n days ago
+   */
+  daysAgo(days: number): Date {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return date;
+  },
+
+  /**
+   * Returns date n days from now
+   */
+  daysFromNow(days: number): Date {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date;
+  },
+
+  /**
+   * Calculate days between two dates
+   */
+  daysBetween(start: Date, end: Date): number {
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  },
+
+  /**
+   * Convert date to YYYY-MM-DD format string
+   */
+  formatDate(date: Date): string {
+    return date.toISOString().split(""T"")[0];
+  },
+};
+
+/**
+ * Utility function for pagination
+ */
+export function getPaginationParams(page?: string, limit?: string) {
+  const parsedPage = parseInt(page || ""1"", 10);
+  const parsedLimit = parseInt(limit || ""10"", 10);
+
+  return {
+    page: parsedPage > 0 ? parsedPage : 1,
+    limit: parsedLimit > 0 ? parsedLimit : 10,
+    skip:
+      (parsedPage > 0 ? parsedPage - 1 : 0) *
+      (parsedLimit > 0 ? parsedLimit : 10),
+  };
+}"
+
+LINK NUMBER 212
+Error fetching diff
+
+LINK NUMBER 213
+Error fetching diff
+
+LINK NUMBER 214
+Error fetching diff
+
+LINK NUMBER 215
+
+File path: src/app.ts
+"import { PrismaClient } from ""@prisma/client"";
+import bcrypt from ""bcryptjs"";
+import dotenv from ""dotenv"";
+import path from ""path"";
+
+dotenv.config({ path: path.resolve(__dirname, ""../.env"") });
+
+import { appConfig } from ""../src/config/app.config"";
+
+const prisma = new PrismaClient();
+
+async function main() {
+  // Get admin information from environment variables
+  const adminEmail = appConfig.admin.email;
+  const adminPassword = appConfig.admin.password;
+
+  if (!adminEmail) {
+    throw new Error(""Admin email is not defined in environment variables"");
+  }
+
+  if (!adminPassword) {
+    throw new Error(""Admin password is not defined in environment variables"");
+  }
+
+  // Hash admin password
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+  // Check if admin already exists
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
+
+  // Create admin if not exists
+  if (!existingAdmin) {
+    const admin = await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: ""Admin"",
+        lastName: ""User"",
+        hireDate: new Date(),
+        role: ""ADMIN"",
+      },
+    });
+
+    console.log(`Admin user created with ID: ${admin.id}`);
+    console.log(`Email: ${adminEmail}`);
+    console.log(""Password: [Set in environment variables]"");
+  } else {
+    console.log(""Admin user already exists"");
+  }
+}
+
+main()
+  .catch((e) => {
+    console.error(""Seed error:"", e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });"
+
+LINK NUMBER 216
+Not enough lines
+
+LINK NUMBER 217
+Not enough lines
+
+LINK NUMBER 218
+
+File path: test/sodium.test.ts
+"});
+
+test(""crypto_scalarmult"", () => {
+    const aliceKeypair = sodium.crypto_box_keypair();
+    const aliceSecret = aliceKeypair.privateKey;
+    const alicePublic = aliceKeypair.publicKey;
+    const bobKeypair = sodium.crypto_box_keypair();
+    const bobSecret = bobKeypair.privateKey;
+    const bobPublic = bobKeypair.publicKey;
+
+    const shared1 = sodium.crypto_scalarmult(aliceSecret, bobPublic);
+    const shared2 = sodium.crypto_scalarmult(bobSecret, alicePublic);
+    expect(shared1).toEqual(shared2);
+});"
+
+LINK NUMBER 219
+Error fetching diff
+
+LINK NUMBER 220
+Error fetching diff
+
+LINK NUMBER 221
+Error fetching diff
+
+LINK NUMBER 222
+Not enough lines
+
+LINK NUMBER 223
+Not enough lines
+
+LINK NUMBER 224
+Not enough lines
+
+LINK NUMBER 225
+Not enough lines
+
+LINK NUMBER 226
+Error fetching diff
+
+LINK NUMBER 227
+Error fetching diff
+
+LINK NUMBER 228
+Error fetching diff
+
+LINK NUMBER 229
+
+File path: handler_chirps.go
+"}
+
+func (cfg *apiConfig) handleDeleteChirpByID(response http.ResponseWriter, request *http.Request, userID uuid.UUID) {
+	// Parse request params
+	chirpID, err := uuid.Parse(request.PathValue(""chirpID""))
+	if err != nil {
+		msg := fmt.Sprintf(""chirps: Problem parsing chirpID from request: %s"", err)
+		log.Println(msg)
+		respondWithError(response, http.StatusBadRequest, msg)
+		return
+	}
+
+	// Fetch chirp to confirm user owns it
+	row, err := cfg.db.GetChirpByID(request.Context(), chirpID)
+	if err != nil {
+		msg := fmt.Sprintf(""chirps: Problem retrieving chirp with id '%s': %s"", chirpID, err)
+		log.Println(msg)
+		respondWithError(response, http.StatusNotFound, msg)
+		return
+	}
+
+	if row.UserID != userID {
+		msg := fmt.Sprintf(""chirps: User '%s' does not own chirp '%s'"", userID, chirpID)
+		log.Println(msg)
+		respondWithError(response, http.StatusForbidden, msg)
+		return
+	}
+
+	// Delete chirp
+	err = cfg.db.DeleteChirpByID(request.Context(), chirpID)
+	if err != nil {	
+		msg := fmt.Sprintf(""chirps: Problem deleting chirp with id '%s': %s"", chirpID, err)
+		log.Println(msg)
+		respondWithError(response, http.StatusInternalServerError, msg)
+		return
+	}
+
+	// Respond with success
+	response.WriteHeader(http.StatusNoContent)"
+
+LINK NUMBER 230
+
+File path: mkdocs_breadcrumbs_plugin/plugin.py
+"            
+            if self.config['use_page_titles']:
+                title = page.meta.get('title', unquote(part))
+            else:
+                title = unquote(part)
+                
+            breadcrumbs.append(f""[{title}]({crumb_url})"")
+            self.logger.debug(f'Added breadcrumb: {title} with URL: {crumb_url}')"
+
+LINK NUMBER 231
+
+File path: internal/auth/auth.go
+"}
+
+func GetAPIKey(headers http.Header) (string, error) {
+	authHeader := headers.Get(""Authorization"")
+	if authHeader == """" {
+		return """", errors.New(""Missing Authorization header"")
+	}
+	const prefix = ""ApiKey ""
+	if !strings.HasPrefix(authHeader, prefix) {
+		return """", errors.New(""Authorization header must start with 'ApiKey '"")
+	}
+	apiKey := strings.TrimSpace(strings.TrimPrefix(authHeader, prefix))
+	if apiKey == """" {
+		return """", errors.New(""API key is empty"")
+	}
+	return apiKey, nil"
+
+LINK NUMBER 232
+
+File path: cpp/cruzancona.cpp
+"/**
+ * @brief Constructs a System object with the given parameters.
+ *
+ * @param l1_ The length of link 1.
+ * @param l2_ The length of link 2.
+ * @param lc1_ The distance from the origin to the center of mass of link 1.
+ * @param lc2_ The distance from the origin to the center of mass of link 2.
+ * @param m1_ The mass of link 1.
+ * @param m2_ The mass of link 2.
+ * @param m1_bar_ The mass uncertainty of link 1.
+ * @param m2_bar_ The mass uncertainty of link 2.
+ * @param g__ The acceleration due to gravity.
+ * @param I1_ The moment of inertia of link 1.
+ * @param I2_ The moment of inertia of link 2.
+ * @param epsilon_ The barrier width.
+ * @param l_ The adaptive parameter \ell.
+ * @param n_ The number of degrees of freedom.
+ * @param varrho_ The parameter varrho.
+ * @param A_ The matrix A.
+ * @param B_ The matrix B.
+ * @param L_ The matrix L.
+ * @param Xi_ The matrix Xi.
+ */"
+
+LINK NUMBER 233
+Error fetching diff
+
+LINK NUMBER 234
+Error fetching diff
+
+LINK NUMBER 235
+Error fetching diff
+
+LINK NUMBER 236
+Not enough lines
+
+LINK NUMBER 237
+Not enough lines
+
+LINK NUMBER 238
+
+File path: recentViewedNotesView.ts
+"import { ItemView, WorkspaceLeaf, TFile, Keymap, PaneType, Notice, Menu, MarkdownView } from 'obsidian';
+import { getRecentNotes, getRecentNotesWithInfo, RecentNoteInfo } from 'selfutil/getRecentNotes';
+import { getNoteType, NoteType } from 'selfutil/getTaskTag';
+
+export const VIEW_TYPE_RECENT_VIEWED_NOTES = 'recent-viewed-notes-view';
+
+class RecentViewedNotesView extends ItemView {
+  public currentNotesPath: string;
+
+  constructor(leaf: WorkspaceLeaf, notesTypeTag: string) {
+    super(leaf);
+    this.currentNotesPath = notesTypeTag;
+  }
+
+  getViewType() {
+    return VIEW_TYPE_RECENT_VIEWED_NOTES;
+  }
+
+  getDisplayText() {
+    return 'Recent Viewed Notes';
+  }
+
+  async onOpen() {
+    this.redraw(true);
+  }
+
+  public getIcon(): string {
+    return 'history';
+  }
+
+  public readonly redraw = async (forceRedraw: boolean): Promise<void> => {
+    this.containerEl.empty();
+    
+    // Get the combined and sorted list of recently viewed and modified notes
+    const recentlyViewedNotes = getRecentNotesWithInfo(this.app, 100);
+    
+    const rootEl = this.containerEl.createDiv({ cls: 'nav-folder mod-root scrollable' });
+    const childrenEl = rootEl.createDiv({ cls: 'nav-folder-children' });
+    
+    for (let noteInfo of recentlyViewedNotes) {
+      const file = this.app.vault.getAbstractFileByPath(noteInfo.path);
+      if (!file || !(file instanceof TFile)) continue;
+      
+      const navFile = childrenEl.createDiv({
+        cls: 'tree-item nav-file recent-viewed-notes-file',
+      });
+      
+      const navFileTitle = navFile.createDiv({
+        cls: 'tree-item-self is-clickable nav-file-title recent-viewed-notes-title',
+      });
+      
+      const navFileTitleContent = navFileTitle.createDiv({
+        cls: 'tree-item-inner nav-file-title-content recent-viewed-notes-title-content internal-link self-wrap-content',
+      });
+      
+      // Just display the filename without the path for cleaner UI
+      const noteType : NoteType | null = getNoteType(file.path)
+      const prefix = noteType ? (noteType.prefix ? noteType.prefix + "" "" : """") : """"
+      navFileTitleContent.setText(prefix + file.path);
+      
+      // Add metadata as subtitle with time info
+      const navFileSubtitle = navFileTitle.createDiv({
+        cls: 'tree-item-flair recent-viewed-notes-subtitle',
+      });
+
+     // Show folder path and relative time info
+     const formattedDate = this.getRelativeTimeString(noteInfo);
+     navFileSubtitle.setText(` • ${formattedDate}`);
+      
+      // Add right-click menu
+      navFileTitle.addEventListener('contextmenu', (event: MouseEvent) => {
+        const menu = new Menu();
+        menu.addItem((item) =>
+          item
+            .setSection('action')
+            .setTitle('Open in new tab')
+            .setIcon('file-plus')
+            .onClick(() => {
+              this.focusFile(file, 'tab');
+            })
+        );
+        
+        this.app.workspace.trigger(
+          'file-menu',
+          menu,
+          file,
+          'link-context-menu',
+        );
+        
+        menu.showAtPosition({ x: event.clientX, y: event.clientY });
+      });
+
+      // Add click handler to open the file
+      navFileTitle.addEventListener('click', (event: MouseEvent) => {  
+        const newLeaf = Keymap.isModEvent(event);
+        this.focusFile(file, newLeaf);
+      });
+    }
+    
+    // Add a message if no recently viewed notes are found
+    if (recentlyViewedNotes.length === 0) {
+      const emptyState = childrenEl.createDiv({
+        cls: 'nav-folder-empty-state',
+      });
+      emptyState.setText('No recently viewed notes found');
+    }
+  }
+  
+  // Helper method to format the time display based on recency
+  private getRelativeTimeString(noteInfo: RecentNoteInfo): string {
+    const now = Date.now();
+    // Use the most recent time between last viewed and modified
+    const mostRecentTime = Math.max(noteInfo.lastViewed, noteInfo.mtime);
+    const diffMinutes = Math.floor((now - mostRecentTime) / 60000);
+    
+    if (diffMinutes < 1) return 'just now';
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    // For older items, show the actual date
+    return new Date(mostRecentTime).toLocaleDateString();
+  }
+  
+  async onClose() {
+    // Cleanup if necessary
+  }
+  
+  private readonly focusFile = (file: TFile, newLeaf: boolean | PaneType): void => {
+    if (file) {
+      const leaf = this.app.workspace.getLeaf(newLeaf);
+      leaf.openFile(file).then(() => {
+        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (view) {
+          // Focus on the beginning of the file
+          view.editor.setCursor({ line: 0, ch: 0 });
+          view.editor.scrollIntoView({ from: { line: 0, ch: 0 }, to: { line: 0, ch: 0 } }, true);
+        }
+      });
+    } else {
+      new Notice('Cannot find a file with that name');
+    }
+  };
+}
+
+export { RecentViewedNotesView };"
+
+LINK NUMBER 239
+
+File path: popup.js
+"<!DOCTYPE html>
+<html>
+  <head>
+    <title>Trademe Property Blacklist</title>
+    <style>
+      body {
+        width: 200px;
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      button {
+        padding: 10px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <button id=""changeColor"">Change Color</button>
+    <script src=""popup.js""></script>
+  </body>
+</html>"
+
+LINK NUMBER 240
+Error fetching diff
+
+LINK NUMBER 241
+Error fetching diff
+
+LINK NUMBER 242
+Error fetching diff
+
+LINK NUMBER 243
+
+File path: tests_from_copilot.py
+"import unittest
+from wordle import Color, Feedback, Attempt, give_feedback, Game
+
+class TestWordle(unittest.TestCase):
+    def test_feedback_is_correct(self):
+        feedback = Feedback([Color.green, Color.green, Color.green, Color.green, Color.green])
+        self.assertTrue(feedback.is_correct())
+
+    def test_attempt_is_correct(self):
+        attempt = Attempt('helps', [Color.green, Color.green, Color.green, Color.green, Color.green])
+        self.assertTrue(attempt.is_correct())
+
+    def test_give_feedback(self):
+        attempt = give_feedback('smile', 'helps')
+        self.assertEqual(attempt.feedback, [Color.grey, Color.green, Color.grey, Color.grey, Color.grey])
+
+    def test_game_guess_word(self):
+        game = Game('helps')
+        attempt = game.guess_word('smile')
+        self.assertEqual(attempt.feedback, [Color.grey, Color.green, Color.grey, Color.grey, Color.grey])
+
+    def test_game_n_attempts(self):
+        game = Game('helps')
+        game.guess_word('smile')
+        game.guess_word('tells')
+        self.assertEqual(game.n_attempts, 2)
+
+if __name__ == '__main__':
+    unittest.main()"
+
+LINK NUMBER 244
+Not enough lines
+
+LINK NUMBER 245
+Not enough lines
+
+LINK NUMBER 246
+Not enough lines
+
+LINK NUMBER 247
+Error fetching diff
+
+LINK NUMBER 248
+Error fetching diff
+
+LINK NUMBER 249
+Error fetching diff
+
+LINK NUMBER 250
+
+File path: internal/models/user/user_model.go
+"	ID            int64  `db:""id"" json:""id,omitempty""`                           // Unique user id
+	Firstname     string `db:""firstname"" json:""first_name,omitempty""`            // Firstname
+	Lastname      string `db:""lastname"" json:""last_name,omitempty""`              // Lastname
+	Email         string `db:""email"" json:""email,omitempty""`                     // Email
+	Username      string `db:""username"" json:""username,omitempty""`               // Unique username
+	FriendsCount  int    `db:""friends_count"" json:""friends_count,omitempty""`     // Number of friends
+	ProfilePicURL string `db:""profile_pic_url"" json:""profile_pic_url,omitempty""` // Profile picture
+	PostsCount    int    `db:""posts_count"" json:""posts_count,omitempty""`         // Number of posts
+	CommentsCount int    `db:""comments_count"" json:""comments_count,omitempty""`   // Number of comments
+	LikesCount    int    `db:""likes_count"" json:""likes_count,omitempty""`         // Number of likes"
+
+LINK NUMBER 251
+Not enough lines
+
+LINK NUMBER 252
+Not enough lines
+
+LINK NUMBER 253
+Not enough lines
+
+LINK NUMBER 254
+Error fetching diff
+
+LINK NUMBER 255
+Error fetching diff
+
+LINK NUMBER 256
+Error fetching diff
+
+LINK NUMBER 257
+
+File path: 4. JavaScript servidor/Ejemplo 2/dwarfs.js
+"const dwarfs = ['Thorin', 'Balin', 'Dwalin', 'Fili', 'Kili', 'Dori', 'Nori',
+                'Ori', 'Oin', 'Gloin', 'Bifur', 'Bofur', 'Bombur'];
+
+for (const dwarf of dwarfs) {
+    console.log(dwarf);
+}"
+
+LINK NUMBER 258
+
+File path: prompt1.java
+"import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class TriangleTest {
+
+    @Test
+    public void testInvalidTriangle() {
+        assertEquals(TriangleType.INVALID, Triangle.classify(0, 0, 0));
+        assertEquals(TriangleType.INVALID, Triangle.classify(-1, 2, 3));
+        assertEquals(TriangleType.INVALID, Triangle.classify(1, -2, 3));
+        assertEquals(TriangleType.INVALID, Triangle.classify(1, 2, -3));
+    }
+
+    @Test
+    public void testEquilateralTriangle() {
+        assertEquals(TriangleType.EQUILATERAL, Triangle.classify(5, 5, 5));
+    }
+
+    @Test
+    public void testIsoscelesTriangle() {
+        assertEquals(TriangleType.ISOSCELES, Triangle.classify(5, 5, 3));
+        assertEquals(TriangleType.ISOSCELES, Triangle.classify(3, 5, 5));
+        assertEquals(TriangleType.ISOSCELES, Triangle.classify(5, 3, 5));
+    }
+
+    @Test
+    public void testScaleneTriangle() {
+        assertEquals(TriangleType.SCALENE, Triangle.classify(3, 4, 5));
+    }
+}"
+
+LINK NUMBER 259
+
+File path: src/main/java/com/challenges/helpers/ValidatorHelpers.java
+"    /**
+     * Validates the given contact detail based on the specified type. Documentation generated by Copilot.
+     *
+     * @param contactDetail The contact detail to validate. This should be a phone number or an email address.
+     * @param contactDetailType The type of the contact detail. This should be PHONE_NUMBER or EMAIL_ADDRESS.
+     * @return true if the contact detail is valid, false otherwise.
+     * @throws IllegalArgumentException If the contactDetail is null or empty.
+     */"
+
+LINK NUMBER 260
+
+File path: main.go
+"// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.28.0
+// source: refresh_tokens.sql
+
+package database
+
+import (
+	""context""
+	""database/sql""
+	""time""
+
+	""github.com/google/uuid""
+)
+
+const createRefreshToken = `-- name: CreateRefreshToken :one
+INSERT INTO refresh_tokens (token, created_at, updated_at, user_id, expires_at)
+VALUES (
+    $1,         -- token
+    NOW(),      -- created_at
+    NOW(),      -- updated_at
+    $2,         -- user_id
+    $3          -- expires_at
+)
+RETURNING token, created_at, updated_at, user_id, expires_at, revoked_at
+`
+
+type CreateRefreshTokenParams struct {
+	Token     string
+	UserID    uuid.UUID
+	ExpiresAt time.Time
+}
+
+func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, createRefreshToken, arg.Token, arg.UserID, arg.ExpiresAt)
+	var i RefreshToken
+	err := row.Scan(
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const deleteRefreshTokenByToken = `-- name: DeleteRefreshTokenByToken :exec
+DELETE FROM refresh_tokens WHERE token = $1
+`
+
+func (q *Queries) DeleteRefreshTokenByToken(ctx context.Context, token string) error {
+	_, err := q.db.ExecContext(ctx, deleteRefreshTokenByToken, token)
+	return err
+}
+
+const getUserIDWithRefreshToken = `-- name: GetUserIDWithRefreshToken :one
+SELECT 
+    users.id AS user_id,
+    refresh_tokens.expires_at,
+    refresh_tokens.revoked_at
+FROM refresh_tokens
+JOIN users ON refresh_tokens.user_id = users.id
+WHERE refresh_tokens.token = $1
+`
+
+type GetUserIDWithRefreshTokenRow struct {
+	UserID    uuid.UUID
+	ExpiresAt time.Time
+	RevokedAt sql.NullTime
+}
+
+func (q *Queries) GetUserIDWithRefreshToken(ctx context.Context, token string) (GetUserIDWithRefreshTokenRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserIDWithRefreshToken, token)
+	var i GetUserIDWithRefreshTokenRow
+	err := row.Scan(&i.UserID, &i.ExpiresAt, &i.RevokedAt)
+	return i, err
+}
+
+const revokeRefreshToken = `-- name: RevokeRefreshToken :exec
+UPDATE refresh_tokens
+SET revoked_at = NOW(), updated_at = NOW()
+WHERE token = $1 AND revoked_at IS NULL
+`
+
+func (q *Queries) RevokeRefreshToken(ctx context.Context, token string) error {
+	_, err := q.db.ExecContext(ctx, revokeRefreshToken, token)
+	return err
+}"
+
+LINK NUMBER 261
+Error fetching diff
+
+LINK NUMBER 262
+Error fetching diff
+
+LINK NUMBER 263
+Error fetching diff
+
+LINK NUMBER 264
+Not enough lines
+
+LINK NUMBER 265
+Not enough lines
+
+LINK NUMBER 266
+Not enough lines
+
+LINK NUMBER 267
+
+File path: 4. JavaScript servidor/Ejemplo 3/server.js
+"const http = require('http');
+
+const PORT = 8080;
+const IP = '52.20.170.244';
+
+const server = http.createServer((req, res) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/plain');
+    res.end('I am Groot\n');
+});
+
+server.listen(PORT, () => {
+    console.log(`Server running at http://${IP}:${PORT}/`);
+});"
+
+LINK NUMBER 268
+Error fetching diff
+
+LINK NUMBER 269
+Error fetching diff
+
+LINK NUMBER 270
+Error fetching diff
+
+LINK NUMBER 271
+
+File path: source/Unit Tests/dotNetTips.Spargine.Core.Tests/Collections/Generic/Concurrent/ChannelQueueTests.cs
+"		foreach (var item in items)
+		{
+			await channel.WriteAsync(item);
+		}
+
+		channel.Lock(); // Lock the channel to allow ListenAsync to complete.
+
+		var readItems = new List<int>();
+		await foreach (var item in channel.ListenAsync())
+		{
+			readItems.Add(item);
+		}"
+
+LINK NUMBER 272
+Not enough lines
+
+LINK NUMBER 273
+
+File path: src/test/java/com/challenges/addressbook/AddressBookTest.java
+"        //COPILOT PROMPT: The phone and email overload for findContact should allow searching for an empty string
+        //So it should return the first Contact that has an empty string for phone number and email respectively
+
+        //Below tests generated by Copilot
+        @Test
+        @DisplayName(""FindContact should return the first Contact with an empty phone number if searchCriteria is an empty string"")
+        public void testFindContactReturnsContactWithEmptyPhoneNumberIfSearchCriteriaIsEmptyString()
+        {
+            Contact contact = mock(Contact.class);
+            when(contact.getName()).thenReturn(""emptyPhoneNumber"");
+            when(contact.getPhoneNumber()).thenReturn("""");
+            when(contact.getEmailAddress()).thenReturn(""testEmail"");
+            addressBook.addContact(contact);
+            assertEquals(contact, addressBook.findContact("""", ContactDetailType.PHONE_NUMBER));
+        }
+
+        @Test
+        @DisplayName(""FindContact should return the first Contact with an empty email if searchCriteria is an empty string"")
+        public void testFindContactReturnsContactWithEmptyEmailIfSearchCriteriaIsEmptyString()
+        {
+            Contact contact = mock(Contact.class);
+            when(contact.getName()).thenReturn(""emptyEmail"");
+            when(contact.getPhoneNumber()).thenReturn(""12345678910"");
+            when(contact.getEmailAddress()).thenReturn("""");
+            addressBook.addContact(contact);
+            assertEquals(contact, addressBook.findContact("""", ContactDetailType.EMAIL_ADDRESS));
+        }
+
+"
+
+LINK NUMBER 274
+Not enough lines
+
+LINK NUMBER 275
+Error fetching diff
+
+LINK NUMBER 276
+Error fetching diff
+
+LINK NUMBER 277
+Error fetching diff
+
+LINK NUMBER 278
+Not enough lines
+
+LINK NUMBER 279
+
+File path: src/ha-tower-discovery.py
+"import time
+import paho.mqtt.client as mqtt
+import json
+import os
+import argparse
+from jinja2 import Environment, FileSystemLoader
+from flask import Flask
+
+
+class Configuration:
+    def __init__(self):
+        self.mqtt_broker = ""mqtt.example.com""
+        self.mqtt_port = 1883
+        self.mqtt_topic_discovery = ""gateway/{id}/nodes/get""
+        self.mqtt_topic_nodes = ""gateway/{id}/nodes""
+        self.mqtt_topic_advertisement = ""homeassistant/devices""
+        self.advertise_interval = None
+        self.firmware_dir = ""firmware""
+
+    def load_from_env(self):
+        self.mqtt_broker = os.getenv(""MQTT_BROKER"", self.mqtt_broker)
+        self.mqtt_port = os.getenv(""MQTT_PORT"", self.mqtt_port)
+        self.mqtt_topic_discovery = os.getenv(""MQTT_TOPIC_DISCOVERY"", self.mqtt_topic_discovery)
+        self.mqtt_topic_nodes = os.getenv(""MQTT_TOPIC_NODES"", self.mqtt_topic_nodes)
+        self.mqtt_topic_advertisement = os.getenv(""MQTT_TOPIC_ADVERTISEMENT"", self.mqtt_topic_advertisement)
+
+    def parse_cmd_args(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument(""--interval"", type=int, help=""Advertisement interval in seconds"")
+        args = parser.parse_args()
+        if args.interval:
+            self.advertise_interval = args.interval
+        
+
+config = Configuration()
+config.load_from_env()
+config.parse_cmd_args()
+
+# Jinja template configuration
+template_loader = FileSystemLoader(config.firmware_dir)
+template_env = Environment(loader=template_loader)
+
+# MQTT client setup
+client = mqtt.Client()
+
+def on_connect(client, userdata, flags, rc):
+    print(""Connected to MQTT broker"")
+    client.subscribe(config.mqtt_topic_nodes)
+
+def on_message(client, userdata, msg):
+    if msg.topic == config.mqtt_topic_nodes:
+        devices = json.loads(msg.payload)
+        advertise_devices(devices)
+
+def send_discovery_message():
+    client.publish(config.mqtt_topic_discovery, """")
+
+def advertise_devices(devices):
+    for device in devices:
+        template = template_env.get_template(device[""firmware""] + "".yaml"")
+        json_message = template.render(device=device)
+        client.publish(config.mqtt_topic_advertisement, json_message)
+
+def main():
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    client.connect(config.mqtt_broker, config.mqtt_port, 60)
+
+    if config.advertise_interval:
+        client.loop_start()
+        while True:
+            send_discovery_message()
+            time.sleep(config.advertise_interval)
+    else:
+        client.loop_forever()
+
+# Flask app setup
+app = Flask(__name__)
+
+@app.route('/health')
+def health_check():
+    return 'OK'
+
+if __name__ == ""__main__"":
+    main()"
+
+LINK NUMBER 280
+
+File path: src/app/services/store.service.spec.ts
+"
+
+
+
+// Some more tests for the StoreService
+describe('StoreService', () => {
+  let service: StoreService;
+  let httpMock: HttpTestingController;
+
+  const STORE_BASE_URL = 'http://localhost:8080/api/v1';
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [StoreService],
+    });
+    service = TestBed.inject(StoreService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('should fetch API data with default parameters', () => {
+    const keyword = '';
+    const page = 0;
+    const size = 10;
+    const sort = 'asc';
+    const expectedUrl = `${STORE_BASE_URL}/products?keyword=${keyword}&page=${page}&size=${size}&sort=${sort}`;
+    const expectedResponse: ApiResponse<Page<Product[]>> = {
+      data: {
+        content: [],
+        totalPages: 0,
+        totalElements: 0,
+        number: 0,
+        size: 10,
+        pageable: {
+          sort: {
+            empty: false,
+            sorted: false,
+            unsorted: false
+          },
+          offset: 0,
+          pageNumber: 0,
+          pageSize: 0,
+          paged: false,
+          unpaged: false
+        },
+        last: false,
+        sort: {
+          empty: false,
+          sorted: false,
+          unsorted: false
+        },
+        numberOfElements: 0,
+        first: false,
+        empty: false
+      },
+      timeStamp: '',
+      statusCode: 0,
+      status: '',
+      message: ''
+    };
+
+    service.fetchApiData().subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('GET');
+    req.flush(expectedResponse);
+  });
+
+  it('should fetch API data with custom parameters', () => {
+    const keyword = 'test';
+    const page = 1;
+    const size = 12;
+    const sort = 'name-asc';
+    const expectedUrl = `${STORE_BASE_URL}/products?keyword=${keyword}&page=${page}&size=${size}&sort=${sort}`;
+    const expectedResponse: ApiResponse<Page<Product[]>> = {
+      data: {
+        content: [],
+        totalPages: 0,
+        totalElements: 0,
+        number: 0,
+        size: 10,
+        pageable: {
+          sort: {
+            empty: false,
+            sorted: false,
+            unsorted: false
+          },
+          offset: 0,
+          pageNumber: 0,
+          pageSize: 0,
+          paged: false,
+          unpaged: false
+        },
+        last: false,
+        sort: {
+          empty: false,
+          sorted: false,
+          unsorted: false
+        },
+        numberOfElements: 0,
+        first: false,
+        empty: false
+      },
+      timeStamp: '',
+      statusCode: 0,
+      status: '',
+      message: ''
+    };
+
+    service.fetchApiData(keyword, page, size, sort).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('GET');
+    req.flush(expectedResponse);
+  });
+
+  it('should find product by id', () => {
+    const productId = 1;
+    const expectedUrl = `${STORE_BASE_URL}/products/${productId}`;
+    const expectedResponse = { id: 1, name: 'Test Product', price: 9.99 };
+
+    service.findProductById(productId).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('GET');
+    req.flush(expectedResponse);
+  });
+
+  it('should place order', () => {
+    const order = { id: 1, name: 'Test Order', total: 9.99 };
+    const expectedUrl = `${STORE_BASE_URL}/orders/new`;
+    const expectedResponse: ApiResponse<any> = {
+      data: order,
+      timeStamp: '',
+      statusCode: 0,
+      status: '',
+      message: ''
+    };
+
+    service.placeOrder(order).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('POST');
+    req.flush(expectedResponse);
+  });
+
+  it('should get orders for user', () => {
+    const userId = '1';
+    const expectedUrl = `${STORE_BASE_URL}/orders/user/${userId}`;
+    const expectedResponse = [{ id: 1, name: 'Test Order', total: 9.99 }];
+
+    service.getOrdersForUser(userId).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('GET');
+    req.flush(expectedResponse);
+  });
+
+  it('should get order by order id', () => {
+    const orderId = '1';
+    const expectedUrl = `${STORE_BASE_URL}/orders/id/${orderId}`;
+    const expectedResponse = { id: 1, name: 'Test Order', total: 9.99 };
+
+    service.getOrderById(orderId).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('GET');
+    req.flush(expectedResponse);
+  });
+
+  it('should get product by product id', () => {
+    const productId = '1';
+    const expectedUrl = `${STORE_BASE_URL}/products/${productId}`;
+    const expectedResponse = { id: 1, name: 'Test Product', price: 9.99 };
+
+    service.getProductByProductId(productId).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('GET');
+    req.flush(expectedResponse);
+  });
+
+  it('should update order status', () => {
+    const orderId = '1';
+    const status = 'SHIPPED';
+    const expectedUrl = `${STORE_BASE_URL}/orders/${orderId}/status/${status}`;
+    const expectedResponse = { id: 1, name: 'Test Order', total: 9.99, status: 'SHIPPED' };
+
+    service.updateOrderStatus(orderId, status).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('PUT');
+    req.flush(expectedResponse);
+  });
+
+  it('should update order item status', () => {
+    const orderNumber = '1';
+    const orderItemId = '1';
+    const status = 'SHIPPED';
+    const expectedUrl = `${STORE_BASE_URL}/orders/${orderNumber}/orderItem/${orderItemId}/status/${status}`;
+    const expectedResponse = { id: '1', name: 'Test Order Item', total: 9.99, status: 'SHIPPED' };
+
+    service.updateOrderItemStatus(orderNumber, orderItemId, status).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('PUT');
+    req.flush(expectedResponse);
+  });
+
+  it('should get user by user id', () => {
+    const userId = '1';
+    const expectedUrl = `${STORE_BASE_URL}/user/${userId}`;
+    const expectedResponse = { id: '1', name: 'Test User' };
+
+    service.getUserByUserId(userId).subscribe((res) => {
+      expect(res).toEqual(expectedResponse);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('GET');
+    req.flush(expectedResponse);
+  });
+
+  it('should update user first name', () => {
+    const userId = '1';
+    const firstName = 'John';
+    const expectedUrl = `${STORE_BASE_URL}/user/${userId}/first-name`;
+
+    service.updateUserFirstName(userId, firstName).subscribe((res) => {
+      expect(res).toEqual(firstName);
+    });
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toBe(firstName);
+    req.flush(firstName);
+  });
+
+  it('should update user last name', () => {
+    const userId = '1';
+    const lastName = 'Doe';
+    const expectedUrl = `${STORE_BASE_URL}/user/${userId}/last-name`;
+
+    service.updateUserLastName(userId, lastName).subscribe();
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toBe(lastName);
+    req.flush(null);
+  });
+
+  it('should update user email', () => {
+    const email = 'test@example.com';
+    const newEmail = 'newtest@example.com';
+    const expectedUrl = `${STORE_BASE_URL}/user/update-email?email=${email}&newEmail=${newEmail}`;
+
+    service.updateUserEmail(email, newEmail).subscribe();
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('PUT');
+    req.flush(null);
+  });
+
+  it('should update user phone number', () => {
+    const userId = '1';
+    const phone = '1234567890';
+    const expectedUrl = `${STORE_BASE_URL}/user/${userId}/phone-number`;
+
+    service.updateUserPhoneNumber(userId, phone).subscribe();
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toBe(phone);
+    req.flush(null);
+  });
+
+  it('should update user address', () => {
+    const userId = '1';
+    const address = '123 Foo St';
+    const expectedUrl = `${STORE_BASE_URL}/user/${userId}/address`;
+
+    service.updateUserAddress(userId, address).subscribe();
+
+    const req = httpMock.expectOne(expectedUrl);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toBe(address);
+    req.flush(null);
+  });
+});"

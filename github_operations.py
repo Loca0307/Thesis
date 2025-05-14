@@ -4,18 +4,18 @@ import json
 import requests
 import time
 
-def get_commit_diff(commit_url, headers, retries=3, delay=2):
+def get_commit_diff(commit_url, meta_data, retries=3, delay=2):
     full_url = commit_url + ".diff"
 
     for attempt in range(retries):
-        time.sleep(delay)  
-        response = requests.get(full_url, headers={**headers, "Accept": "application/vnd.github.v3.diff"})
+        time.sleep(delay)
+        response = requests.get(full_url, headers={**meta_data[2]  , "Accept": "application/vnd.github.v3.diff"})
 
         if response.status_code == 200:
             return response.text
         elif response.status_code == 406:
             print(f"❌ 406 Not Acceptable for diff — falling back to JSON for: {commit_url}")
-            response = requests.get(commit_url, headers={**headers, "Accept": "application/vnd.github.v3+json"})
+            response = requests.get(commit_url, headers={**meta_data[2]  , "Accept": "application/vnd.github.v3+json"})
             if response.status_code == 200:
                 data = response.json()
                 patch_texts = [file.get("patch") for file in data.get("files", []) if file.get("patch")]
@@ -34,6 +34,7 @@ def get_commit_diff(commit_url, headers, retries=3, delay=2):
             break
 
     return None
+
 
 
 def extract_largest_added_chunk(diff, min_lines, valid_extensions):
@@ -72,7 +73,7 @@ def extract_largest_added_chunk(diff, min_lines, valid_extensions):
 def count_files_impacted(diff):
     return sum(1 for line in diff.splitlines() if line.startswith('diff --git'))
 
-def process_links_file(link_file_path, result_file_path, min_lines, max_lines, jsonl_writer, valid_extensions, headers):
+def process_links_file(link_file_path, result_file_path, min_lines, max_lines, jsonl_writer, valid_extensions, meta_data):
     with open(link_file_path, mode='r') as infile:
         reader = csv.reader(infile)
         rows = [row for row in reader if len(row) >= 2]
@@ -86,7 +87,7 @@ def process_links_file(link_file_path, result_file_path, min_lines, max_lines, j
             result_writer.writerow([])
             result_writer.writerow([f"LINK NUMBER {link_number}"])
 
-            diff_text = get_commit_diff(commit_url, headers)
+            diff_text = get_commit_diff(commit_url, meta_data)
 
             if diff_text:
                 longest_chunk, chunk_length, file_path = extract_largest_added_chunk(diff_text, min_lines, valid_extensions)
@@ -115,7 +116,7 @@ def process_links_file(link_file_path, result_file_path, min_lines, max_lines, j
             else:
                 result_writer.writerow(["Error fetching diff"])
 
-def process_all_links_files(paths, headers, min_lines, max_lines, valid_extensions):
+def process_all_links_files(paths, meta_data, min_lines, max_lines, valid_extensions):
     os.makedirs(paths[1], exist_ok=True)  
 
     STATS_JSONL_PATH = os.path.join("data", "stats.jsonl")
@@ -127,6 +128,6 @@ def process_all_links_files(paths, headers, min_lines, max_lines, valid_extensio
                 link_file = os.path.join(paths[0], filename)
                 result_file = os.path.join(paths[1], f"results{index}.csv")
 
-                print(f"📁 Processing {filename} ➞ {os.path.basename(result_file)}")
-                process_links_file(link_file, result_file, min_lines, max_lines, jsonl_writer, valid_extensions, headers)
+                print(f"📁 Processing {filename} -> {os.path.basename(result_file)}")
+                process_links_file(link_file, result_file, min_lines, max_lines, jsonl_writer, valid_extensions, meta_data)
                 print(f"✅ Done: saved results to {result_file} and appended stats to JSONL\n")
