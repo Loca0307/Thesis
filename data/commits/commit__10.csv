@@ -1,0 +1,425 @@
+message,author,date,url
+got chatgpt to write a good looking readme,Jordi,2025-05-12T22:00:26.000-03:00,https://github.com/Santosjordi/fc_challenge_clean_arch/commit/97201357ea5b673014400c4e3b5ef6ccfb5168a2
+used chatgpt to write a Go bot restarter,CreateSource,2025-04-27T13:06:02.000-04:00,https://github.com/abnormalhare/Elemental-On-Cards/commit/69cd694d7ba6fd73c40e7af52a1fce0695363d7a
+Add users and enable chatgpt to write a minute,Juan Bustamante,2025-04-10T22:31:09.000-05:00,https://github.com/jfbm74/transcrypto/commit/e2ea034659699be9ea4393e390a6c29063fe9ba4
+Fixed Data Creation Bugs (SUJAN DO NOT USE CHATGPT TO WRITE CODE!!!!),das5pzq,2025-04-09T10:26:10.000-04:00,https://github.com/uva-spin/ANN-NMR/commit/635d9fde6d2ecf9a93c430848e11076dfb2e22ac
+feat: migrate 'I asked ChatGPT to write a blog post about...' post from dev.to,wpieters,2025-03-24T10:11:44.000+02:00,https://github.com/wpieters/wpieters.github.io/commit/37847b66adf63c3203efd60f88714f815825174d
+"Fixing tidyverse install issue
+
+Used ChatGPT to write this new workflow file. May need to revert.",Stephan Teodosescu,2025-02-23T07:42:19.000+01:00,https://github.com/steodose/club-elo/commit/215ae1b844dc9a318f073198eddf4c023e3bda6d
+Ask chatgpt to write setup,Michelle-Watson,2025-03-13T20:43:27.000-04:00,https://github.com/Michelle-Watson/LC/commit/c158904b2bded1159696049147b6034504cc29a3
+story on using chatgpt to write frontmatter,hallm74,2024-12-09T19:29:55.000-06:00,https://github.com/hallm74/hallm.blog/commit/d7acf59a4dc1caa38887cbb6528e7e0d1972356a
+"Added callEnded function, promps ChatGPT to write summary of call after it ends",NoahCagle,2025-02-01T07:53:17.000-06:00,https://github.com/Felopater-Melika/HackMT25/commit/b7ca0ccb2122eb72dc1f2ab301e287f2d81daaf4
+Shared an example conversation I had with ChatGPT to write the code,Joel Kozikowski,2025-01-02T13:59:07.000-05:00,https://github.com/joelkoz/NodeUML/commit/be978607d7ac2bcb12f573f8cd0411189316055d
+"template for node fetching, use chatgpt to write these bc some urls can be weird",gramms,2025-01-30T11:06:46.000-05:00,https://github.com/sgrammas10/CareerMatch-AI/commit/ddb90db63e38a80404d6303d750b8a1c8e208fe5
+"remove username and mentionings, which will cause chatgpt to write a letter beginning with Hi ... and ending with Kind Regards",Uwe Winter,2025-02-14T14:39:41.000+11:00,https://github.com/galaxyproject/galaxy/commit/affb3b246a3977091f4765ae8603911b070738a3
+pushing before using chatgpt to write benchmark code,ModeEric,2024-11-03T19:53:29.000-06:00,https://github.com/ModeEric/rustlearn/commit/cae398a324ce9e83dc8685e306868131848747d4
+"remove pointless JSON decode
+
+...the perils of using ChatGPT to write things.",Colin Dellow,2024-11-17T21:39:14.000-05:00,https://github.com/cldellow/bayesky/commit/574a04757cccb4145d98ecc5da9fa6f2299d32bd
+Getting ChatGPT to write code for me,jrings,2024-10-05T17:16:02.000-07:00,https://github.com/jrisi256/secret_lives_pa/commit/7f76a7b602a8328df7ff680a607721bf83f63e12
+"starting items
+
+chat gpt wrote import items
+
+asset load doc
+
+clean up
+
+example standard items by chatgpt
+
+import items
+
+item menu but javascript is bad
+
+fixing inventory menu
+
+item use in combat
+
+started item cards
+
+card clean up
+
+polishing
+
+some intro improvements
+
+started get random item
+
+chat gpt help
+
+get random item
+
+basic encounter completed
+
+working on shop
+
+swapping out evaluate variable with regex.
+I asked chatgpt to write the regex string I wanted but everything else is mine.
+
+NPC encounter buy
+
+selling menu may need to revisit",Aiden Bradley,2025-04-02T15:48:00.000-04:00,https://github.com/AidenBradley24/Echo-Island/commit/4b962638635d9419a686f8c9404d659137245e53
+Made ChatGPT to write main.py,KentarouGotou,2024-07-24T23:05:56.000+09:00,https://github.com/Davis9120/acm/commit/0a332091938558e0dea6637c6e66af5728521b26
+"HW1 for Tech16 
+
+In the notebook
+1) **We call OpenAI API** using an API key. We default to the GPT 3.5 model to keep costs down.
+2) **We query ChatGPT** with a user specified message
+3) **We ask ChatGPT to write a 500 word essay** on a user specified topic. Since the criteria for the essay might be arbitrary also, we ask ChatGPT to first identify helpful criteria when writing such an essay.
+4) **We ask ChatGPT to summarize a document** and use a sample 500 word essay as input text
+5) **We ask ChatGPT to compare two documents** and use two 500 word essays from related topics as input and their original essay-writing criteria as context to compare and contrast both documents.
+
+Example topics used
+a) US vs Indian government
+b) US vs Indian financial systems
+c) Meta vs Google companies",thisisRMak,2025-02-12T03:43:32.000-08:00,https://github.com/thisisRMak/2025-tech16-LLM/commit/8df5a7a8da2b620958f8eb195f75437738ab2c60
+updated README.md and index.html with help from chatGPT to write better.,Andrew Elwood,2024-10-09T21:24:32.000+01:00,https://github.com/AElwood119/PyOptics/commit/cf2d03fe4a39bcf9fc08d38f835a087a9e4096e4
+Use chatgpt to write nice readme,rglonek,2024-07-12T17:02:25.000-07:00,https://github.com/rglonek/aeroage/commit/eb4d1e0a7b91b4b698635ff435814e096145209d
+Typo: I should use ChatGPT to write English,Marven11,2024-07-29T12:42:36.000+08:00,https://github.com/Marven11/CVE-2024-28397-js2py-Sandbox-Escape/commit/6fd6c83d2c68e281598c94a096127a6054b64137
+"added code for basic calendar
+
+used chatgpt to write basic code for later editing to see its affect on swiftportal.com and if branches can be used for preview of static website",Rudraksh-Tripathi-47647574,2025-02-09T02:50:29.000+11:00,https://github.com/rudyt123/SwiftPortal.com/commit/0a9d28a5502cd2c0aa6808d54547c92fc94acc06
+I lack humour so I ask ChatGPT to write me some jokes.,Clare So,2024-09-05T15:05:21.000-04:00,https://github.com/mozreorg/arewereorganizedyet.com/commit/8a5917a35b2491dd7be6c2987a75f65844ffd381
+"LLM interactions Oct 30
+
+Interaction with ChatGPT to write and debug the code for the results section",talia fabregas,2024-10-30T22:16:35.000-04:00,https://github.com/taliafabs/USPresidentialPollingForecast2024/commit/c6bdafbdd6a4269e8f1dff961eba3e049eb99a70
+use ChatGPT to write an initial first pass at the article,Adrian Edwards,2024-08-23T09:47:38.000-04:00,https://github.com/RITlug/wiki/commit/e71dfc220c3abed1eb41826a3c2d3d8f09641975
+"Upload the template for the project Documentation
+
+Use chatGPT to write a introduction to my project",Slavi Dimitrov,2024-09-09T13:19:54.000+03:00,https://github.com/sldimitrov/VueJobs/commit/70ebd3a5ec27ee48ba9e303b768752b0124a920b
+"common: implement op_return test.
+
+Since we included the spec for it, this is a good time to implement
+it.
+
+I also asked chatgpt to write some unit tests.  I had to mangle them a
+bit, but it probably saved me a few minutes.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>",Rusty Russell,2025-03-15T21:51:35.000+10:30,https://github.com/ElementsProject/lightning/commit/71eb04064c06c9530c937c5fcdaea6499e6ad276
+"common: implement op_return test.
+
+Since we included the spec for it, this is a good time to implement
+it.
+
+I also asked chatgpt to write some unit tests.  I had to mangle them a
+bit, but it probably saved me a few minutes.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>",Rusty Russell,2025-03-15T21:51:35.000+10:30,https://github.com/Bittium1/Lightning/commit/71eb04064c06c9530c937c5fcdaea6499e6ad276
+"spent a while making a prompt, but got chatgpt to write code to make a table automatically Tue, Oct 22, 2024 10:53:39 AM",runaround,2024-10-22T10:53:39.000-06:00,https://github.com/I-s-aac/golf-score-app/commit/57529515e2b3b6c0ca6a1d86326690a5dca99c15
+ask ChatGPT to write sth,Alberto Iong,2024-03-07T10:03:51.000+08:00,https://github.com/Albert0i/Redis-Stack-Tutorial/commit/5bb5b13260c548900aa6315b86e7398fb59a6a73
+"Prototyped the eye blinking, moving, and playing a sound file
+
+I used chatGPT to write the actual Eye class with the functionality of blinking. Then I started adjusting numbers and adding features.",jch3xyz,2024-12-13T13:14:55.000-06:00,https://github.com/jch3xyz/Eye-In-The-Sky/commit/3395d6e3021d2a40b87c5bc9f5fe20c2c7fed7e1
+"Add macOS ARM64 compatibility chatgcc.sh
+
+Technically I've only run it up until the prompt generation, on an M1 MacBook Pro running macOS Sequoia 15.3.
+
+I had asked ChatGPT to write a really encouraging prompt in the end else case 😋",Henk Poley,2025-02-08T14:41:08.000+01:00,https://github.com/Sawyer-Powell/chatgcc/commit/36cb91346f8c37eaa22e1b2357314012adf89929
+used ChatGPT to write the basic frame work of the plot profile.,Ting-Hsuan (Dustin) Ma,2024-06-18T14:08:13.000-07:00,https://github.com/dustinma324/DataValidationScripts/commit/745cfb6f6e8fa6a7fbf707503bd57fba4c3ffcf8
+Delete RWS305/files/ Should You Use ChatGPT to Write a Resume (Wilson).pdf,Rhetorician,2024-06-29T17:46:37.000-07:00,https://github.com/Rhetorician/coursematerials/commit/4b70b3656365ca50f455f795e8f67db068f8c79d
+"Add background, character sprite, menu, video scene, and scene transition buttons
+
+(testing using chatgpt to write commit messages)
+- Added background image to the scene
+- Implemented character sprite
+- Created a main menu with buttons for navigation
+- Added video scene for cutscenes or intro
+- Implemented buttons to transition between scenes
+
+- watermelon (I had to change something, right?)",Sean Philip,2025-02-12T14:04:37.000+07:00,https://github.com/seanphilip04/firstapp2/commit/6506e6bb480883b43be37033d01d70741f7ab6f0
+"README preparation before I feed it into ChatGPT to write the rest, which I will then adjust as needed",Barth,2024-08-23T10:05:04.000+02:00,https://github.com/Quirin-DHBW/DHBW-WebEntwicklung-2024-Portfolio/commit/f8430ee41ca45829216288f3085286433f558e6d
+Used chatgpt to write documentation.,Adam Angell,2024-01-05T16:34:40.000Z,https://github.com/NetworkingB2A/quick_scripts/commit/637cffb03edc00dc16ebdd7eb701759773f5c275
+Revise Using ChatGPT To Write Papers,HayoonSong,2024-01-02T11:43:11.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/3c36b5f73a115000229adb46a151cef6b4e4703a
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-28T11:11:54.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/ee954792134bd25b82aa33bceaaa970f4ddc0df8
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-28T04:22:48.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/9ed0627bd24d3df76d35fba408276fc6748b1740
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-28T04:10:01.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/ae54159162ce1f07ae071a328d0c8b97b5edefd2
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-28T04:02:07.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/3802126b471eb4370efc340b362fa25a0d1e6346
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-28T03:04:19.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/3a8ead355a242f25309d917f51c04f3afdcb6cfd
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-27T21:13:29.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/d985998b39d8ae47a72bba3eaa784ac2b0c4dba6
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-27T17:42:52.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/bf3d8fb6f902b567a351454fbec21745b56c707c
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-27T17:39:06.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/40f8312608d9764e2516d194a2e0d54c757b731a
+Update Using ChatGPT To Write Papers,HayoonSong,2023-12-27T16:29:35.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/f96eecce234bf14ba8481c0e445ff5ce8c6e4c98
+Revise Using ChatGPT To Write Papers,HayoonSong,2023-12-27T15:33:59.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/c6b9af25876389eeae39de957ee5204de7d25d34
+Post Use ChatGPT To Write Papers,HayoonSong,2023-12-27T14:33:40.000+09:00,https://github.com/HayoonSong/HayoonSong.github.io/commit/0d8926de3e66b3c4681bad9cd862af60cba1f1be
+"AWS resource script (#538)
+
+For each sprint PR, I redeploy my sandbox environment from scratch using
+`cdk deploy 'Sandbox/*'`. I found myself going into the AWS console to
+find the necessary fields required for configuring my frontend local
+environment. This script helps make that process easier and faster.
+
+I used ChatGPT to write this code, so if anything is non-standard, let
+me know, and I'd be happy to update.",Joshua Kravitz,2025-02-13T15:38:18.000-05:00,https://github.com/csg-org/CompactConnect/commit/bce57faf536493bb8e06cdd6b507db1d2af18855
+used chatgpt to write this code!,Moh,2023-11-18T18:33:03.000-06:00,https://github.com/mkashani-phd/WebPage/commit/19921092fbd68f45ae1d1a96b08995646598818d
+CQI: Add next steps blog post – Get help from ChatGPT to write better english,Tobias,2024-03-24T11:58:21.000+01:00,https://github.com/osmberlin/www.osm-verkehrswende.org/commit/81b0ccee8abae58b899b628a3abcdf93343b1810
+Update content src/site/notes/Wiki/Technology/AI/Use ChatGPT to Write and Sell Books.md,Ethan Miller,2024-04-24T14:59:14.000-05:00,https://github.com/ethanimproving/Ethan-s-Digital-Garden/commit/72d9a84e9ad734a3823937ff1ab2b6e57d25434a
+dumped champions and items into database and tried to webscrape builds from other sites not with much success. last resort activated: get chatgpt to write sql files for me,ottomann1,2024-08-14T22:20:20.000+02:00,https://github.com/ottomann1/leaguebuilder/commit/e87b6856874d8b3615a6c5003fc715d269cb2461
+Add content src/site/notes/Wiki/Technology/AI/Use ChatGPT to Write and Sell Books.md,Ethan Miller,2024-04-20T23:51:40.000-05:00,https://github.com/ethanimproving/Ethan-s-Digital-Garden/commit/38889fd8e5776d004c7abda5dbfe62de87f80ae2
+Delete content src/site/notes/Wiki/Technology/AI/Use ChatGPT to Write and Sell Books.md,Ethan Miller,2024-04-20T23:41:35.000-05:00,https://github.com/ethanimproving/Ethan-s-Digital-Garden/commit/558307af99535e09117298b738aac575677ecc71
+Update content src/site/notes/Wiki/Technology/AI/Use ChatGPT to Write and Sell Books.md,Ethan Miller,2024-04-18T18:09:12.000-05:00,https://github.com/ethanimproving/Ethan-s-Digital-Garden/commit/7afaff5dc728d84920fa372ec8388d837e9cd92c
+"Asked Chatgpt to write burningship count method, its upsidedown",Isaac Nielsen,2023-12-10T14:18:38.000-07:00,https://github.com/IsNielsen/FractalImager/commit/0a626f1996758c3828c949cb7a829dca34faf2c1
+used ChatGPT to write use state and heart code,Errol Vidad,2023-11-29T03:38:42.000Z,https://github.com/Code-Fellows-School-Work/Gallery-of-Horns/commit/8f19bdc98ef1bfedb2087ab4230eb243a99c20c3
+This is an experiment by somebody who used chatGPT to write something that looks right but isn't,Artur Das,2024-06-13T10:55:59.000+02:00,https://github.com/adaschevici/rustic-toy-chest/commit/ce83de51af786a2ef8004f1c214ebe1df32ac68f
+used chatgpt to write view results function,Errol Vidad,2023-11-07T00:48:34.000Z,https://github.com/Code-Fellows-School-Work/odd-duck/commit/d3b76894dcb6f65dcc629b799040cffabc26c37d
+"added a POST method to save a book for this 3 methods used -> 1. using Thunder Client using VS Code, 2. using POSTMAN and 3. using html page created a form and used chatGPT for the same and encountered an error 'Cross-Origin Resource Sharing (CORS)', so to solve this used chatGPT to write the configuration file to solve the issue",Yogendra,2024-07-13T15:01:46.000+05:30,https://github.com/Viralore/LearnJFS/commit/7e954d7174b90162d88af9de735aa6dd3e460db1
+Wrote the methods that I'll be asking ChatGPT to write. Program is working.,harlan.howe,2024-02-06T22:23:03.000-06:00,https://github.com/Harlan-Howe/ArrowMazeForAISolution/commit/23b05fb441736acb296eb4d170ee70b855e56d70
+added whiteboard and used ChatGPT to write the code based on my algorithm,evidad,2024-01-17T14:35:46.000-08:00,https://github.com/Code-Fellows-School-Work/data-structures-and-algorithms/commit/8bc09eef2b686199a581c887e4159026675747ef
+Used chatgpt to write a draft blurb for the welcome page. Only targeted for daters currently,Emma,2024-02-21T10:36:21.000-07:00,https://github.com/NateMcKenzie/cupid_code/commit/54e96821701e85ddeb2ff1f65f8e388e4064a0ce
+Used chatgpt to write a draft blurb for the welcome page. Only targeted for daters currently,Emma,2024-02-21T10:36:21.000-07:00,https://github.com/funkybooboo/cupid_code/commit/54e96821701e85ddeb2ff1f65f8e388e4064a0ce
+use chatgpt to write code,Zhenying Zhu,2023-07-31T01:14:49.000-07:00,https://github.com/ZhenyingZhu/StudyNotes/commit/2368ffcb5f3dc17981f3a889cb3fa3eb91f59cb2
+"Readme-by-chatgpt
+
+I asked chatgpt to write readme.md page",hugo,2023-03-19T15:02:20.000-06:00,https://github.com/hugorila/hangman-with-chatgpt/commit/f68f5c993536517c4901aabf78e30bbd44240029
+Ask ChatGPT to write a guidelines document,Kaj Siebert,2023-08-24T09:27:55.000+02:00,https://github.com/SocialFinanceDigitalLabs/liia-tools/commit/d1eb18e4a00df5e0e242197d34cdb57d0330e20d
+"Use ChatGPT to write an infrastructure provider (#59)
+
+A fun post on how to use ChatGPT to write an infrastructure provider",Till Toenshoff,2023-03-15T18:55:42.000+01:00,https://github.com/mesosphere/d2iq-engineering-blog/commit/cd88d20b99f4bebb597a1107e4da77e5e0533552
+Help CHATGPT to write index text,felipedelosh,2023-08-17T08:08:00.000-05:00,https://github.com/felipedelosh/AFE-PORTFOLIO/commit/48651a90447dedda3829318a7358f18a953371e5
+"lift packet parsing
+
+coming up with a structure i can leave chatgpt to write",martin,2024-01-10T22:22:06.000-06:00,https://github.com/0xcaff/extern_traces/commit/bfbd657095e8587b8de7adcf5107ac57e5e32476
+BTC Markets didn't have a python client so I got ChatGPT to write one.,bohemian-miser,2024-02-08T01:58:53.000+11:00,https://github.com/bohemian-miser/BTCMarkets/commit/dc9564903912964d1869d810857ecc5d00010577
+"Create initial nonlinearmin file
+
+Use chatGPT to write the docstring.",Erik Inghammar,2023-11-29T15:21:24.000+01:00,https://github.com/erikinghammar/fman61-optimization/commit/8dc0ef204d8657d79b6e4ee98b142deda67e36d9
+"used ChatGPT to write working form to filter horns by 1, 2, or 3",Errol Vidad,2023-11-30T23:32:47.000Z,https://github.com/Code-Fellows-School-Work/Gallery-of-Horns/commit/1cb91daadf1b752f0058a3a5c8a6979cff62e498
+Used ChatGPT to write proper documentation,Daniel Ozoani,2023-06-15T12:26:04.000-04:00,https://github.com/OzunaModelo123/jav-1000-lap3-dice-game/commit/0e0192e8ebd81de8eec58ed34b78b12d116a85bb
+"Added super epic reflection stringify-ing of RCP addresses
+
+With a little help from ChatGPT to write me a loop",Craig Anderson,2024-02-23T17:37:39.000+13:00,https://github.com/theonlytechnohead/TouchFaders/commit/4b429b7f705547efe36b546705d4a1f07625e183
+asking chatgpt to write synopsis and also find the local name of the movies,jnuo,2023-11-15T00:08:05.000+03:00,https://github.com/jnuo/jnuo-gpt/commit/50343f88d692e6be5097ca3a71e89f66127ade4f
+"Add Skia clean skip
+
+Now we don't need to keep that line commented out! Whether this lasts for very long before we remove Skia entirely remains to be seen, but it'll be useful for a sliver of time!
+
+Stage whisper: I used ChatGPT to write this. Bash scares me.
+
+Diffs=
+64ff27de26 Add Skia clean skip (#8650)
+
+Co-authored-by: Erik <erik@rive.app>",ErikUggeldahl,2024-11-27T19:29:37.000Z,https://github.com/rive-app/rive-android/commit/679df96290cadea4ddfeea4c7be10d6433a5920d
+"1.0 - Readme File
+
+Got ChatGPT to write me a readme file I edited down.",Dan McCahon,2023-12-13T16:54:49.000+06:30,https://github.com/dtoshm/data_project_one/commit/c12846e40edce4e64481dd91b2bbb4b3bfd2d7b4
+"Update README.md
+
+I used chatGPT to write this.",Nik,2023-08-04T00:17:52.000+02:00,https://github.com/RootRooster/slovenia__driving_licence_open_spot_finder/commit/5f671a98c106860bb7212e203c378cf087065daa
+Update content src/site/notes/Wiki/Technology/AI/Use ChatGPT to Write and Sell Books.md,Ethan Miller,2023-12-21T10:57:19.000-06:00,https://github.com/ethanimproving/Ethan-s-Digital-Garden/commit/91f0a79aec206275d2251605d93f3e764a3a75e0
+Use ChatGPT to write tests for utils.js,Sean,2023-06-10T17:39:44.000-07:00,https://github.com/cse110-sp23-group20/fortune-teller/commit/ca20f25881b40e042a688af4768b0da9b4d0d9c4
+prompt chatGPT to write cypress tests,Piero Pretto,2023-04-04T22:44:28.000-05:00,https://github.com/pieroapretto/ChatGPT-Code-Mentor/commit/152f328a671446696291aaaff91f033924e52402
+"Any non-zero value is considered high
+
+I was analyzing some code I got ChatGPT to write to control the LCD and got this line: HAL_GPIO_WritePin(GPIOB, GPIO_PIN_D4, (command >> 4) & 0x01);
+
+After considering it for a while and asking LLMs more questions, I realized that any byte with any nonzero value it in is considered high. I tested this with 0x10, 00010000 - Very amazing to read datasheets until you discover to fundamentals of firmware programming",Christopher Kalitin,2024-12-03T12:41:12.000-08:00,https://github.com/CKalitin/STM32-F031K6T6/commit/57eaabe9faa6579e55818416674a7ccc68c906df
+Using ChatGPT to write AppleScript,Simon Willison,2023-03-08T21:41:07.000-08:00,https://github.com/simonw/til/commit/27bf1239e09c57fb5bd131d02797b95e1416b1ad
+Use ChatGPT to write a story,Andrew Keenan Richardson,2023-04-05T11:49:42.000-07:00,https://github.com/qemqemqem/ProgGen/commit/d1b98e78e2a143fb04641f7e2a3ca75796abfdab
+Use chatgpt to write test for getColorIndex,Willem Verbuyst,2023-04-15T07:17:30.000+02:00,https://github.com/willemverbuyst/bookworm/commit/c0a55671cf8e2b8d29d7fdf3e9c418f3f325b04e
+Use chatgpt to write test for genericSearch,Willem Verbuyst,2023-04-15T07:16:15.000+02:00,https://github.com/willemverbuyst/bookworm/commit/4e1f447bb00cba1b0c8f877dbcfe11539027fca0
+Use chatgpt to write test for compare,Willem Verbuyst,2023-04-15T07:13:47.000+02:00,https://github.com/willemverbuyst/bookworm/commit/77e5f5b8d578fedf7ef87991b8f84f2c3840244a
+feat: use chatgpt to write dockerfile,kok-s0s,2023-03-13T19:57:09.000+08:00,https://github.com/kok-s0s/astro_blog/commit/f96689f77704250640e1754f3467f358f7a834af
+i had some issues with the findById of mongoose i went to chatGPT to write the types cause am terrible on types and now we'll test it,David D,2024-03-15T03:15:04.000-03:00,https://github.com/DavidxDl/wheres-waldo/commit/89b5f55faa5d62e5d6ad197a75ddc735f2a8dee9
+docs: use chatgpt to write initial docs,ezzabuzaid,2023-04-14T20:47:24.000+03:00,https://github.com/JanuaryLabs/tiny-mediatr/commit/9fbd019017e769c805dcf80bb7930125fb66c8af
+"Restored ability to write to database, it seems the saved FIts variable was causing a problem, because of some null value, and was deleting all of my data. NEVER USE CHATGPT TO WRITE ALL OF YOUR CODE, GO LINE BY LINE",Daniel,2024-04-04T12:53:04.000-07:00,https://github.com/kenquach-man/PartnerApp2/commit/38160abf1c2b0e461b448de25824cc25df16f9a9
+Use ChatGPT to write sql queries,Dan Savage,2023-03-20T12:36:55.000-04:00,https://github.com/predictivetechnologysystems/MachineTrader-Community/commit/d897b19ae1b33f501d4c38e32eff71f94187db55
+trying to get chatGPT to write this code,Rana X,2023-03-22T15:25:46.000-07:00,https://github.com/rxa254/livespec/commit/3a7645806e3488eb34cb5721298ea8b0defc9654
+"Update README.md
+
+Used ChatGPT to write this description of the code I made :)",gocygo,2023-09-07T18:17:49.000-05:00,https://github.com/gocygo/House-Buzzer-System/commit/7c3d846bea74c83f949245ad1a21a396a2d8ce87
+Use ChatGPT to write an infrastructure provider,Dimitri Koshkin,2023-03-08T12:40:08.000-08:00,https://github.com/mesosphere/d2iq-engineering-blog/commit/b178b6757b506d75f8ad5e4fc92018da4d97795c
+Using ChatGPT to write some tests for function_ref,Mohammad Bahoosh,2023-03-15T02:21:34.000-07:00,https://github.com/the-moisrex/webpp/commit/56a4236d122c936154bceac9db89b2d622a38e9f
+I used chatgpt to write the script,AnnyeongAloha,2023-02-11T07:18:06.000Z,https://github.com/AnnyeongAloha/Code-Challenge/commit/ba162c5ada0a59e6d92b2a07cdbab3628b271705
+Integrate chatgpt to write a summary for tasks in the board,Basit Bashir,2023-06-20T22:49:54.000+05:30,https://github.com/Basitowaisi/trello-clone/commit/55ec40a972b1e0de93acfcf7bb0a381d99241192
+"use benhyot basic impl from https://raw.githubusercontent.com/benhoyt/go-1brc/master/r1.go to ask chatgpt to write some basic test, bench and a main function",Jérôme MOUREY,2024-03-04T10:32:50.000+01:00,https://github.com/Canadadry/1brc-2024/commit/0ed97d40f74ccdd632a897fb9b529037302f1afa
+"write-hangman.py
+
+first try asking ChatGPT to write the hangman game",Hugo Lira,2023-03-19T15:09:37.000-06:00,https://github.com/hugorila/hangman-with-chatgpt/commit/7142684ddd8f015e8cccbb1cb498f0436fe78c2e
+made chatGPT to write a random generator module using multiplication and modulo,farukyld,2023-07-19T12:45:23.000+03:00,https://github.com/farukyld/sort-circuit/commit/d60e6bac0b1f508a0ce2964433ff5c43d4445ab0
+Play with ChatGPT to write some tests for WifiDetailsEntity,Adrian Tache,2023-04-15T10:12:59.000+02:00,https://github.com/adriantache/GReat-Image-Downloader/commit/1bad8899cc25e5dea0e34ef99522a86e82c46eab
+How to use ChatGPT to Write Good Code Faster post,Eric Volpert,2023-04-19T21:08:32.000-07:00,https://github.com/ericvolp12/jazco-dev/commit/ac52d1a032292ee868f1c5f643f181ce8d9a2731
+"Create README.md
+
+it is morning and I ask chatGPT to write it for me",Sergei Chicherin,2023-08-26T07:32:17.000+04:00,https://github.com/chroneus/textual_avatar/commit/5e973959c22366e15538a7fcb5a0d2c60375bbe3
+"Write rules of the game in README.md
+
+Used ChatGPT to write the rules of Make 24",Tenzan Araki,2023-06-15T21:43:45.000+02:00,https://github.com/tenzan-araki/Make24-Solver/commit/e8ed941ab22b2b107518d95adb6e1f6d168faacd
+Use CHATGPT to write to the SN76489 via I2C,Michiel Erasmus,2023-02-28T16:38:04.000+01:00,https://github.com/pappavis/EasyLab-retro-synth-SN76489/commit/8bb96a23ed018c1849989a0ea1ed8a7e4d8fd824
+"May 3 commit, using chatGPT to write a better version",Qirui,2023-05-03T10:11:38.000-04:00,https://github.com/jwy6669/with-QiRui/commit/a33fb272c2c46780bade87106fc178bdd6298ab1
+"May 3 commit, using chatGPT to write a better version",Qirui,2023-05-03T10:05:57.000-04:00,https://github.com/jwy6669/with-QiRui/commit/6c359109157ceec6b5e9254e3e28df5d022e97f3
+using chatGPT to write website,larry,2022-12-06T14:32:26.000+08:00,https://github.com/hg-gong/portfolio/commit/6df9e32de41e788047996635b3446a0ecb429a4c
+Using ChatGPT to write some tests for function_ref,Mohammad Bahoosh,2023-03-15T02:21:34.000-07:00,https://github.com/the-moisrex/webpp/commit/911bad597c83410bb6b5aee7a27f8c1dba3a81a8
+create post: I've asked ChatGPT to write a honeypot,Kamil Gierach-Pacanek,2023-05-22T09:00:41.000+02:00,https://github.com/CyberEthicalMe/blog-articles/commit/1025d581fe0c09cab15ecd57fe0b668fc4072682
+"Update chat.ts
+
+Using ChatGPT to write a bot for it lol",Jack Caulfield,2023-05-31T08:51:07.000-05:00,https://github.com/anultravioletaurora/OpenAI-Discord-Bridge/commit/5ea16ae1a65c3145ced860751e6fefa0b24d9d2c
+Lots of changes. Using ChatGPT to write some,Jon,2022-12-30T12:19:51.000-05:00,https://github.com/Jcros214/QuizBox/commit/b20f51e41dbbc55d78d6c97eded516c946ae5dc2
+"Table extraction problem attempted fix
+
+This is my attempt at addressing the table problem. I had some success but it is not perfect. I tried it only on ING's report.
+
+It works by:
+1) First going through all the pages of the report
+2) Converts the page into an image stored in memory
+3) Uses a table extractor to identify the position of tables in the page
+4) If it finds one (or more) with high confidence, it gets the position of the table in the picture
+5) The picture is then cropped to keep only the table
+6) The picture moves from memory to a stored folder
+
+-------- The above takes approximately 1s/page of the report --------
+
+7) We then give the pictures to a Multimodal LLM (I used llama scout through Groq. It needs an API key but you can get one for free. Mine was free as well. Watch out for the limits though)
+8) I asked ChatGPT to write a system prompt for the LLM  so that it turns the picture into CSV format
+9) The CSV format is then turned into a DataFrame
+
+Complex tables are not dealt with very well but for the majority of the tables, it produces good results. Maybe the system prompt needs a bit of tweaking but I think it is a good start.",Thalis Milisios,2025-05-02T21:32:55.000+02:00,https://github.com/kambatzis/BAN_Bachelors_Thesis_Team_11/commit/6777c192be428d81fd7c97cde544cc8c55e0b654
+"Got chart.js to work
+Got trasnistions kinda done
+got chatgpt to write some basica animations for what letter grade given
+next to do:
+I cant think",Gavin Fletcher,2023-12-24T23:26:44.000-05:00,https://github.com/gfletcher0311/VolleyBallProject/commit/56adc3835f46e9401ceb604440b421a9ba644d94
+"got ChatGPT to write findMostCommon function, but I'm not sure if it'll work since I'm skeptical",Nathan Brown,2023-09-30T10:17:38.000-05:00,https://github.com/snowywaffles/golang/commit/ddb91469d7b730bc89df061e525f86214221abd3
+"added ability
+
+added the ability for chatGPT to write or something idk",Raymond Morales,2023-04-05T21:42:13.000-04:00,https://github.com/Raydevl/SaML-py/commit/1efbf10749b177207ebf6d284fb317da52658ab5
+"Extend documentation of the BitReader class
+
+I asked ChatGPT to write documentation for this class and got this. It is
+too hilarious to not copy it here verbatimly.",Martchus,2023-11-02T16:48:00.000+01:00,https://github.com/Martchus/cpp-utilities/commit/938e4413361d4ae06cea804ef1aeadf99e908335
+made ChatGPT to write the interface of the memory module providing sort_circuit module as a basis,farukyld,2023-07-04T23:59:02.000+03:00,https://github.com/farukyld/sort-circuit/commit/8e8e55d94fe15f4b6d5ad801e04e30049230aaf3
+"Create index.php
+
+I asked ChatGPT to write a website for me.",KJ,2023-01-31T23:11:16.000+05:30,https://github.com/karthikjavangula/karthikjavangula.github.io/commit/26e148128313d0511a6d1d320a18f9cad69e14eb
+"a bunch tkinter stuff, and this also marks the
+beginning of using chatGPT to write code.",Kevin,2023-05-23T16:07:32.000-04:00,https://github.com/Aervtas/playground/commit/279e1d3e75c2476df12c5600267b86a2469af257
+"UI
+
+1. Made an UI.
+2. Wrote CSS rules.
+
+Might ask Chatgpt to write my README.md file.",Elanchezhiyan,2023-07-10T13:52:44.000+05:30,https://github.com/wraththevengeful/etch-a-sketch/commit/4b429867d57c6fc75aee0a6d14c014a561dae943
+"maybe i should use chatgpt to write documentation for my
+
+cl-*-generator projects",Martin Kielhorn,2023-01-20T22:59:09.000+01:00,https://github.com/plops/cl-csharp-generator/commit/5ae694f166b9ba1f8647cdbac6fad5c14d9352bc
+Update content src/site/notes/Wiki/Technology/AI/Use ChatGPT to Write and Sell Books.md,Ethan Miller,2023-04-18T22:37:37.000-05:00,https://github.com/ethanimproving/Ethan-s-Digital-Garden/commit/ae2b642b6c9c585a714f959e36e80cba47fd6d0c
+wip In button-link asked ChatGPT to write component unit test for button,Brent S.A. Cowgill,2023-02-03T11:36:07.000Z,https://github.com/bcowgill/bsac-linux-cfg/commit/addab061b94fa131ad8b43404926cadc804d406a
+"Creating rule - using chatgpt to write rules (#5661)
+
+* Create rule.md
+
+Draft
+
+* Update rule.md
+
+* Create rule.md",Seth Daily [SSW],2023-06-01T18:15:09.000+10:00,https://github.com/SSWConsulting/SSW.Rules.Content/commit/929a13921a234deb447a9cf52ff8162528bdef89
+"Merge pull request #2 from pieroapretto/feature/add-cypress-test-automation
+
+prompt chatGPT to write cypress tests",Piero A. Pretto,2023-04-05T09:59:42.000-05:00,https://github.com/pieroapretto/ChatGPT-Code-Mentor/commit/8fca9e55585648173735fe52366b86e1b8147409
+Write release notes 10x faster with AI. Leverage OpenAI’s ChatGPT to write your content in seconds after pulling your Git commits from GitHub automatically.,Kamil Nicieja,2023-03-10T01:50:12.000+01:00,https://github.com/changepack/changepack/commit/11c85218dbe635508743103cc70b29f689fe298c
+"CHATGPT CONVERSATION FILE
+
+I'm sorry this pdf is so large. There are a lot of pages because chatgpt kept giving me unusable responses. The prompts where I ask for the ""additional prompts"" as requested in the assignment details are closer to the beginning/middle of the pdf. The program got too complicated near the end and unfortunately I was not able to implement the last feature ""display the current time"". However, I did prompt chatgpt to write that code.",kresimirgotovac,2023-08-07T23:43:55.000-04:00,https://github.com/kresimirgotovac/AI_Assignment/commit/648152fefee6d69f072aab48dde1cc1755384ead
+"Update Rule “do-you-understand-the-enterprise-mvc-request-process/rule” (#8819)
+
+* Update Rule “do-you-understand-the-enterprise-mvc-request-process/rule”
+
+* Update Rule “do-you-understand-the-enterprise-mvc-request-process/rule”
+
+* Update rule.md
+
+* Added intro
+
+Hi @babakamyljanovssw 
+
+This rule had no written content. I used ChatGPT to write an intro for it.
+
+---------
+
+Co-authored-by: Tiago Araújo [SSW] <tiagov8@gmail.com>",Babanazar Kamyljanov [SSW],2024-07-04T02:24:32.000+08:00,https://github.com/SSWConsulting/SSW.Rules.Content/commit/e7fab204c49799e0ee1cdf414cf736330b36b69b
+Jesus Christ allowed chatgpt to write this code nohup python main.py https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5862355/citedby/?page=1 qsmooth >> output.log &,EBYEMJC1,2023-07-19T12:28:48.000-07:00,https://github.com/EBYEMJC1/Check_if_benchmarking_study/commit/ba422bc27576b27548b24351a0620cd6ca36def1
+I asked ChatGPT to write a script to make the sea into a mesh with more vertices.  It took ages to debug.  AI will not replace humans,DanteLore,2023-04-29T21:39:47.000+01:00,https://github.com/DanteLore/SmolbeanPlanet3D/commit/61145bebb1e5af320f9d6a6cfb5d22ca2a611e5e
+"I tried to get chatGPT to write a program that would generate a perlin worm noise map, but it didn't work.",DavidCM,2023-01-06T11:54:39.000Z,https://github.com/codingwatching/UnityMinecraft-1/commit/3d154353d5f5548e42e162a35ece2b9ebe5e696a
+"trying out using chatgpt to write some classes:
+identity, memory, conversation.
+it doesn't work yet. commented out at bottom of library.",AFinlayV,2023-01-04T01:19:46.000-05:00,https://github.com/AFinlayV/GPT-tools/commit/1c061d8633070b50a0bca5e0caccbb77d35e0ce4
+"not functional yet. 
+
+I started this project trying to get chatgpt to write the whole thing for me. BIG MISTAKE. I had at one time a functional program but needed some more features, 12 hours and 2500 chatgpt queries later im left with this mess. will be fixing this in my free time but feel free to help or give me some tips",guyfawkes69,2023-03-04T12:21:16.000-07:00,https://github.com/SupremeSkriptKiddie/Decoder/commit/ce58789eb663c7a96557101524d715a923bc2c6b
+"10 Impressive Things Python Can Do for Finance Professionals! (Blow Your Manager’s Mind)
+
+n this video, I’ll walk you through 10 mind-blowing things Python can do for financial planning and analysis that you probably didn’t know about. From interactive dashboards to advanced machine learning models, Python has tools that can revolutionize how you work in finance. And the best part? You don’t need to be a coding expert!
+
+Here’s what you’ll discover:
+1️⃣ Interactive Dashboards Beyond Excel – Create variance analysis, trend visualizations, and more.
+2️⃣ Sankey Diagrams – Showcase income statement components with customizable visuals.
+3️⃣ Cluster Analysis – Analyze revenue vs. marketing spend or other metrics with stunning visualizations.
+4️⃣ Real-Time Stock Data – Import data from Apple, Tesla, and more using Python’s YFinance library.
+5️⃣ Machine Learning Forecasting – Use Facebook’s Prophet library for trend, seasonality, and anomaly forecasting.
+6️⃣ Monte Carlo Simulations – Model 10,000+ potential scenarios for risks and uncertainty.
+7️⃣ Efficient Frontier for Portfolios – Optimize your investments in just a few lines of code.
+8️⃣ QR Code Generation – Create QR codes instantly without any additional apps.
+9️⃣ Pairwise Financial Metric Analysis – Correlate and visualize financial drivers effortlessly.
+🔟 AI-Generated Code – Learn how to use AI tools like ChatGPT to write Python scripts for finance.",The-Financial-Fox,2025-01-17T08:30:27.000+01:00,https://github.com/The-Financial-Fox/pythonforfinance2025/commit/7399a3c53dea4ed1d39d058b351734a06b4a77f4
+"[REF] knowledge: update the action helper and the template picker dialog
+
+This commit uses the new editor features and embedded components for the action
+helper and the template picker.
+
+The template picker now uses the HtmlViewer to display prefabricated articles
+with embedded components, which can be used as the default value for an article
+and automatically create related article items.
+
+The action helper provides a menu to help the user start using Knowledge.
+Features such as: inserting a template, an embedded view for article items,
+using ChatGPT to write content.
+
+task-3672747
+
+Part-of: odoo/enterprise#67083
+Related: odoo/odoo#173997
+Signed-off-by: Thibault Delavallee (tde) <tde@openerp.com>
+Co-authored-by: Damien Abeloos <abd@odoo.com>
+Co-authored-by: Adrien Schoffeniels <adsc@odoo.com>
+Co-authored-by: Julien Banken <jbn@odoo.com>
+Co-authored-by: Thomas Josse <thjo@odoo.com>",abd-msyukyu-odoo,2024-09-22T19:09:31.000+02:00,https://github.com/Khanstore/odoo_enterprise/commit/e001efc750d25d5dfcc681e42adf7a46edc7f37b
+"added a new XML Parser for Geek API
+
+got ChatGPT to write us a parser to convert the XML we were getting into usable JSON rather than dealing with separate arrays of objects...
+
+This should come in handy if we do decide to carry on with the geek API as I know it is better suited to our needs",Clark Oake,2023-04-29T14:57:32.000-02:30,https://github.com/mwhancock/game-shelf/commit/f5f16d8af501208c45eb7b0ace718893cd4c22c7
+"Create AIGeneratedWindowsHardening
+
+Created by asking ChatGPT to write me a powershell script using the following prompt. Instead of writing a complete script it seems to get stuck partway through and then seems to get confused about where it left off, and so has a lot of repeats.
+
+Please write me a powershell script to harden a windows system according to Microsoft's hardening guidelines",fadedgreenpeace,2023-01-08T15:15:33.000-06:00,https://github.com/fadedgreenpeace/Public/commit/f59354629753e98916df94949402db39b58a749a
+"There are a few ways to do regex it turns out. You can learn the patterns, ask ChatGPT to write them for you, or brute force a bunch of different options and form a frankenstein's monster of patterns that technically works. It should be clear which route I took.",roll20plusplus,2023-03-26T21:20:32.000-07:00,https://github.com/ryanmalley101/5eAutomation/commit/69c45e7b8a50e0cc930690690d277c5fc84a49d1
+"Remove dependencies, format, simplify, coverage, black,
+
+- Generate coverage reports
+- Remove numpy, beartype as dependencies
+- Move prevalence to its own script
+- Use chatGPT to write more concise, less buggy code
+- Use `black` package to reformat scripts
+- Use .loc and .copy to avoid chain indexing and chain indexing assignment errors",shaunporwal,2023-02-05T17:20:27.000-05:00,https://github.com/MSKCC-Epi-Bio/dcurves/commit/a4fce89e22064b44c3dcf0925a718d443fa30e6b
+"Fixed bugs in Stack and created test suite
+
+The Stack class had no __ at the end of the __setitem__ function, so the index assigning and fetching would not work, these were also improperly indented by accident.
+
+Also, used chatgpt to write the test cases for the Stack class, as writing test cases is the most mind numbingly boring thing to do when writing code.",George Tait,2023-06-29T10:20:46.000+01:00,https://github.com/GeorgeTait848/ElementaryDataStructures/commit/4d76aa669ea371e9fb2b1a1c3bb1705a2ce24239
+"lots of post-AI refactoring. added args support with the fn creator;
+- added args in fn creator and execution; should work. needing the proper imports sucks though. I wonder if I can pre-load imports somehow, maybe there's a lib for that
+- AI is still magnitudes faster at writing simple logic like this. it just seems to get a little wrapped up if you give it too much to do at once
+  - seems to help to give it the current files; don't expect it to keep context with the changes. just copy/paste it w/ the prompt
+  - it can read images and deduce some issues but I didn't find this helpful. possibly helpful when describing layout editing help?
+  - this time around I did more manual cleanup. it was definitely much slower progress compared to full on AI generation
+  - I think if I'm stricter with my prompts I can get ChatGPT to write things more the way I want them the first time around
+  - it was able to fix a bug when I copy/pasted the controller + service that was getting an issue on the backend.
+TODO:
+- should have a checklist or something in a readme for my TODOs
+- need to fix 'edit' feature for functions; all it does is open a new fn creator
+- make default functions; something for a tcp send/receive and a kafka send/receive. so the scripts will need to know about the connection stuff. that'll be interesting
+- add file import to the connections
+- toggle a 'send only' mode so you can just send stuff out if you want; I'll probably implement this and the test case serializing first before doing the test case/assertion stuff.",ashfordhill,2024-08-19T22:24:53.000-05:00,https://github.com/ashfordhill/dynamic-integration-tester/commit/4550c60c0e7db78bd5be4dc043767a94309352ed
+"separated Normal and Threaded algos
+
+This commit separates the normal and threaded algorithms in the home page of the application, by creating two separate sections for them. This improves the organization and readability of the page by grouping similar algorithms together and making it clear which algorithms are threaded and which are not. Additionally, this change allows for easier future expansion, as new algorithms can be added to the appropriate section without disrupting the existing layout (yes i asked chatGPT to write this commit message)",Haroon,2023-01-26T16:43:53.000+05:00,https://github.com/notwld/Scheduler/commit/4f89035ccb8060f12bab3c565f0b19bd0df6882a

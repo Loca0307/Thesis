@@ -1,0 +1,558 @@
+
+LINK NUMBER 1
+Error fetching diff
+
+LINK NUMBER 2
+Error fetching diff
+
+LINK NUMBER 3
+Error fetching diff
+
+LINK NUMBER 4
+Error fetching diff
+
+LINK NUMBER 5
+Error fetching diff
+
+LINK NUMBER 6
+Error fetching diff
+
+LINK NUMBER 7
+Error fetching diff
+
+LINK NUMBER 8
+Error fetching diff
+
+LINK NUMBER 9
+Error fetching diff
+
+LINK NUMBER 10
+Error fetching diff
+
+LINK NUMBER 11
+Error fetching diff
+
+LINK NUMBER 12
+Error fetching diff
+
+LINK NUMBER 13
+Error fetching diff
+
+LINK NUMBER 14
+Error fetching diff
+
+LINK NUMBER 15
+Error fetching diff
+
+LINK NUMBER 16
+Error fetching diff
+
+LINK NUMBER 17
+Error fetching diff
+
+LINK NUMBER 18
+Error fetching diff
+
+LINK NUMBER 19
+Error fetching diff
+
+LINK NUMBER 20
+Error fetching diff
+
+LINK NUMBER 21
+Error fetching diff
+
+LINK NUMBER 22
+Error fetching diff
+
+LINK NUMBER 23
+Error fetching diff
+
+LINK NUMBER 24
+Error fetching diff
+
+LINK NUMBER 25
+Error fetching diff
+
+LINK NUMBER 26
+Error fetching diff
+
+LINK NUMBER 27
+Error fetching diff
+
+LINK NUMBER 28
+Error fetching diff
+
+LINK NUMBER 29
+Error fetching diff
+
+LINK NUMBER 30
+Error fetching diff
+
+LINK NUMBER 31
+Error fetching diff
+
+LINK NUMBER 32
+Error fetching diff
+
+LINK NUMBER 33
+Error fetching diff
+
+LINK NUMBER 34
+Error fetching diff
+
+LINK NUMBER 35
+Error fetching diff
+
+LINK NUMBER 36
+Error fetching diff
+
+LINK NUMBER 37
+Error fetching diff
+
+LINK NUMBER 38
+Error fetching diff
+
+LINK NUMBER 39
+Error fetching diff
+
+LINK NUMBER 40
+Error fetching diff
+
+LINK NUMBER 41
+Error fetching diff
+
+LINK NUMBER 42
+Error fetching diff
+
+LINK NUMBER 43
+Error fetching diff
+
+LINK NUMBER 44
+Error fetching diff
+
+LINK NUMBER 45
+Error fetching diff
+
+LINK NUMBER 46
+Error fetching diff
+
+LINK NUMBER 47
+Error fetching diff
+
+LINK NUMBER 48
+Error fetching diff
+
+LINK NUMBER 49
+Error fetching diff
+
+LINK NUMBER 50
+Error fetching diff
+
+LINK NUMBER 51
+Error fetching diff
+
+LINK NUMBER 52
+Error fetching diff
+
+LINK NUMBER 53
+Error fetching diff
+
+LINK NUMBER 54
+Error fetching diff
+
+LINK NUMBER 55
+Error fetching diff
+
+LINK NUMBER 56
+Error fetching diff
+
+LINK NUMBER 57
+Error fetching diff
+
+LINK NUMBER 58
+Error fetching diff
+
+LINK NUMBER 59
+Error fetching diff
+
+LINK NUMBER 60
+Error fetching diff
+
+LINK NUMBER 61
+Error fetching diff
+
+LINK NUMBER 62
+Error fetching diff
+
+LINK NUMBER 63
+Error fetching diff
+
+LINK NUMBER 64
+Error fetching diff
+
+LINK NUMBER 65
+Error fetching diff
+
+LINK NUMBER 66
+Error fetching diff
+
+LINK NUMBER 67
+Error fetching diff
+
+LINK NUMBER 68
+Error fetching diff
+
+LINK NUMBER 69
+Error fetching diff
+
+LINK NUMBER 70
+Error fetching diff
+
+LINK NUMBER 71
+Error fetching diff
+
+LINK NUMBER 72
+Error fetching diff
+
+LINK NUMBER 73
+Error fetching diff
+
+LINK NUMBER 74
+Error fetching diff
+
+LINK NUMBER 75
+Error fetching diff
+
+LINK NUMBER 76
+Error fetching diff
+
+LINK NUMBER 77
+Error fetching diff
+
+LINK NUMBER 78
+Error fetching diff
+
+LINK NUMBER 79
+Error fetching diff
+
+LINK NUMBER 80
+Error fetching diff
+
+LINK NUMBER 81
+Error fetching diff
+
+LINK NUMBER 82
+Error fetching diff
+
+LINK NUMBER 83
+Error fetching diff
+
+LINK NUMBER 84
+Error fetching diff
+
+LINK NUMBER 85
+Error fetching diff
+
+LINK NUMBER 86
+Error fetching diff
+
+LINK NUMBER 87
+Error fetching diff
+
+LINK NUMBER 88
+Error fetching diff
+
+LINK NUMBER 89
+Error fetching diff
+
+LINK NUMBER 90
+Error fetching diff
+
+LINK NUMBER 91
+Error fetching diff
+
+LINK NUMBER 92
+Error fetching diff
+
+LINK NUMBER 93
+Error fetching diff
+
+LINK NUMBER 94
+Error fetching diff
+
+LINK NUMBER 95
+Error fetching diff
+
+LINK NUMBER 96
+Error fetching diff
+
+LINK NUMBER 97
+Error fetching diff
+
+LINK NUMBER 98
+Error fetching diff
+
+LINK NUMBER 99
+Error fetching diff
+
+LINK NUMBER 100
+Error fetching diff
+
+LINK NUMBER 101
+Error fetching diff
+
+LINK NUMBER 102
+Error fetching diff
+
+LINK NUMBER 103
+Error fetching diff
+
+LINK NUMBER 104
+Error fetching diff
+
+LINK NUMBER 105
+Error fetching diff
+
+LINK NUMBER 106
+Error fetching diff
+
+LINK NUMBER 107
+Error fetching diff
+
+LINK NUMBER 108
+Error fetching diff
+
+LINK NUMBER 109
+Error fetching diff
+
+LINK NUMBER 110
+Error fetching diff
+
+LINK NUMBER 111
+Error fetching diff
+
+LINK NUMBER 112
+Error fetching diff
+
+LINK NUMBER 113
+Error fetching diff
+
+LINK NUMBER 114
+Error fetching diff
+
+LINK NUMBER 115
+Error fetching diff
+
+LINK NUMBER 116
+Error fetching diff
+
+LINK NUMBER 117
+Error fetching diff
+
+LINK NUMBER 118
+Error fetching diff
+
+LINK NUMBER 119
+Error fetching diff
+
+LINK NUMBER 120
+Error fetching diff
+
+LINK NUMBER 121
+Error fetching diff
+
+LINK NUMBER 122
+Error fetching diff
+
+LINK NUMBER 123
+
+File path: PycharmProjects/Project_with_chatgpt/pong_pygame.py
+"import pygame
+import random
+
+# Initialisation de Pygame
+pygame.init()
+
+# Dimensions de la fenêtre
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption(""Jeu de Casse"")
+
+# Couleurs
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+BLACK = (0, 0, 0)
+
+# Police
+font = pygame.font.Font(None, 36)
+
+
+# Fonction pour afficher un bouton (Rejouer)
+def draw_button():
+    pygame.draw.rect(screen, RED, (WIDTH // 2 - 75, HEIGHT // 2, 150, 50))
+    text = font.render(""Rejouer"", True, WHITE)
+    screen.blit(text, (WIDTH // 2 - 40, HEIGHT // 2 + 10))
+
+
+# Fonction pour afficher un écran de fin (victoire ou game over)
+def show_end_screen(message):
+    screen.fill(BLACK)
+    text = font.render(message, True, WHITE)
+    screen.blit(text, (WIDTH // 2 - 70, HEIGHT // 2 - 50))
+    draw_button()
+    pygame.display.update()
+
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if WIDTH // 2 - 75 <= x <= WIDTH // 2 + 75 and HEIGHT // 2 <= y <= HEIGHT // 2 + 50:
+                    return True
+    return False
+
+
+# Fonction principale du jeu
+def game_loop():
+    global ball_x, ball_y, ball_speed_x, ball_speed_y, bar_x, bricks
+
+    # Réinitialisation des variables du jeu
+    ball_x, ball_y = WIDTH // 2, HEIGHT - 50
+    ball_speed_x, ball_speed_y = random.choice([-3, 3]), -3
+    bar_x = WIDTH // 2 - 50
+
+    # Création des briques
+    bricks = [pygame.Rect(col * 70 + 35, row * 25 + 40, 60, 20) for row in range(5) for col in range(10)]
+
+    clock = pygame.time.Clock()
+    run = True
+
+    while run:
+        clock.tick(60)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+
+        # Déplacement de la barre
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and bar_x > 0:
+            bar_x -= 6
+        if keys[pygame.K_RIGHT] and bar_x < WIDTH - 100:
+            bar_x += 6
+
+        # Déplacement de la balle
+        ball_x += ball_speed_x
+        ball_y += ball_speed_y
+
+        # Collision avec les murs
+        if ball_x - 10 <= 0 or ball_x + 10 >= WIDTH:
+            ball_speed_x = -ball_speed_x
+        if ball_y - 10 <= 0:
+            ball_speed_y = -ball_speed_y
+        if ball_y + 10 >= HEIGHT:
+            run = False  # Game over si la balle touche le bas
+
+        # Collision avec la barre
+        bar_rect = pygame.Rect(bar_x, HEIGHT - 30, 100, 20)
+        ball_rect = pygame.Rect(ball_x - 10, ball_y - 10, 20, 20)
+        if ball_rect.colliderect(bar_rect):
+            ball_speed_y = -abs(ball_speed_y)
+            ball_speed_x += random.choice([-1, 1])  # Effet de variation du rebond
+
+        # Collision avec les briques
+        for brick in bricks[:]:
+            if ball_rect.colliderect(brick):
+                bricks.remove(brick)
+                ball_speed_y = -ball_speed_y
+                break
+
+        # Vérifier si toutes les briques sont détruites
+        if not bricks:
+            run = False
+            victory = True  # Indique qu'on a gagné
+
+        # Dessiner les éléments du jeu
+        screen.fill(BLACK)
+        pygame.draw.circle(screen, WHITE, (ball_x, ball_y), 10)
+        pygame.draw.rect(screen, BLUE, (bar_x, HEIGHT - 30, 100, 20))
+        for brick in bricks:
+            pygame.draw.rect(screen, GREEN, brick)
+
+        pygame.display.update()
+
+    # Affichage de l'écran de fin (victoire ou game over)
+    if not bricks:
+        message = ""Victoire !""
+    else:
+        message = ""Game Over""
+
+    if show_end_screen(message):
+        game_loop()  # Relancer une partie
+
+
+# Lancer le jeu
+game_loop()"
+
+LINK NUMBER 124
+Not enough lines
+
+LINK NUMBER 125
+Not enough lines
+
+LINK NUMBER 126
+Not enough lines
+
+LINK NUMBER 127
+Error fetching diff
+
+LINK NUMBER 128
+Error fetching diff
+
+LINK NUMBER 129
+Error fetching diff
+
+LINK NUMBER 130
+Error fetching diff
+
+LINK NUMBER 131
+Error fetching diff
+
+LINK NUMBER 132
+Error fetching diff
+
+LINK NUMBER 133
+Error fetching diff
+
+LINK NUMBER 134
+Error fetching diff
+
+LINK NUMBER 135
+Error fetching diff
+
+LINK NUMBER 136
+Error fetching diff
+
+LINK NUMBER 137
+Error fetching diff
+
+LINK NUMBER 138
+Error fetching diff
+
+LINK NUMBER 139
+Error fetching diff
+
+LINK NUMBER 140
+Error fetching diff
+
+LINK NUMBER 141
+Error fetching diff
+
+LINK NUMBER 142

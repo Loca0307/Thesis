@@ -1,0 +1,12 @@
+message,author,date,url
+Used ChatGPT to implement much simpler prototype,anonimation,2024-08-27T13:14:22.000-04:00,https://github.com/anonimation/spokenMentalMath/commit/e5b4a1e1b9176a7c2e64dd3a107ea085095c1e44
+"Fixed scrolling element
+
+YT lesson sometimes is not the best teacher. Used chatGPT to implement widget. Also did some refactorization",Łukasz Michalak,2024-12-22T22:54:16.000+01:00,https://github.com/Irnin/ToDo/commit/7ee269b5050a4417fe2ba12e2ac216aadfbb7a8e
+"Add a `npm run routes routes` command
+
+Attempting to introspect routes, I ask chatgpt to implement this.
+Went through a couple versions before getting something that wouldn't raise an exception.
+It doesn't show the root route, but maybe that's OK, I'll add a controller next, see what happens.",Bill Kirtley,2025-01-30T11:45:33.000-05:00,https://github.com/cluesque/nest-first-steps/commit/59acc438cc790ff540ffe300d2bac2120c301511
+I used ChatGPT to implement lookup libraries for the scalar-graviton vertices describing the minimal coupling.,Dr Boris Latosh,2024-03-29T10:28:47.000+09:00,https://github.com/BorisNLatosh/FeynGrav/commit/7052658a1640c303cb228cbda7bca55b4e4706ff
+before using chatGpt to implement the styles,PICO443,2023-11-10T16:50:41.000+02:00,https://github.com/PICO443/dickens/commit/5cf3654ec47b1940e7959214941da2f480bc2ff7

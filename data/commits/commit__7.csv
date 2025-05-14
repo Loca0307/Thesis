@@ -1,0 +1,1502 @@
+message,author,date,url
+"Update README.md
+
+Co-authored-by: ChatGPT <chatgpt@openai.com>",Vector,2025-04-13T18:49:59.000-04:00,https://github.com/BFVOICE/BFVOICE/commit/5cabcef7045c67698971967aa0767ea5e80a3d62
+"fix: robucop Style/MutableConstant
+
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",Frederico Alves,2025-03-14T16:41:23.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/763cf6ba02bc58951479e16a732c8f37d1205ea7
+"Add ChatGPT as co-author
+
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",rakulmaria,2025-02-09T17:15:40.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/42c3576133c2b5f2ad673f236cc1f0bf34ae173b
+"test: Helge expects a follow to be a get request, so we acommodate both post and get now
+
+Co-authored-by: lauritsbrok <labp@itu.dk>
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",DumbDane,2025-02-27T11:40:24.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/f61a372ca0eaf9a6315d42675c85e5b9ae037039
+"fix: Only close database connection when shutting down website
+
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",DumbDane,2025-03-15T08:40:57.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/9d2367eb0f30bced2ed4c32a311025a8929e8c40
+"Fix : Update Dockerfile
+
+Co-authored-by: David <daso@itu.dk>
+Co-authored-by: ChatGPT",Nikoline Burman,2025-03-06T12:48:23.000+01:00,https://github.com/DuwuOps/minitwit/commit/63009debb076136662a4d7c86d7bfc07aed02b97
+"CHAT generated example
+
+Co-authored-by: ChatGPT <chatgpt.com>",Nicolai Grymer,2025-02-07T13:26:22.000+01:00,https://github.com/DevOps-Sad-people/itu-minitwit/commit/8634bf8a7c553a401ea8af0b1c825fd7d46a11da
+containerized working> > Co-authored-by: Chatgpt,oskaitu,2025-02-13T20:53:11.000+01:00,https://github.com/Niceness-2-0/itu-minitwit/commit/6918c0071c9f99e689b3e5e0b952699982ba49f1
+"fix: Database now closes after every request, this lets pytest clean up
+teh database between modules
+Request body is only read once, letting us control for empty body
+properly
+
+Co-authored-by: lauritsbrok <labp@itu.dk>
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",DumbDane,2025-02-27T11:07:11.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/8f44eb1601a019feed159a3c91763c6ee322032b
+"Feat : Add function formatDatetime
+
+Co-authored-by: ChatGPT",Nikoline Burman,2025-03-12T10:18:01.000+01:00,https://github.com/DuwuOps/minitwit/commit/3ef949a58801bebbe30b9ad03b0edbcf3ec80bf9
+"Fully working dockerfil
+
+Co-authored-by: ChatGPT",JacquesPuvis,2025-02-26T09:34:50.000+01:00,https://github.com/ITU-DevOps2025-GROUP-A/itu-minitwit/commit/a7b89434f7fd1974d04ca23dd5ecbefaf0321364
+"Feat : Add formatDatetime to NewTemplateRenderer
+
+Co-authored-by: ChatGPT",Nikoline Burman,2025-03-12T10:18:01.000+01:00,https://github.com/DuwuOps/minitwit/commit/b5c8d737a0d8a4c559be62f041187cc72ef03785
+"Feat : Add gravatarUrl to NewTemplateRenderer
+
+Co-authored-by: ChatGPT",Nikoline Burman,2025-03-12T10:18:01.000+01:00,https://github.com/DuwuOps/minitwit/commit/da6b71562a7b5f36480f5f3f3cbde8233a28a485
+"Added process to playwright
+
+Co-authored-by: Co-pilot
+
+Co-authored-by: Chatgpt",denw,2024-11-24T17:26:41.000+01:00,https://github.com/ITU-BDSA2024-GROUP31/Chirp/commit/364c9c57bcda48f0a35b0d86a6abfeefb7600959
+"Cleanup seperate style
+
+Co-authored-by: ChatGPT <ChatGPT@OpenAI.com>",Victor Sforzini,2024-12-05T00:41:13.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/86e9489492224ab368fbccd5c7983e51267707d0
+"test!: Update tests to work inside docker container
+
+BREAKING CHANGE: tests can now only run inside docker container.
+
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",DumbDane,2025-03-13T13:49:52.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/817cc4c8fb5310d49cf7e4d3c5e235e6ae2754e7
+"Refactor : AddMessage-route-method translated to golang
+
+Co-authored-by: Gustav <guch@itu.dk>
+Co-authored-by: ChatGPT <https://openai.com/>",David Martin Sørensen,2025-02-15T15:57:00.000+01:00,https://github.com/DuwuOps/minitwit/commit/9fc8cfe08ccde7c8710abc3a92bd827e14dd97dc
+"Added Register User Test
+
+Co-authored-by: ChatGPT <https://chatgpt.com/>
+Co-authored-by: Nikolaj Alsøe <69769473+niko391a@users.noreply.github.com>
+Co-authored-by: Marcus Løfberg <151034101+Tipskind@users.noreply.github.com>",Nikolaj Carlson,2024-10-25T11:45:00.000+02:00,https://github.com/ITU-BDSA2024-GROUP7/Chirp/commit/c2d4a61bfa6ab5234ae49413b773002134c78644
+"missing timeline and usertimeline
+
+Co-Authored-By: ChatGPT <ChatGPT@openai.com>",André,2024-12-03T15:33:31.000+01:00,https://github.com/ITU-BDSA2024-GROUP13/Chirp/commit/a7d6fc8d8fef1002bb456ec6a82a30cbe6dbe406
+"Feat : The database is populated by generated placeholder-data
+
+Co-authored-by: Gustav <guch@itu.dk>
+Co-authored-by: ChatGPT <https://openai.com/>",David Martin Sørensen,2025-02-15T13:09:19.000+01:00,https://github.com/DuwuOps/minitwit/commit/62378047a999a708a483485e002a710074df47d7
+"added OnpostFollowAsync
+
+Co-authored-by: ChatGPT",cslj,2024-12-10T19:29:18.000+01:00,https://github.com/ITU-BDSA2024-GROUP24/Chirp/commit/d46a83dd85766ea7f04ec63e4b187fb4cff3a310
+"Added implementation for add_message.
+
+Co-authored-by: ChatGPT",Philip Boesen Blomholt,2025-02-11T17:25:30.000+01:00,https://github.com/devops-q/devops/commit/301b82a2555a0a71ad21a3ffc5a32ca0e877fde5
+"Added Register User Test
+
+Co-authored-by: ChatGPT <https://chatgpt.com/>
+Co-authored-by: Nikolaj Alsøe <69769473+niko391a@users.noreply.github.com>
+Co-authored-by: Marcus Løfberg <151034101+Tipskind@users.noreply.github.com>",Nikolaj Carlson,2024-10-25T11:45:00.000+02:00,https://github.com/RasmusAChr/Chirp/commit/c2d4a61bfa6ab5234ae49413b773002134c78644
+"Add char counter under submit msg
+
+Co-authored-by: ChatGPT <ChatGPT@Openai.com>",Victor Sforzini,2024-12-05T00:27:06.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/f135b1e3ed6734a0d4c3691e7b71e4fd6ec556c5
+"Feat : Add gravatar to timeline.html
+
+Co-authored-by: ChatGPT
+
+Closes #10",Nikoline Burman,2025-03-12T10:18:01.000+01:00,https://github.com/DuwuOps/minitwit/commit/14c85c1f25045f3862fd52528919977dfac25676
+"Created POST test for msgs/Username
+
+Co-authored-by: ChatGPT",JacquesPuvis,2025-02-20T10:25:11.000+01:00,https://github.com/ITU-DevOps2025-GROUP-A/itu-minitwit/commit/a463e5f4dc33de5a44ed87d3cda1cd13bb4c8373
+Vagrant file for automatic deploy to DigitalOcean droplet \Co-authored-by: ChatGPT,nikolaitilgreen,2025-02-20T12:49:33.000+01:00,https://github.com/Docker-Daze/itu-minitwit/commit/b81119218d42a640717fe8243afe278c8ec0f4d5
+"Organized IAuthorRepo + comments
+
+co-authored-by: ChatGPT <>",Lucas,2024-12-16T18:55:23.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/464d1684162851eae404f00611bb94ff3fc17735
+"added docu for chirp.services
+
+Co-Authored-By: ChatGPT <chatgpt@openai.com>",André,2024-12-03T14:31:01.000+01:00,https://github.com/ITU-BDSA2024-GROUP13/Chirp/commit/f381bba8b75718a9dbd8e377728bf78603955aaf
+"added docu for chirp.repository
+
+Co-Authored-By: ChatGPT <chatgpt@openai.com>",André,2024-12-03T14:03:15.000+01:00,https://github.com/ITU-BDSA2024-GROUP13/Chirp/commit/3106f73a148584d868f83ab453d92256746d72d1
+"Fixed test setup
+
+Co-authored-by: Lucas <lucasveha@gmail.com>
+Co-authored-by: ChatGPT <>",ITU-mikcl,2024-10-16T14:44:24.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/fe9c03e6b53b1f3eeba67485d1e34c0b05ac17f6
+"Added the GET endpoint for msgs/username
+Co-authored-by: ChatGPT",JacquesPuvis,2025-02-19T14:29:16.000+01:00,https://github.com/ITU-DevOps2025-GROUP-A/itu-minitwit/commit/3fb8183a3bcbd1238a4a4d5f653b8ad80c852869
+"added docu for chirp.web.models
+
+Co-Authored-By: ChatGPT <ChatGPT@openai.com>",André,2024-12-03T15:42:24.000+01:00,https://github.com/ITU-BDSA2024-GROUP13/Chirp/commit/f9de37af2111cbee6d03e2d3e36d0233b275ee06
+"Readded query/command comments
+
+co-authored-by: ChatGPT <>",Lucas,2024-12-16T15:08:52.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/485f9d090a9fcee155c3cdaf7e5da4b23f9d45c4
+"A bit closer
+
+Co-authored-by: chatGpt",jing,2024-12-04T20:47:28.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/b9160a69d58ef21f72972bde374ccb5c73cb91dd
+"Add json serialization
+
+Co-authored-by: Mikkel <Mikcl@itu.dk>
+Co-authored-by: Bergur <Berd@itu.dk>
+Co-authored-by: ChatGPT <>",Allan Petersen,2024-09-24T12:42:22.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/33801159ceee7484cf798a2fc604dc0aeb08f319
+"Fix time conversion
+
+Co-authored-by: Marcus <mhiv@itu.dk>
+Co-authored-by: ChatGPT",mhiv,2024-09-07T13:10:31.000+02:00,https://github.com/ITU-BDSA2024-GROUP8/Chirp/commit/0e0b3c27636e3d8463a492e697560c32cc4a4d67
+"Update renderReport.yml now pushes the pdf to the repository
+
+Co-authored-by: Marius <marho@itu.dk>
+Co-authored-by: ChatGPT",MortenFB,2024-12-17T12:12:35.000+01:00,https://github.com/ITU-BDSA2024-GROUP15/Chirp/commit/b14a8b19491b23fd0e971dd89b4ec436c18c10b2
+"Update renderReport.yml hadnling images
+
+Co-authored-by: ChatGPT",MortenFB,2024-12-17T12:44:59.000+01:00,https://github.com/ITU-BDSA2024-GROUP15/Chirp/commit/bb7a17614075ca6822c4f09144ecf6f8f75102e3
+"Adds a like button to every cheep. Not complete.
+
+Co-authored-by: chatGpt
+Co-authored-by: JacquesPuvis <japu@itu.dk>",JIngeholm,2024-12-03T15:48:52.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/2ab090fc7c20e5264d4b984e19941ebd6d98b92d
+"Fix (Messages) : Add Messages route
+
+Co-authored-by: ChatGPT <openai@github.com>
+
+Closes #41",Nikoline Burman,2025-02-26T21:35:10.000+01:00,https://github.com/DuwuOps/minitwit/commit/0c1ccd9804f58e3c9e024d23af225c723c591160
+"Added basic download functionallity
+
+co-authored-by: ChatGPT <>",Lucas,2024-11-20T13:46:12.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/bf1d2497d8d9953199772e1775a672ab875e0eda
+Refactor: migrations are run on database during deployment Co-authored-by: Jasmin <jsho@itu.dk> Co-authored-by: ChatGPT,Maria Arnvig,2024-11-15T14:48:49.000+01:00,https://github.com/ITU-BDSA2024-GROUP30/Chirp/commit/39e6698d53954bb1b17056e35afebf1a684d90f8
+"Running site
+Get error when pressing create...
+Confused and tired
+
+Co-authored-by: Jasmin <jsho@itu.dk>
+Co-authored-by: ChatGPT",jsho,2024-12-06T01:43:01.000+01:00,https://github.com/ITU-BDSA2024-GROUP30/Chirp/commit/08c0cf1d871b531665a1324b07ae6c3b9ebe207b
+"Reorder cheep repository interface and implementation
+
+co-authored-by: ChatGPT <>",Lucas,2024-12-16T15:05:25.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/f42124a692014d44bd8981f173f66bfca2de27e4
+"Fix github action publish
+
+Co-authored-by: ChatGPT <>
+Co-authored-by: Allan <allp@itu.dk>
+Co-authored-by: Bergur <berd@itu.dk>
+Co-authored-by: Victor <visf@itu.dk>",ITU-mikcl,2024-09-17T11:22:54.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/308840ec2d9070896ffb860b1b1ac74d0a830165
+"Refactored backend and frontend together to avoid code dup and easier maintainability
+Co-Authored-By: ChatGPT",Laurits Brok,2025-02-27T09:21:56.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/db8527f11dbd185d2b9e423a853a3bd83038b0ab
+"Created doc for AuthorDTO and CheepDTO
+
+Co-authored-by: chatGPT",Cecilie,2024-12-15T17:23:46.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/625e2915ffa3aa16e5a47be620568cb59a2def9b
+"Fix publish action linux version
+
+Co-authored-by: Allan <allp@itu.dk>
+Co-authored-by: Bergur <berd@itu.dk>
+Co-authored-by: ChatGPT <>
+Co-authored-by: Victor <visf@itu.dk>""",ITU-mikcl,2024-09-17T12:08:44.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/83a4a15f7449b4b2faab2e53b29e890d191d0a85
+"Made runtimeIdentifiers dynamic
+
+co-authored-by: ChatGPT <>
+co-authored-by: Allan <allp@itu.dk>
+co-authored-by: Bergur <berd@itu.dk>
+co-authored-by: Victor <visf@itu.dk>
+co-authored-by: Lucas <lucasveha@gmail.com>",mikcla,2024-09-17T17:29:39.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/91fa5a71699fe743435fb9a7e6c9f51b8df3a397
+"Merge pull request #5 from Niceness-2-0/oska
+
+containerized working> > Co-authored-by: Chatgpt",oskaitu,2025-02-13T21:12:58.000+01:00,https://github.com/Niceness-2-0/itu-minitwit/commit/58120eb8944e2f8138e18b319cf73b999a15f8a1
+"Modifying stuff for notification migration
+Co-authored-by: Chatgpt",torbjornjohannsen,2024-12-03T22:45:44.000+01:00,https://github.com/ITU-BDSA2024-GROUP26/Chirp/commit/7209da3de15e266aab93a8d74dc3b5caa1760eb8
+"Sufficiently passes test
+
+Co-authored-by: ChatGPT <OpenAI@OpenAI.ai>",Victor Sforzini,2024-11-29T23:33:20.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/cb8f311a170b3286a3ffd282b63097e3d128239e
+"Fix readdbbyauthor
+
+Co-authored-by: ChatGPT",Nicky Ye,2024-09-30T13:08:06.000+02:00,https://github.com/ITU-BDSA2024-GROUP5/Chirp/commit/f3588323668fef37276b6990d4325b037becc09b
+"Fixed styling however generated cheeps already contain space... so they look weird
+
+co-authored-by: ChatGPT <ChatGPT@Openai.com",Victor Sforzini,2024-12-04T22:27:04.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/4a626bff78d5092a4d2947453cc655627c6b89f4
+"Fix css should force author name and date to be static placement
+
+co-authored-by: ChatGPT <ChatGPT@Openai.com",Victor Sforzini,2024-12-04T22:16:21.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/40c67390f571627453150c61a0a27b15b1daf92d
+"Attempt at making the like button work as well as styling it
+
+Co-authored-by: chatGpt
+Co-authored-by: JacquesPuvis <japu@itu.dk>",JIngeholm,2024-12-04T14:09:21.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/1f1e604df2732506a4ab150c3b8e08ffdadac995
+"Added facebook like css styling
+
+Co-Authored-By: ChatGPT",Nikolaj,2024-11-29T20:11:16.000+01:00,https://github.com/RasmusAChr/Chirp/commit/1cd91ffa86621512fc684d7e880d5fc980658069
+"Added facebook like css styling
+
+Co-Authored-By: ChatGPT",Nikolaj,2024-11-29T20:11:16.000+01:00,https://github.com/ITU-BDSA2024-GROUP7/Chirp/commit/1cd91ffa86621512fc684d7e880d5fc980658069
+"Use GitHub credentials to create user
+
+Co-authored-by: ChatGPT",mhiv,2024-11-12T22:04:16.000+01:00,https://github.com/ITU-BDSA2024-GROUP8/Chirp/commit/12441d323c29626f70f70995d521d2a01ec3861d
+"Add more option to Services.AddAuthentication
+
+Co-authored-by: ChatGPT",mhiv,2024-11-12T22:02:30.000+01:00,https://github.com/ITU-BDSA2024-GROUP8/Chirp/commit/ec780c15cbe6048ff7f625df775bc091cd7e2edb
+"Log in test in PlayWright (ChatGPT helped with csproj errors and terminal commands)
+
+Co-Authored-By: ChatGPT",alhhITU,2024-11-26T12:37:07.000+01:00,https://github.com/ITU-BDSA2024-GROUP13/Chirp/commit/7b04cc1f8e80e5fd8a8a04c74b8bdce761ade237
+"one attempt for following, not perfect yet
+Co-authored-by: ChatGPT",cslj,2024-12-10T20:19:13.000+01:00,https://github.com/ITU-BDSA2024-GROUP24/Chirp/commit/1cc024a09f56b57c5d593e07784e32036301dd56
+"added html, follow/unfollow buttons on cheeps
+
+Co-authored-by: ChatGPT",cslj,2024-12-10T19:37:52.000+01:00,https://github.com/ITU-BDSA2024-GROUP24/Chirp/commit/60d49bdbb037884b0fb519b863f4b6cb35eea3c4
+"feat!: Add TimelineViewComponent.cs and Timeline.cshtml
+Make Public.cshtml invoke Timeline.cshtml
+
+Co-authored-by: Marius <marho@itu.dk>
+
+Co-authored-by: ChatGPT",Mads Christensen,2024-12-06T15:33:07.000+01:00,https://github.com/ITU-BDSA2024-GROUP15/Chirp/commit/b2076725d7f74fa0b833784c3ec74aed8a83dd5e
+"feat(api): Complete /register endpoint for api
+
+Moved api into separate script
+ChatGPT tried to help but I am not even sure I ended up using any of the
+code it provided
+
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",DumbDane,2025-02-18T19:46:30.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/9fc57b6ca378d13e6fa33d4ba9832ac2ef60b1ef
+"The code now executes the schema and dump
+
+Co-authored-by: Anna <anyp@itu.dk>
+Co-authored-by: Stina <stik@itu.dk>
+Co-authored-by: Karoline <kamp@itu.dk>
+Co-authored-by: Olivia <brop@itu.dk>
+Co-authored-by: ChatGPT",AVNBuelow,2024-10-01T16:34:56.000+02:00,https://github.com/ITU-BDSA2024-GROUP22/Chirp/commit/60f262924bcdc299dfe196af0bbdaa52ce71fd21
+"feat: add query for getting all cheeps by authors a user follows
+
+Co-authored-by: Ida <iast@itu.dk>
+Co-authored-by: ChatGPT",Mads Christensen,2024-11-20T16:35:21.000+01:00,https://github.com/ITU-BDSA2024-GROUP15/Chirp/commit/c9e4f4639c9a8c1a6264c0f00fee07255f2b1c1a
+"Add new test
+
+Add new test for ReadCheeps & WriteCheep
+
+co-authored-by: Allan <allp@itu.dk>
+co-authored-by: Bergur <berd@itu.dk>
+co-authored-by: ChatGPT <>",ITU-mikcl,2024-09-24T18:14:36.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/24831043828956ce649ac40feac70fececd48b21
+"Added new styling and theme to page and fixed next b´page buttons
+Co-Authored-By: ChatGPT <openai>
+Co-Authored-By: Allan <allp@itu.dk>",Bergur,2024-12-02T19:40:02.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/aa8d538dd8561f69a8efd6c70da68a4b16a9302f
+"change .yml to pass tests
+Co-authored-by: Chatgpt",JojoStarman,2024-11-15T15:30:32.000+01:00,https://github.com/ITU-BDSA2024-GROUP26/Chirp/commit/4257edc47aacbb6aa43c4d570c94d7312ca86e4f
+"created script for periodic fetch of notifcations
+Co-authored-by: Chatgpt",torbjornjohannsen,2024-12-04T12:47:09.000+01:00,https://github.com/ITU-BDSA2024-GROUP26/Chirp/commit/b3ee8a67361789d05bcf2fd71cb00d4dbd37040d
+"New migration
+
+All methods relating to following have been made async
+
+Button has been adapted to a http post type request, which was inspired by Group 25 code.
+
+Changing method for following in publicmodel til OnPostAsync was an idea from ChatGPT.
+
+Co-authored-by: Sophie Gabriela <slak@itu.dk>
+Co-authored-by: Group 25
+Co-authored-by: ChatGPT",tomat-suppe,2024-12-05T13:47:39.000+01:00,https://github.com/ITU-BDSA2024-GROUP30/Chirp/commit/b234048929c811c6d8a5f36fce99e6272ae38be3
+"Make author info download button use service
+
+Co-authored-by: ChatGPT",Gutti Torvadal,2024-12-04T00:51:53.000+01:00,https://github.com/ITU-BDSA2024-GROUP26/Chirp/commit/aa73519486dfddd293662278aef0044d2c15dbc5
+"debug client secrets without showing them
+co-authored-by: chatgpt",JojoStarman,2024-11-16T00:37:09.000+01:00,https://github.com/ITU-BDSA2024-GROUP26/Chirp/commit/8e84a5cd4947441ac60bd07d581d85ee63524870
+"Fixed ChatDBContext.cs error.
+
+Co-authored-by: ChatGPT",salj,2024-10-02T13:54:33.000+02:00,https://github.com/ITU-BDSA2024-GROUP5/Chirp/commit/c59c1822ebb8c3eef8eea1c7666d4cb4a7bbe1b8
+"Added css styling for top reactions box
+
+Co-Authored-By: ChatGPT",Nikolaj,2024-11-29T21:03:05.000+01:00,https://github.com/ITU-BDSA2024-GROUP7/Chirp/commit/28aab944984ae6dace40c61a9bef5f841776e776
+"Added css styling for top reactions box
+
+Co-Authored-By: ChatGPT",Nikolaj,2024-11-29T21:03:05.000+01:00,https://github.com/RasmusAChr/Chirp/commit/28aab944984ae6dace40c61a9bef5f841776e776
+"Create move-issue.js
+
+Co-authored-by: ChatGPT",Emilbks,2024-09-14T17:31:56.000+02:00,https://github.com/ITU-BDSA2024-GROUP1/Chirp/commit/f46414a2cf2310f68f1764241d29c0d895f72260
+"Added an End to End test with Playwright
+
+Co-authored-by: ChatGPT<openai>",Bergur,2024-11-30T21:58:45.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/0aa0ddd6db1997f29a997b3a5b9e5ac20198f071
+"#43 In Memory Testing set up. Tests still need to be made/converted
+
+Co-authored-by: Mathias <matal@itu.dk>
+Co-authored-by: ChatGPT",=,2024-10-22T02:22:49.000+02:00,https://github.com/ITU-BDSA2024-GROUP1/Chirp/commit/e257bbce2cfc9aecd44ff968ce4ba40f285db4b0
+"automatically gets email from github after authentication.
+Co-authored-by: Chatgpt",JojoStarman,2024-11-12T19:59:17.000+01:00,https://github.com/ITU-BDSA2024-GROUP26/Chirp/commit/87956ca6553dc4a695f5b490c96dcfd779aabcad
+"#28 #33 RazorPages GET request test
+
+Co-Authored-By: ChatGPT",=,2024-10-07T23:14:32.000+02:00,https://github.com/ITU-BDSA2024-GROUP1/Chirp/commit/1533f23ab1fdeb7aaa5afcf1e784cabdfd031f54
+"Added DBFacade + modifying code in CheepService
+
+Co-Authored-By: ChatGPT",cslj,2024-10-08T17:24:52.000+02:00,https://github.com/ITU-BDSA2024-GROUP24/Chirp/commit/eb0237709e90baf925d66e58c4a19b7f3d4c5c84
+"Added validation and a test for it
+Co-authored-by: ChatGPT <>",Lucas,2024-10-19T14:47:59.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/4664fa7270f12db725a2a615d9e8e2ad3844b1ee
+"Update move assigned issues.yml
+
+Co-authored-by: ChatGPT",Emilbks,2024-09-14T17:32:40.000+02:00,https://github.com/ITU-BDSA2024-GROUP1/Chirp/commit/f3a333df53c6312bb613c65ef8124334936c74c1
+"Updated the release to work on the Razor project
+Co-Authored-By: ChatGPT<openai>",Bergur,2024-12-02T20:50:04.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/514f5d316df801ea3e04810653c433ed50f65d69
+"Added tests for msgs/username
+
+Added three test, to test both success and failure cases
+
+Co-authored-by: ChatGPT",JacquesPuvis,2025-02-20T09:45:35.000+01:00,https://github.com/ITU-DevOps2025-GROUP-A/itu-minitwit/commit/b50359b49f1e204b54944bdbc970619c39c67762
+"Added new test with SQLite in memory
+
+Co-authored-by: ChatGPT <>",ITU-mikcl,2024-10-16T08:55:11.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/4b3fc98e64cf651007ccba9dc30ae27813f1fd93
+"Releases and exes should now be made properly when tags are pushed
+
+Co-authored-by: ChatGPT
+Co-authored-by: Sif <esja@itu.dk>",Emil,2024-09-25T13:28:57.000+02:00,https://github.com/ITU-BDSA2024-GROUP1/Chirp/commit/f08c4ed36797d67756c78e64262ec14103df726c
+"Add Cheeps are added correctly to downloaded file, and one .csv file downloaded instead of 4 txt files
+
+co-authored-by: Lucas <lucasveha@gmail.com>
+
+co-authored-by: ChatGPT <>",Victor Sforzini,2024-11-22T14:20:29.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/9eb8444126794cb5bcbf62f1e6aee54b883de2fd
+"Implements Data Transfer Objects and uses them to show cheeps on the Chirp site.
+
+Co-authored-by: Cecilie Amalie Wall Elkjær <ceel@itu.dk>
+Co-authored-by: Freya Nørlund Wentzel <frnw@itu.dk>
+Co-authored-by: Noale <noan@itu.dk>
+Co-authored-by: JacquesPuvis <japu@itu.dk>
+Co-authored-by: chatGPT",JIngeholm,2024-10-16T15:05:20.000+02:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/5e173b924bc4013ef8af7fab9fdbb7862608154e
+"Changing and adding the user's email, username, phonenumber and password is now possible.
+
+Co-authored-by: Cecilie Amalie Wall Elkjær <ceel@itu.dk>
+Co-authored-by: ChatGpt",JIngeholm,2024-11-06T14:15:25.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/6f66057057ccd55546b601ef9235bab29aebd007
+"DId something
+
+This maybe fix possibel race condition.
+Chat gpt was consulted brifely.
+
+Co-authored-by: chatGpt
+Co-Authored-By: Mathias <62756914+math045b@users.noreply.github.com>
+Co-Authored-By: anthoncastillo <145575420+anthoncastillo@users.noreply.github.com>",Christoffer Grünberg,2024-11-06T14:41:20.000+01:00,https://github.com/ITU-BDSA2024-GROUP10/Chirp/commit/1145016af436242fe583415dcc4e92d675acee59
+"Changes Index and Email pages to show correct info.
+
+Co-authored-by: chatGpt",jing,2024-10-31T16:13:42.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/b6cf51365e1533024b183a1b01d6e6702d5e1ee4
+"Small commit to acknowledge involvement of ai for the javascript functionality:
+
+Co-Authored-By: ChatGPT",alhhITU,2024-12-07T21:37:55.000+01:00,https://github.com/ITU-BDSA2024-GROUP13/Chirp/commit/1b9d49690861a085479bfde3247ef65d1743da42
+"temp data visualization
+
+Co-authored-by: ChatGPT <chatgpt>",Burak123T,2024-03-13T10:19:16.000+01:00,https://github.com/IBM-Sustainable-Logistics/Frontend-IBM-SL/commit/ed228c29c0746b73566b90f5f6205ce7753f22f2
+"Fixed the Timezone
+
+Automatically Finds the time for copenhagen and adjust itself for Daylight savings
+
+Co-authored-by: ChatGPT <chatgpt@Chirp.com>",Mathias Larsen,2024-11-02T14:32:07.000+01:00,https://github.com/ITU-BDSA2024-GROUP7/Chirp/commit/c4e981d42fc464fc05b90ffdd6bd1a02bf025961
+"Fixed the Timezone
+
+Automatically Finds the time for copenhagen and adjust itself for Daylight savings
+
+Co-authored-by: ChatGPT <chatgpt@Chirp.com>",Mathias Larsen,2024-11-02T14:32:07.000+01:00,https://github.com/RasmusAChr/Chirp/commit/c4e981d42fc464fc05b90ffdd6bd1a02bf025961
+"Changed integration tests to use an in-memory SQLIte database
+
+Co-authored-by: ChatGPT",Olivia-Brophy,2024-10-20T16:09:27.000+02:00,https://github.com/ITU-BDSA2024-GROUP22/Chirp/commit/bb65a479d3684d1519cf45c5a9b73e6aa799a661
+"Changes the _LoginPartial.cshtml and the _Layout.cshtml classes so that the layout resembles the images in the project description.
+
+Co-authored-by: chatGpt
+Co-authored-by: Cecilie Amalie Wall Elkjær <ceel@itu.dk>
+Co-authored-by: JacquesPuvis <japu@itu.d>
+Co-authored-by: Freya Nørlund Wentzel <frnw@itu.dk>",JIngeholm,2024-10-29T13:07:30.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/03e3d1d33e3bce3c175b45b684b3f9a16df1f6e6
+"fix: Changed so linq sql queries is not longer printed in console
+
+Co-authored-by: ChatGPT",Marius Holm,2024-11-21T17:35:37.000+01:00,https://github.com/ITU-BDSA2024-GROUP15/Chirp/commit/bcbbd2a64174c42e8de47089549401e830b1a136
+"Another attempt at making the like button work as well as styling it
+
+Co-authored-by: chatGpt",JIngeholm,2024-12-04T17:39:00.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/05d156e0dbd769f0282c50dacded7f8303aa57f3
+"Fix UI layout issues with graph visualization
+
+- Fixed issue where only half the screen was being filled
+- Added full width styling to container elements
+- Removed flex display from body that was causing layout problems
+- Ensured all parent containers have width: 100%
+- Added proper container wrapping in App component
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+Co-Authored-By: ChatGPT <noreply@openai.com>",LocktheBow,2025-05-14T01:30:16.000-04:00,https://github.com/LocktheBow/ProjectChronos1/commit/c775d8413cbdfd266e5ce50c0f5bce41847684b3
+"Chore/vagrant script (#121)
+
+* Old initial Vagrantfile
+
+* Changed script to target digitalocean.
+
+* Using non-default ssh-key.
+Also installing docker on engine,
+and uploading deploy script.
+
+* Vagrantfile now working.
+
+Changed deploy to not deploy database.
+Changed naming of secrets file, and added
+pattern to .gitignore
+
+Changed dependencies to match new files,
+in deploy.sh and docker compose.
+
+ChatGPT-4 helped with debugging and fixing
+the Vagrantfile.
+
+Co-authored-by: ChatGPT <ChatGPT@no-reply.com>
+
+* Removed unwanted file from index.
+
+* The Vagrant file now works when re-provision an existing droplet.
+
+* Vagrant now works fully.
+
+The vagrantfile also works now when executed with 'vagrant up' or 'vagrant redbuild'.
+
+The file now adds the droplet to the firewall and allows access from the the current droplet
+to this droplet and the database droplet on port 5432 (postgres sql).
+
+Co-authored-by: ChatGPT <chatgpt@no-reply.com>
+
+* Added deployment to new droplet.
+
+The vagrantfile now adds the new public key of the github user.
+The deploy script now deployes to the new droplet as well.
+
+* Firewall rule are now idempotent
+
+* Fixed condition.
+
+* Updated deploy.sh.
+
+* Word splitting is intentaional.
+
+---------
+
+Co-authored-by: ChatGPT <ChatGPT@no-reply.com>",LukasA707,2025-04-21T15:13:46.000+02:00,https://github.com/minitwit-JOEL/minitwit-DEVOPS/commit/4379e93709e9c95c7ed20e0342e01a4d3fa1bd48
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",BenjaminAngel,2024-03-23T10:49:56.000+09:00,https://github.com/Benjamin-Dally/chatbot-ui/commit/9b2eae308c58b2b0f341a3db926548136a13bac7
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/ishtihoss/chatbot_ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Implements a fully functional like system which works on both public and privat timeline
+
+Co-authored-by: chatGpt",jing,2024-12-05T01:41:51.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/9fb8996bde01194076a6fdb54302aade28599c29
+"Created tests for msgs/username
+
+Three tests for the GET method have been created
+They test both success and error
+
+Co-authored-by: ChatGPT",JacquesPuvis,2025-02-19T16:11:37.000+01:00,https://github.com/ITU-DevOps2025-GROUP-A/itu-minitwit/commit/f06a440dd2c1012e6a0573c0213223b374425ed6
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/lvmdr97/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",OceanDev89,2024-03-23T10:49:56.000+09:00,https://github.com/OceanDev89/AI-Chatbot-Webapp/commit/c0b8b7138d1e1484469f1e244ec81ed67517778d
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/maxwellpothier/chatbot-ui-llama-only/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/mhamzasani/askmymac-chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/ScrogBot/chat-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Srinidhi1368/Chat-bot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/cccc0322/ai/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/konstantintuev/thesis-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Alirezakhan7/edited-porsino-chat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",alefe0518,2024-03-23T10:49:56.000+09:00,https://github.com/richardwhite1028/typescript-chatbot/commit/9083db6007f3a316bb5bacddf4c0355d6f8cb0ed
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/zaczilla/cmdchat-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Fixes the scroll position being the same when you go to another page. It now resets the scroll position when redirecting to a new page.
+
+Co-authored-by: Freya Nørlund Wentzel <frnw@itu.dk>
+Co-authored-by: chatGpt",JIngeholm,2024-12-16T11:44:59.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/4b152014b89f783a48a02d5fc4fd73d3f95001b5
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/mohityadaviitb/chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",Cooldev0824,2024-03-23T10:49:56.000+09:00,https://github.com/Cooldev0824/chatbot-ui/commit/26bf7cd99d38e609bc3458f5b3b013da831d4a54
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",RedApple990129,2024-03-23T10:49:56.000+09:00,https://github.com/RedApple990129/chatbot-ui/commit/91844f1f0244e9398cd72a5e58ca6d8c7942af7a
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Sebastian-Ordonez1105/chatbot/commit/5513f86720a81f2aed09589ed0bf2dd7e67d1372
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Raghav-V-2004/PE_Assessment/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Metatransformer/metatransformer/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/kronjuvel1/thesis-webby-chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/DrZeepeads/Nelbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/JPDucky/chatbot-ui-v2/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/nirbenda/chatbot-ui-af/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/kimshinhyuk1/chat2/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/AffanSurya/chatbot-ui-lfa/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/shinjadong/shinjadongai/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"changed path reference of internal visible so the program can run on mac
+
+Co-authored-by: chatgpt",Theresia,2024-10-30T11:00:24.000+01:00,https://github.com/ITU-BDSA2024-GROUP3/Chirp/commit/17d0867126cab4ea04c19aee1cd5868429af6413
+"Fix hardcoded url
+
+The url was hardcoded to localhost, which would create problems on Azure.
+
+Co-authored-by: ChatGPT",Jacques,2024-12-03T12:48:21.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/e6f4c0f975ad53f83ffabfc2cc95d9d4ed5d56d6
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",Rarewolf626,2024-03-23T10:49:56.000+09:00,https://github.com/Rarewolf626/chatbot-ui/commit/915d8100b40b822a261073908d2ae2dd3f6577ab
+"Initial commit for SearchBar
+
+Added a SearchResult page.
+Added a SearchBar in Public which navigates to SearchResult.
+Added a method ""SearchAuthorAsync"" in AuthorRepository
+
+Co-authored-by: ChatGPT
+Co-Authored-By: Noaleflame <151853768+Noaleflame@users.noreply.github.com>",Jacques,2024-12-03T09:29:18.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/65217ec7d53f5e054c9be452b3f41b426d9c1514
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/emilalvaroaitekph2024/aiconChat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",EliteDev9472,2024-03-23T10:49:56.000+09:00,https://github.com/EliteDev9472/Chatbot/commit/6571b754a8873c29322ef794bc53784dcd18a388
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",Rostya,2024-03-23T10:49:56.000+09:00,https://github.com/aipioneer777/chatbot-ui/commit/624d487df2b2eb3bdd13cffeda2ee44b75c4a435
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/neshkito/chatbot-ui-clean/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/matheusmendez-ask/bcmed-chat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/zuochan/talkiary-app/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/d-a-v-A-i-d/soph-ai/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/saleskit24/chattapphypermodel55/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",Rostya,2024-03-23T10:49:56.000+09:00,https://github.com/Ray777-AI/chatbot-ui/commit/624d487df2b2eb3bdd13cffeda2ee44b75c4a435
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/argahv/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Gerosullivan/Learntime/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/cmdchat/cmdchat-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/giorgi731/chatbot-ui/commit/aa66e2be79925473c0923eeef10e4acdf2cb2da5
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",SeniorDev222,2024-03-23T10:49:56.000+09:00,https://github.com/SeniorDev222/chatbot-ui/commit/c6b79d2309ded4c8d78dc7bc804078fe6148e498
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/GoldenAI-1123/Next-Voice-Chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/niallam22/chat-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/svettoch/chat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/RaphaelHeber/dillen-ai-agent/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/shubham-chawhan/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Sebastian-Ordonez1105/sprockets/commit/5513f86720a81f2aed09589ed0bf2dd7e67d1372
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",madara1793,2024-03-23T10:49:56.000+09:00,https://github.com/madara1793/chatbot-ui/commit/7d3239781029b183b0f22aabd383826462b8afbb
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Alex42prk/chat_bot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",dirtymalikjin9k,2024-03-23T10:49:56.000+09:00,https://github.com/dirtymalikjin9k/OpenChatbot-UI/commit/f2cfc9c6f991968a27dc4f5ab039bb561e5d8bb1
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/manazitto/chatbotUI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/willyywt/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/N3wM4t1c/chatbot-ui-dev/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"DarkMode toggle works
+
+Co-authored-by: W3Schools
+Co-authored-by: ChatGPT",Benjamin Altenburg,2023-11-30T21:58:38.000+01:00,https://github.com/ITU-BDSA23-GROUP18/Chirp/commit/025d8fdb4f3526dca9dfddbbd315fa0ee73283dc
+"37 creating a cicd setup for your itu minitwit (#66)
+
+* Modified dockerfiles
+
+* Modified vagrantfile, runs start_vm now instead of start_webserver
+
+* Test workflow (#58)
+
+* test: Update baseurl, introduce apiurl
+
+* feat: add dotenv gem, database path now defined with the env variable 'ENV' with a default of 'dev'
+
+* test: Update workflow to use env variable
+
+* feat: rackup can now be called from root if given path to config.ru
+e.g. bundle exec rackup src/minitwit/config.ru
+
+* chore: Update gitignore
+
+* feat: Update workflow to account for new source code
+
+* refactor: Vagrantfile no longer starts a deploy on creation
+
+---------
+
+
+Co-authored-by: rakulmaria <97880346+rakulmaria@users.noreply.github.com>
+Co-authored-by: DVH-H <dhel@itu.dk>
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",Laurids Robert Holme Pedersen,2025-02-28T15:18:55.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/78a1bcd0ab1e62da0eaf23a43d905e3580b88b16
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/mckaywrigley/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/youngcommanders/venatrix/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/oiov/chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/MOHAMMEDHARS/TNSDCGIT/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",frostida04,2024-03-23T10:49:56.000+09:00,https://github.com/frostida04/Chatbot/commit/7da3129aafe253abd2711380ec5fa6ba6650f427
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/HVG-Infotech/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Changed dbContext to reflect the new Follows list in DomainModel Author.
+
+Also added handling of possible null values refering to usernames and logged in users
+
+Co-authored-by: ChatGPT
+Co-authored-by: Sophie Gabriela <slak@itu.dk>",tomat-suppe,2024-11-28T16:10:02.000+01:00,https://github.com/ITU-BDSA2024-GROUP30/Chirp/commit/c475a82b6d188a031fbea115713294f74931bced
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",goldvlady,2024-03-23T10:49:56.000+09:00,https://github.com/MagicAI-1123/Voice-Chatbot/commit/772f01b061b96819c282655df765dcf5d3e65ba0
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Thormzy/Chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Merge pull request #196 from ITU-BDSA2024-GROUP4/added-more-styling-and-changed-theme
+
+Added new styling and theme to page and fixed next b´page buttons Co-Authored-By: ChatGPT <openai> Co-Authored-By: Allan <allp@itu.dk>",AllanPetersen1,2024-12-02T19:44:59.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/1083d6334ef47e7a50bfce53aa1a1815ea9afdf7
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/luighifeodrippe/chatlendario/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/akhified-lab-bit/AI-CLONE/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/hichambht32/FreightForwarder-Ai-Assistant/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/aitek-gph-development/gphchat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/ai-dev-passion/chatbot-ui/commit/1c1417c835d0682e50ddb0c5ac3a77269346ef62
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Divu2611/platform-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Add Name field when logging in with github
+
+Also merge main into this branch
+
+Co-authored-by: ChatGPT",Gutti Torvadal,2024-11-12T23:55:17.000+01:00,https://github.com/ITU-BDSA2024-GROUP26/Chirp/commit/b36416b8f90dc327be00c123467d67e046360a47
+"Changed the test suite so that it uses an in memory sqLite database
+
+Co-authored-by: chatGpt",JIngeholm,2024-10-23T12:18:08.000+02:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/328656e37f5247ed8d4aadd8f8710eb8724bdf48
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",bankus7,2024-03-23T10:49:56.000+09:00,https://github.com/bankus7/chatbot-ui/commit/70ce5913715875e3d2d36ad3886e87cfb5aa493e
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Nounou-13/AshiaOpenAI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/slackadjuster/maya23/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/tubby124/Lofty-Ai-Chatbot-Basic/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/khalagai/local-chatbotui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",timbertinker,2024-03-23T10:49:56.000+09:00,https://github.com/timbertinker/Chatbot/commit/1083054fa5455ba4d6a8c453b691f77a1a46db22
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",goldendragon0830,2024-03-23T10:49:56.000+09:00,https://github.com/GoldenDragon0830/chatbot-ui/commit/40c496023445476abe8fb1dfefca78d358ab1929
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/QQBridge/ehime-demo/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/qishilong/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/baileyirving/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/MNJUYDV/RAG-Chat-UI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Level9000/webchat-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/KALEOUUU/jawara_chat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/zbooks10600/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/N3wM4t1c/NewMatic-Dev/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Teetam-lenz/0-AI-Chat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/sharka88/chatbot-UI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/moemad277/sybot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Prasanth0107/ChatBot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/ali-adm/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/slackadjuster/mayagpt/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/MuriloCastro0216/ChatBOT/commit/cb7bc207e9ed2d45fb9f4c23a9f3cc0f89c79bb8
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/JYM3/JYM3/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/CoraCote/chatbot-ui/commit/3ac3f04d0717e2602e3d791a96fa3ca3e10ec847
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/tsunemi-y/Chatbot-UI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/walisalman/gotbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Add logging with Serilog in FollowController
+
+Co-authored-by: ChatGPT <chatgpt@openai.com>",Markus Schlögl,2024-03-27T08:29:50.000+01:00,https://github.com/DevOps-GroupF/itu-minitwit-devops/commit/f3ab2b413e230efc701d43d9d076967e7b2cef89
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/emilalvaroaitek24/gphappc/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Made it so new users get added as authors when they register or signup with github
+Co-Authored-By: ChatGPT<openai>",Bergur,2024-11-28T22:17:13.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/2bacfc6badb3026db2cbc42949f4f01bb39fab84
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/madara-ark/Brosei1/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Add the part where ChatGPT was used
+
+Co-authored-by: ChatGPT <openai@users.noreply.github.com>
+Co-authored-by: Nicklas Jeppesen <nicklasxxx@users.noreply.github.com>
+Co-authored-by: Markus-Scl <Markus-Scl@users.noreply.github.com>
+Co-authored-by: GertLu <GertLu@users.noreply.github.com>
+Co-authored-by: David Falces <DavidFalces@users.noreply.github.com>",P. Rouvillain,2024-02-15T17:45:02.000+01:00,https://github.com/DevOps-GroupF/itu-minitwit-devops/commit/b9944a9b016b1f92c49c2d50ed3095dbd49bea87
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",web-developer77,2024-03-23T10:49:56.000+09:00,https://github.com/web-developer77/chatbot-ui/commit/de9f62545a19f8df248cf8aadb03e71f67e2cf42
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/DrZeepeads/NelsonBot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/pauluswi/chatbot-ui-1/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/ditissaug2024/chatbot1/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/JusstewaSNSJ/chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/nonysticker/chatbot-ui/commit/f3f36853d4910008e29cd182a6cdeb9573d2cc6f
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/changxubo/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/evannaderi/open-chat-online/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/sidjain0503/Chat/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Auwanga/enkaliprime_AI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",elite-0000,2024-03-23T10:49:56.000+09:00,https://github.com/elite-0000/chatbot-ui/commit/199f2ce4eaf1dd59417089bf3bc291f0ff2f6dd7
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/ankittand0n/Interviewer/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"""added the integration tests again and made a main function in program.cs
+
+Co-authored-by: ChatGPT",Olivia-Brophy,2024-10-03T23:37:09.000+02:00,https://github.com/ITU-BDSA2024-GROUP22/Chirp/commit/79e72915526807c1929b4da13d75f31e83945504
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/hanezuiro/chatbot-ui_copy/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/khaher/stock-market-expert/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Azil2001/Chatbot-AI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/gbragante/ChatBotUI-hosted/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/cesarleaz/chatgpt-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/joaoaugusto293/3D-project---1/commit/cfb40f1e056ea0311f52842ffefbcd47ee17c9fd
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Youjjwal/Ai-1/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Removes all but one warning, which will have to be discussed with the rest of my group
+
+Co-authored-by: chatGpt",jing,2024-11-28T15:41:17.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/ed5e39a00e677a10bf987d355227b78f899b61d2
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/chulgil/llm-chat-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/mehedihasan2810/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/LGCOYOTE/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Dipzestbrains/chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/roomy-tadpole2/Chatbot1/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"implemented MsgsController
+Co-authored-by: ChatGPT",Markus Schlögl,2024-02-21T20:46:26.000+01:00,https://github.com/DevOps-GroupF/itu-minitwit-devops/commit/b6c3471f3b889b10c9678b821a90b1083098fbf3
+"Changes the navigation bar so that the name and logout button are divided and properly spaced
+
+Co-authored-by: chatGpt",JIngeholm,2024-10-30T20:40:14.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/780740999284eacdc413fa18e1674f0558a9da52
+"Attempt at incorperating the environment variable called CHIRPDBPATH. This program doesn't fully work.
+
+Co-authored-by: chatGpt",JIngeholm,2024-10-01T15:48:35.000+02:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/4e7902c61204201764c206e1c0ed304379389bce
+"Added login and logout tests for Helge and Adrian users and updated the ChirpWebfactory to load up faster
+Co-Authored-By: ChatGPT <Openai>",Bergur,2024-11-27T22:37:59.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/6acc713be07c5ae81a19946497ec832728826f5d
+"Login og register pages oprettet. Fokus på css og selve page delen - mangler database
+Co-authored-by: chatgpt.com",Anders0106,2024-10-24T02:29:15.000+02:00,https://github.com/ITU-BDSA2024-GROUP2/Chirp/commit/34cd97a0113656b9717d02562cfbb8b4fda7470b
+"feat: Update game content with sarcastic and humorous items, creatures, and locations
+
+Co-authored-by: Morgan Lowtech <tx@lowtech-labs.org>
+Co-authored-by: ChatGPT <chatgpt@openai.com>",Morgan Lowtech,2024-01-09T14:35:11.000-08:00,https://github.com/tx/gen-repl/commit/d410b38361c1a138d02d230708750e86122e75d1
+"Cleaned up move assigned issues.yml and gave chat gpt the credit it deserves
+
+Co-authored-by: ChatGPT",Emilbks,2024-09-16T01:04:43.000+02:00,https://github.com/ITU-BDSA2024-GROUP1/Chirp/commit/d4f729f03dc0140d90a507f1a5e5ffd2cd9d41c5
+"Added statistical analysis to CI/CD pipeline (#100)
+
+* Added shellcheck to build_and_test workflow.
+
+* Added double quotes to script.
+
+As suggested by shellcheck.
+
+* Added double quotes to test script.
+
+As required by shellcheck.
+
+* Added kicks lintering to pipeline.
+
+* Specified severity degree.
+
+Kicks should only fail if the severity of the found
+issues are medium or high.
+
+* Added memory limit.
+
+Added memory limit specifications to services
+in the docker compose file, as required by the
+kicks linter.
+
+* Corrected memory specification.
+
+The memory format did not match the correct
+version of the docker compose file.
+
+Debugged with the help of ChatGPT.
+
+Co-authored-by: ChatGPT chatgpt@no-reply.com
+
+* Added healthchecks to containers.
+
+* Utilizing healthchecks.
+
+ChatGPT provided the command used to check the
+the health condition of the database contianer
+in the deploy script.
+
+* mend
+
+* Excluding certain kicks reports.
+
+* Wrong code ....
+
+* typo
+
+* Debugging.
+
+With the help of dear ChatGPT.
+
+Co-authored-by: ChatGPT chatgpt@noreply.com
+
+* Added ESLint for js
+
+* specified eslint github actions plugin.
+
+* Sepeterated restore and build for web.
+
+* Created ESLint configuration.
+
+* Specified the files for eslint.
+
+* Debugging.
+
+With the help of dear ChatGTP
+
+Co-authored-by: ChatGPT chatgpt@noreply.com
+
+* Tried installing again.
+
+* Specified latest package.
+
+* Reverted changes.
+
+* Tried to specify working directory in command.
+
+* Fixed error codes
+
+* Revert ""Fixed error codes""
+
+This reverts commit f19a5c646593f13e17b6a17dd004b74d25c7cb84.
+
+* Add path specification to command
+
+* Added usage of Node.js
+
+* Path cleanup
+
+* Removed working directory specification.
+
+* Now?
+
+* Changed back to npm i
+
+* Changed build and test web flow
+
+* Changed flow of build and analyze workflow
+
+* --ext doesn't work
+
+* Changed path
+
+* Updated linter
+
+* Removed duplicate path
+
+* added working directory
+
+* Moved eslint.config file
+
+* Moved file back
+
+* Reverted package.json
+
+* Updated linter
+
+* Re-structured package.json
+
+* Updated lock file
+
+* Fixed linter errors
+
+* Exclude build folder
+
+* Testing dotnet analyze
+
+* Removed C#/dotnet static analysis
+
+---------
+
+Co-authored-by: Oliver Prip <ohag@itu.dk>",LukasA707,2025-04-02T11:18:21.000+02:00,https://github.com/minitwit-JOEL/minitwit-DEVOPS/commit/6d5879feac9591adffbd00c14ab92da0df7580ce
+"Added end2end test for CSVDB read command
+
+Co-authored-by: ChatGPT
+Co-authored-by: https://learn.microsoft.com/en-us/answers/questions/204058/how-to-execute-this-command-in-cmd-prompt-using-c",Nikolai,2024-09-17T15:42:01.000+02:00,https://github.com/ITU-BDSA2024-GROUP2/Chirp/commit/b0b2002a9e66cc051f1233118a6630d4ff77a595
+"Fixed identity so user can see that they are authenticated and also fixed so you can logout without issues
+Co-authored-by: ChatGPT",Bergur,2024-11-15T00:36:00.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/fc8eb553f3ce10c5675e7107b1e9e8219e72f131
+"Fix warnings in UserInformation
+
+Co-authored-by: Lauritz <lana@itu.dk>
+
+Co-authored-by: ChatGPT",Jonas,2023-12-05T15:18:33.000+01:00,https://github.com/ITU-BDSA23-GROUP9/Chirp/commit/f8464a8204d6d03a08dcd404f90f440585b77380
+"Fix pagination
+
+Co-authored-by: Oline <okre@itu.dk>
+
+Co-authored-by: Clara <clwj@itu.dk>
+
+Co-authored-by: ChatGPT",Jonas,2023-10-17T15:20:43.000+02:00,https://github.com/ITU-BDSA23-GROUP9/Chirp/commit/816eb8db089a3aa9b4ad7bd2b7d7b697096db607
+"Added a char counter for writing cheeps + styling
+
+Now you are able to see how many characters you have written so far, when you are writing a cheep.
+Styling on buttons etc has also been made a bit nicer.
+
+Co-authored-by: chatGPT
+Co-authored-by: W3Schools",Cecilie,2024-12-03T14:24:01.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/d8a6c53daacb54b73bcd05643486927ab0dd2801
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/mathewlewallen/chatbot-ui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"refactor timeline
+
+Co-authored-by: chatgpt <openai@openai.COM>",cemn,2024-02-15T23:46:22.000+01:00,https://github.com/DevOps-2024-group-p/maxitwit/commit/28ce9108ada32882e6c34973131766ef27fd7276
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/ford-thomas-w/chatbot/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/mranv/chatbot-ui-deepanjali/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/Ahmet-Onder-Onlu/nutricare-chatbotui/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"refactor timeline
+
+Co-authored-by: chatgpt <openai@openai.COM>",cemn,2024-02-15T23:46:22.000+01:00,https://github.com/AAFredsted/maxitwit_org/commit/28ce9108ada32882e6c34973131766ef27fd7276
+"Image handling
+
+Co-authored-by: ChatGPT",Benjamin Altenburg,2023-11-30T11:43:50.000+01:00,https://github.com/ITU-BDSA23-GROUP18/Chirp/commit/cbdf7ac75e170823a769818db950e9b019e2d13c
+"Restructuring project to use dependency injection
+Co-authored-by: ChatGPT",Rokas Kasperavicius,2024-02-21T00:03:19.000+01:00,https://github.com/DevOps-Ben11/minitwit/commit/3c52bb3d12ebab6fb55e07e454d29c758887f860
+"mobile ui improvements (#1567)
+
+Co-authored-by: chatgpt-ai-user <chatgpt-ai-user>",chatgpt-ai-user,2024-03-23T10:49:56.000+09:00,https://github.com/coremanaged-mscp/MCSP-ChatGPT-UI/commit/063001c899dc42559bceb48dd52bf79546da50ae
+"Docs : Add dependency graph for refactored Golang code.
+
+Co-authored-by: ChatGPT
+
+- The following commandos were used to create the small version:
+go install github.com/kisielk/godepgraph@latest
+gomod graph '**' | dot -Tpng > graph.png
+
+Closes #52",Nikoline Burman,2025-03-07T16:58:09.000+01:00,https://github.com/DuwuOps/minitwit/commit/23b7c8430100fcf80ce0f9a625a2bbe2fb380dc1
+"Refactoring
+Co-authored-by: ChatGPT",Thomas Rand,2023-09-14T15:15:50.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/aa2e354fe831f4ad683fd50190268b20efdbf2d8
+"Succeeds at adding cheeps to a list of liked cheeps in authors, as well as almost finishing the look for the like button
+
+Co-authored-by: chatGpt",JIngeholm,2024-12-04T18:11:32.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/7700968adc0dad470051b3ebf75162ed7a8ac7ee
+"Feat : Add function gravatarUrl
+
+Co-authored-by: ChatGPT
+
+- Note that it slightly deviates from the python version because size is no longer an optional parameter, but the only place where we call the function we provide size anyway.",Nikoline Burman,2025-03-12T10:18:01.000+01:00,https://github.com/DuwuOps/minitwit/commit/4a3f8c12b8a69a8516e9d0dd9353b7dc1ba332bf
+"Fixed oauth so it doesnt ask to confirm email and also fixed oauth storing email as username instead of the github username
+Co-Authored-By: ChatGPT <Openai>",Bergur,2024-11-27T20:37:34.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/7382b2a918c2569c709f208774711fa8e416fc8a
+"Add TOC test
+
+Co-authored-by: ChatGPT",Jonas,2023-12-19T15:29:58.000+01:00,https://github.com/ITU-BDSA23-GROUP9/Chirp/commit/4eb57418412c5fda9e7c56a0fee42efc169654c9
+"Added form to partial view instead
+
+Managed to add the form to a partial view by using PartialAsync in the public.cshtml file instead of adding it to the layout via <partial name=""_Navbar""/>. Which was suggested by ChatGPT
+
+Co-authored-by: ChatGPT <https://chatgpt.com/>",Nikolaj,2024-11-03T22:32:01.000+01:00,https://github.com/ITU-BDSA2024-GROUP7/Chirp/commit/69b6620a705cbe5d62a1fc104ae373717c0ba4ac
+"Refactoring
+Co-authored-by: ChatGPT",Thomas Rand,2023-09-14T15:15:50.000+02:00,https://github.com/devops-group-l/chirp/commit/aa2e354fe831f4ad683fd50190268b20efdbf2d8
+"Added form to partial view instead
+
+Managed to add the form to a partial view by using PartialAsync in the public.cshtml file instead of adding it to the layout via <partial name=""_Navbar""/>. Which was suggested by ChatGPT
+
+Co-authored-by: ChatGPT <https://chatgpt.com/>",Nikolaj,2024-11-03T22:32:01.000+01:00,https://github.com/RasmusAChr/Chirp/commit/69b6620a705cbe5d62a1fc104ae373717c0ba4ac
+"Enable tests locally, fix nil check on interface {} nil (see line minitwit.go 293 + 514-520)
+
+Co-authored-by: Viktoria anam@itu.dk
+Co-authored-by: Trond trondrossing@gmail.com
+Co-authored-by: ChatGPT",Daniel Grønbjerg,2024-02-15T08:52:36.000+01:00,https://github.com/Eagles-DevOps/MiniTwit/commit/cefee61714d02566c17187425a7e272ee78c2c5e
+"Enable tests locally, fix nil check on interface {} nil (see line minitwit.go 293 + 514-520)
+
+Co-authored-by: Viktoria anam@itu.dk
+Co-authored-by: Trond trondrossing@gmail.com
+Co-authored-by: ChatGPT",Daniel Grønbjerg,2024-02-15T08:52:36.000+01:00,https://github.com/Eagles-DevOps/MiniTwit/commit/c392562d24fa4a6c6de01d2c97a5edb947a35cc3
+"Further Refactoring
+Co-authored-by: ChatGPT",Thomas Rand,2023-09-14T15:21:30.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/30cdc35c1c7e1c9d181adb5e1c5e48247147ee49
+"better schema descriptions
+
+Co-authored-by: ChatGPT <chatgpt@openai.com>",jnaglick,2023-06-17T22:22:38.000-04:00,https://github.com/jnaglick/gpt-toolbox/commit/5fdaa3dc5207efb7dc196a432ab8f293c7d30298
+"Corrección mensaje de error en inglés (#337)
+
+Co-authored-by: Rafa Gómez <rgomezcasas@gmail.com>
+Co-authored-by: ChatGPT",davidPaymefy,2023-09-27T20:24:55.000+02:00,https://github.com/CodelyTV/php-ddd-example/commit/d5ee40b28d36d12661c52968f433a0f30d2eb612
+"Now extends the authenticated factory
+Co-authored-by: ChatGPT",Villads Grum-Schwensen,2023-12-06T13:08:19.000+01:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/8ac8021f38cdc1378406094ecc0eeee54ff78b21
+"getting closer to post status
+
+Co-authored-by: ChatGPT <chtagpt>",Burak123T,2023-12-01T16:36:05.000+01:00,https://github.com/ITU-BDSA23-GROUP17/Chirp/commit/c949b30b6a4971d4bd86b585c03d33fd27b38b90
+"Further Refactoring
+Co-authored-by: ChatGPT",Thomas Rand,2023-09-14T15:21:30.000+02:00,https://github.com/devops-group-l/chirp/commit/30cdc35c1c7e1c9d181adb5e1c5e48247147ee49
+"Added delete cheeps
+
+Added a way to delete cheeps by using cheepID since we need to delete a specific. Added also a delete button and some css.
+
+Co-authored-by: ChatGPT",denw,2024-12-05T18:57:42.000+01:00,https://github.com/ITU-BDSA2024-GROUP31/Chirp/commit/3ad12611893603b50a5c402413bbf829cc4c8afb
+"minor changes
+
+Co-authored-by: Line<linejkpraestegaard@gmail.com>
+Co-authored-by: Max<max@qbrix.dk>
+Co-authored-by: ChatGPT",Casper,2023-10-09T16:04:08.000+02:00,https://github.com/ITU-BDSA23-GROUP7/Chirp/commit/ea755f659763326c9a7ac3562f7b1fbb088baea6
+"Add documentation to public timeline
+
+Co-authored-by: ChatGPT",Jonas,2023-12-20T16:12:52.000+01:00,https://github.com/ITU-BDSA23-GROUP9/Chirp/commit/0fdf9e862246dde4bb3a8fbff35b528cc6aa13b2
+"Fixed warnings
+
+Warnings have now been fixed. Thanks chatGPT for reminding me to but a ? at the end of list declarations.
+
+Co-authored-by: ChatGPT <chatgpt>",Burak123T,2023-12-20T13:13:42.000+01:00,https://github.com/ITU-BDSA23-GROUP17/Chirp/commit/3922c6a0251c03a2f6f5f9db48a2f7e64a5580ef
+"Now extends the authenticated factory
+Co-authored-by: ChatGPT",Villads Grum-Schwensen,2023-12-06T13:08:19.000+01:00,https://github.com/devops-group-l/chirp/commit/8ac8021f38cdc1378406094ecc0eeee54ff78b21
+"Changed style of cheepbox
+
+Changed the style so message its is own paragraph and made so a sentence breaks and goes to next line when writing in the cheepbox
+
+Co-authored-by: ChatGPT",denw,2024-12-17T20:32:55.000+01:00,https://github.com/ITU-BDSA2024-GROUP31/Chirp/commit/4c4d4e5c3fd19e4277d6e289141e20fe507f700d
+"Merge pull request #200 from ITU-BDSA2024-GROUP4/167-as-developers-we-need-to-fix-the-releases
+
+Updated the release to work on the Razor project Co-Authored-By: ChatGPT<openai>",BergurDavidsen,2024-12-02T20:53:50.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/1e6302827c295ab9b1e2339917ee238cf6145d74
+"Static files can also be displayed now! wwwroot path in Program fixed.
+
+We now have our program back so that it displays in the same way as main. EFCore still not fully functional, as there are problems with CheepService.
+
+Co-authored-by: Sophie Gabriela <slak@itu.dk>
+Co-authored-by: ChatGPT",tomat-suppe,2024-11-05T16:17:17.000+01:00,https://github.com/ITU-BDSA2024-GROUP30/Chirp/commit/cb5f6075cbbdc26a3ea054e355074eed1a3125ef
+"Corrección mensaje de error en inglés (#337)
+
+Co-authored-by: Rafa Gómez <rgomezcasas@gmail.com>
+Co-authored-by: ChatGPT",davidPaymefy,2023-09-27T20:24:55.000+02:00,https://github.com/jafamo/warehouse/commit/d5ee40b28d36d12661c52968f433a0f30d2eb612
+"Stops page from always reloading at the top of the page if you follow/unfollow or like/unlike. Now the page reloads from the point you scrolled to
+
+Co-authored-by: chatGpt",jing,2024-12-05T18:36:10.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/f7657918e96597323803aee6e99cbcf78c852c58
+Refactoring old commandline arguments to use the new package.^Co-authored-by: Daniel <daah@itu.dk>^Co-authored-by: ChatGPT,Christopher Robin Heldgaard,2023-09-19T15:20:06.000+02:00,https://github.com/ITU-BDSA23-GROUP13/Chirp/commit/f0b819ef7ef701b50bc1bd20142fabab4875f9fe
+"Add acknowledgments and information about ChatGPT usage
+
+Co-authored-by: ChatGPT",Just Me,2023-02-24T22:09:01.000+02:00,https://github.com/vinnytsia-tl/automation/commit/e9a9c6ad79d530bf8c62d215252fa7f758033865
+"Added resource manager
+
+Co-authored-by: ChatGPT <info@openai.com>",Abdul Hanan,2023-10-03T15:08:35.000+02:00,https://github.com/ITU-BDSA23-GROUP17/Chirp/commit/147a53f8d3ddc36f1c6cc1d438fc616df508739f
+"Change in program.cs so bash script
+gets initialized when typing dotnet run.
+
+Co-authored-by: Carmen <alcn@itu.dk>
+Co-authored-by: Olivia <olmo@itu.dk>
+Co-authored-by: Alex <alebj@itu.dk>
+Co-authored-by: ChatGPT",Emilie,2023-10-03T15:27:33.000+02:00,https://github.com/ITU-BDSA23-GROUP1/Chirp/commit/8cbb10f4e11a53842af63e9e12d34b0462fcd89a
+"Added read/write to Download
+
+Co-authored-by: ChatGPT",Phi Va Lo,2023-11-24T10:17:21.000+01:00,https://github.com/ITU-BDSA23-GROUP27/Chirp/commit/69da92e5e15b26772e1d86b1d72eb02ed115b9d9
+"Fixed timezone on cheeps created
+
+Co-authored-by: ChatGPT",Phi Va Lo,2023-11-15T13:44:02.000+01:00,https://github.com/ITU-BDSA23-GROUP27/Chirp/commit/5166f602d6c49fd1e1c5aea5a93c905fb992d26e
+"Project Chronos Final Rough Draft
+
+- Fixed RelationshipGraph visualization issues:
+  - Fixed ""Show Labels"" and ""Show Arrows"" checkboxes
+  - Added white background in fullscreen mode
+  - Improved text visibility with background rectangles
+
+- Updated search UI:
+  - Removed Data Axle references
+  - Added Cobalt Intelligence as primary search provider
+  - Improved styling for radio button group
+  - Added complete list of US states
+
+- Added new data sources:
+  - Integrated Cobalt Intelligence API
+  - Added OpenCorporates API as fallback
+
+- Updated documentation:
+  - Rewrote README with focus on final product
+  - Added data structures documentation
+  - Improved system architecture description
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+Co-Authored-By: ChatGPT <noreply@openai.com>",LocktheBow,2025-05-14T01:23:46.000-04:00,https://github.com/LocktheBow/ProjectChronos1/commit/c0b4d3128688dcade328b7b8fd0a1f475afe8256
+"fixed follower bug on api
+Co-authored-by: ChatGPT <openai@users.noreply.github.com>",Markus Schlögl,2024-03-08T13:59:59.000+01:00,https://github.com/DevOps-GroupF/itu-minitwit-devops/commit/0e2219c96a5eccc07b43fe36e01b49467cf116a0
+"Pagination implemented. Authors on cheeps broken
+
+Co-authored-by: ChatGPT",Kåre Kejser,2023-10-12T10:37:28.000+02:00,https://github.com/ITU-BDSA23-GROUP6/Chirp/commit/dca50ec4a9fba84d225cb4995c87544fe8a1cc8b
+"AI attribution
+
+Co-authored-by: ChatGPT",Adam Julian Hvitsted Rose,2023-05-17T23:16:09.000+02:00,https://github.com/ContainerMaintainers/MiniTwit-Golang/commit/b5deb639e3f4d93485716cd36c51f5a94eacd7f3
+"Add vim_ex route and VimExRequest schema
+
+Co-authored-by: ChatGPT <chatgpt@openai.com>",jnaglick,2023-06-17T22:05:42.000-04:00,https://github.com/jnaglick/gpt-toolbox/commit/c77d6b9bcc36e5f314089df2415a2672828e513b
+"Added a function to toggle menus
+
+Co-authored-by: ChatGPT",Phi Va Lo,2023-11-23T23:43:29.000+01:00,https://github.com/ITU-BDSA23-GROUP27/Chirp/commit/faa0f6f82c2bf75a90a606620b598dac91669265
+"Optimized one unit test for regex.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:39:54.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/6241414f8c370f3e36c5b9a966ebf95c1ff6af8c
+"Optimized one unit test for regex.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:39:54.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/b252a025a1e55463102beb31d0b874f43c60022d
+"Optimized one unit test for regex.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:39:54.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/e52b98ac6d40346ff5df3f4be31d90d39cff1d03
+"Mujoco Env (#1511)
+
+* add first iteration nao model
+
+* add uv venv
+
+* record videos
+
+* fix dependencies
+
+* change solver, add more options to naoxml
+
+* fix dependencies (really)
+
+* add nao_standup env
+
+* add test script
+
+* fix dependencies (really2)
+
+* improve nao env
+
+* use nao in scripts
+
+* use face-down keyframe for standup
+
+* improve naming
+
+* tune motors
+
+* add interactive script, fix joint ranges
+
+* limit arms
+
+* add tensorboard, better video naming
+
+* improve feet, improve body
+
+* add wandb
+
+* add site head_center and use in reward
+
+* add power-unlimited nao
+
+* use bhuman model, update env
+
+Co-authored-by: Arne Hasselbring <arne.hasselbring@dfki.de>
+
+* add face-down keyframe
+
+* add site head_center
+
+* fix reward xpos
+
+* fix reward xpos
+
+* use named access for site head_center
+
+* rename env
+
+* remove wrong comments
+
+* update readme
+
+* remove redundant model
+
+* Add interactive_viewer
+
+Co-authored-by: oleflb <45100017+oleflb@users.noreply.github.com>
+Co-authored-by: chatgpt <chatgpt>
+
+* Use external model
+
+Co-authored-by: oleflb <45100017+oleflb@users.noreply.github.com>
+
+* update readme, add gitignore for video and run files
+
+* remove jupyter notebook
+
+* change neovim to dev-dependency
+
+* add entry_point of nao_env in test_script
+
+* Add glfw dependency to readme
+
+Co-authored-by: Alexander Schmidt <55590992+ThagonDuarte@users.noreply.github.com>
+
+* remove test_script
+
+* remove ruff stuff and sort imports
+
+---------
+
+Co-authored-by: Maximilian Schmidt <maximilian@schmidt.so>
+Co-authored-by: Arne Hasselbring <arne.hasselbring@dfki.de>
+Co-authored-by: oleflb <45100017+oleflb@users.noreply.github.com>
+Co-authored-by: Alexander Schmidt <55590992+ThagonDuarte@users.noreply.github.com>",Luis,2024-12-03T16:50:18.000+01:00,https://github.com/HULKs/hulk/commit/678469667703b0095f7d3d8523c3be24eec12acf
+"Embed database schema and data dump BUT CORRECTLY
+
+Since our data directory is two directories above Chirp.Razor.csproj, I had to
+wrestle with file paths rather than putting the data directory into Chirp.Razor,
+because that would have made my life too easy
+
+Co-authored-by: Asger <asjo@itu.dk>
+Co-authored-by: ChatGPT",Bruno Martinovic,2024-10-01T17:10:23.000+02:00,https://github.com/ITU-BDSA2024-GROUP18/Chirp/commit/ee7a199a4995b2d1c7557ecdcc359df15565aa51
+"Fix test to pass after refactoring.
+
+Co-authored-by: Chatgpt",Jonas,2023-10-08T04:55:16.000+02:00,https://github.com/ITU-BDSA23-GROUP9/Chirp/commit/9c30da3f61913a01d8875f9d3938d16bc8f87eb6
+"Updated the way to find the resources
+
+Co-authored-by: ChatGPT",Patrick Handberg Jessen,2023-10-04T18:14:21.000+02:00,https://github.com/ITU-BDSA23-GROUP19/Chirp/commit/3ad5437027d81794b49e886f04d2d1c1034af597
+"Optimized one unit test for regex.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:39:54.000+02:00,https://github.com/devops-group-l/chirp/commit/6241414f8c370f3e36c5b9a966ebf95c1ff6af8c
+"Optimized one unit test for regex.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:39:54.000+02:00,https://github.com/devops-group-l/chirp/commit/b252a025a1e55463102beb31d0b874f43c60022d
+"Optimized one unit test for regex.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:39:54.000+02:00,https://github.com/devops-group-l/chirp/commit/e52b98ac6d40346ff5df3f4be31d90d39cff1d03
+"add SimpleDB class library
+Added the SimpleDB class library via the dotnet new classLib and also added sln called Solution for managin the projects
+Co-authored-by: ChatGPT",Bergur Davidsen,2024-09-04T17:23:56.000+02:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/f7805880706a75106eb93ee348a4d52f7bd82c80
+"Adds a setup and teardown for all tests where it makes sure to register and login. It also makes sure not to do so for the register and login test.
+
+Co-authored-by: chatGpt",JIngeholm,2024-11-11T11:54:51.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/0761f1823be22e476a442bef857277e9d48e61b7
+"Add migrations support
+
+Co-authored-by: ChatGPT",Just Me,2023-02-24T20:45:31.000+02:00,https://github.com/vinnytsia-tl/automation/commit/048a99d3af469eddbef54bf81e365ef93289beed
+"Pagination implemented. Authors on cheeps broken
+
+Co-authored-by: ChatGPT",Kåre Kejser,2023-10-12T10:37:28.000+02:00,https://github.com/frenchtaco/TwitterClone/commit/dca50ec4a9fba84d225cb4995c87544fe8a1cc8b
+"Collision detection with separating axis theorem
+
+Co-authored-by: ChatGPT",Richard Towers,2023-07-17T15:53:30.000Z,https://github.com/richardTowers/boat-physics-sim/commit/ea57808da39605265c3cd74f61e95403a41075b4
+"Fully implemented pagination on public and private sites.
+Co-authored-by: ChatGPT",Villads Grum-Schwensen,2023-10-11T14:26:47.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/c28152cc0d5a7efa609503e92ab5ac5ac6a954ce
+"Paths to wwwroot and Pages in Program.cs have been fixed.
+
+Our program had issues with locating these files, because they are in a different folder than the Program.cs file.
+
+Our DomainModel and Chirp.core files right now are the same as Group3 as we think we need the exact same things, but we will of course revisit this.
+
+The paths to wwwroot and Pages in Program.cs have been helped by Chatgpt
+
+Co-authored-by: Sophie Gabriela <slak@itu.dk>
+Co-authored-by: ChatGPT",tomat-suppe,2024-11-05T15:59:17.000+01:00,https://github.com/ITU-BDSA2024-GROUP30/Chirp/commit/1914a6522456c836fb24957dc7f24682421d6193
+"Imported HTML package and created test for cheeps amount.
+Co-authored-by: ChatGPT",Villads Grum-Schwensen,2023-11-02T14:28:10.000+01:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/d0118784bc601ae651500ca17919d77ac4a37f2a
+"Updated Claims to fetch data from GitHub API
+
+Co-authored-by: ChatGPT",Phi Va Lo,2023-11-10T11:45:01.000+01:00,https://github.com/ITU-BDSA23-GROUP27/Chirp/commit/ab2b6b38c5a64d2a30582eb1443f21d25f1777f1
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/b66e1733a9f404f97466439ee83867b41d5479ab
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/ae058402ff91949efbdf45081268663793fe3c9f
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/be1347dfea2c33cd26b6e0c0f5f67c963d8cbc77
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/29c53b69609772336eb65025da097d00c5ac8eb3
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/d49d87e78649fd7a6faf80a9e5efb74de604d68b
+"feat: Integrate JSON structures for defining game elements
+
+Refactor the game module to utilize JSON objects for defining
+locations, items, and creatures. This enhances flexibility and
+readability in managing game elements.
+
+Co-authored-by: Morgan Lowtech <tx@lowtech-labs.org> Co-authored-by: chatgpt <chatgpt@openai.com>",Morgan Lowtech,2024-01-09T13:25:44.000-08:00,https://github.com/tx/gen-repl/commit/d20240e1c96c6655a325566020096f035ff5e4f8
+"Fully implemented pagination on public and private sites.
+Co-authored-by: ChatGPT",Villads Grum-Schwensen,2023-10-11T14:26:47.000+02:00,https://github.com/devops-group-l/chirp/commit/c28152cc0d5a7efa609503e92ab5ac5ac6a954ce
+"refactor: Move 'encoder.py' to 'examples' directory
+
+- Moved the 'encoder.py' source file to the 'examples' directory for future reference.
+
+Co-authored-by: ChatGPT <chatgpt@openai.com>",teleprint-me,2024-01-28T03:30:22.000-05:00,https://github.com/teleprint-me/byte-pair/commit/21f4171c144195779ea3463030e9472abc37e8fc
+"Imported HTML package and created test for cheeps amount.
+Co-authored-by: ChatGPT",Villads Grum-Schwensen,2023-11-02T14:28:10.000+01:00,https://github.com/devops-group-l/chirp/commit/d0118784bc601ae651500ca17919d77ac4a37f2a
+"Added toggle to Follow button (still some minor bug)
+
+Co-authored-by: ChatGPT",Phi Va Lo,2023-11-20T00:17:17.000+01:00,https://github.com/ITU-BDSA23-GROUP27/Chirp/commit/9f807aa38ed1bab0eea80c4ab9689134297e3199
+"Project init
+
+Co-authored-by: ChatGPT-4",andy19910102,2023-06-03T20:56:59.000+08:00,https://github.com/andy19910102/Spinning-Donut-in-Terminal-by-ChatGTP-4/commit/58e7dcdc7bf260124c791b4100f655be99fd5a0b
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/devops-group-l/chirp/commit/b66e1733a9f404f97466439ee83867b41d5479ab
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/devops-group-l/chirp/commit/ae058402ff91949efbdf45081268663793fe3c9f
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/devops-group-l/chirp/commit/be1347dfea2c33cd26b6e0c0f5f67c963d8cbc77
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/devops-group-l/chirp/commit/29c53b69609772336eb65025da097d00c5ac8eb3
+"Optimized unitesting with XUnit and refactored static classes.
+Co-authored-by: ChatGPT",Villads Grum,2023-09-14T16:03:13.000+02:00,https://github.com/devops-group-l/chirp/commit/d49d87e78649fd7a6faf80a9e5efb74de604d68b
+"Made a custom webapplicationfactory superclass that will automatically mock autorization
+Co-authored-by: ChatGPT
+Co-authored-by: https://learn.microsoft.com/en-us/aspnet/core/test/integration-tests?view=aspnetcore-7.0",Villads Grum-Schwensen,2023-12-06T13:01:26.000+01:00,https://github.com/ITU-BDSA23-GROUP11/Chirp/commit/497f10c0e41c08c2be510e83a35aaeb40b61396f
+"Changed efcore to be a library
+
+Co-authored-by: ChatGPT",Sebastian Cloos Hylander,2023-10-24T13:05:04.000+02:00,https://github.com/ITU-BDSA23-GROUP7/Chirp/commit/1f16168d2c888154c9b49fb50ba364f42a5bd9cd
+"When you now use GitHub to register, a user is created with the correct username and email which corresponds to the username and email on your GitHub profile, you are automatically logged in and redirected to public timeline. It should also ensure that if you cannot retrieve the email form your GitHub account you can enter one manually.
+
+Co-authored-by: JacquesPuvis <japu@itu.dk>
+Co-authored-by: chatGpt",JIngeholm,2024-11-13T16:40:28.000+01:00,https://github.com/ITU-BDSA2024-GROUP16/Chirp/commit/1f35d1420d3534e8174b6ef923e5cd57e0f19f1f
+"Made a custom webapplicationfactory superclass that will automatically mock autorization
+Co-authored-by: ChatGPT
+Co-authored-by: https://learn.microsoft.com/en-us/aspnet/core/test/integration-tests?view=aspnetcore-7.0",Villads Grum-Schwensen,2023-12-06T13:01:26.000+01:00,https://github.com/devops-group-l/chirp/commit/497f10c0e41c08c2be510e83a35aaeb40b61396f
+"Authors are now fixed again and Pagination works as it should
+
+Co-authored-by: ChatGPT",Kåre Kejser,2023-10-12T12:13:31.000+02:00,https://github.com/ITU-BDSA23-GROUP6/Chirp/commit/fdd9e9875bed55c17d5cfef59e9b473f6a291bd4
+"[Update] Correct the wording by ChatGPT
+
+Signed-off-by: Kent Huang <kent@infuseai.io>
+Co-Authored-by: ChatGPT <noreply@openai.com>",Kent Huang,2023-08-04T10:24:55.000+08:00,https://github.com/InfuseAI/piperider/commit/cb2f2b7d5f442459ee23293c7447bb2974fdc0d2
+"Merge pull request #160 from ITU-BDSA2024-GROUP4/remove-confirm-email-when-login-with-github
+
+Fixed oauth so it doesnt ask to confirm email and also fixed oauth storing email as username instead of the github username Co-Authored-By: ChatGPT <Openai>",Victor Sforzini,2024-11-28T10:41:08.000+01:00,https://github.com/ITU-BDSA2024-GROUP4/Chirp/commit/701e49e2746c16e5a57fd79dc8a393c3ed766b63
+"Add logging to the database module
+
+Co-authored-by: ChatGPT",Just Me,2023-02-24T21:31:09.000+02:00,https://github.com/vinnytsia-tl/automation/commit/212035196b844906fb5e8c384863adcd40af1c0e
+"🛠 Sync Makefile and justfile with new requirements and version tasks
+
+- Added `requirements` task to both Makefile and justfile for generating
+  requirements.txt and requirements-dev.txt from pyproject.toml
+- Updated sync-version to use `--all` for consistency
+- Ensured parity between Makefile and justfile (aliases, help messages, ordering)
+- Minor improvements to help readability and usability for contributors
+
+Co-authored-by: ChatGPT <chatcraft@openai.com>",Michael Borck,2025-03-29T06:56:40.000+08:00,https://github.com/michael-borck/hands-on-ai/commit/b9aa320028e42c748712590a7f71d46292d4a428
+"Add a WinSock example
+
+Co-authored-by: ChatGPT",Moses Turner,2023-02-21T02:12:41.000-06:00,https://github.com/moshimeow/mercury_steamvr_driver/commit/0eeccd9a5a1abe5b74c5140dc4fa982163116e39
+"Fixed a parameter in About Me pagination that was not parsed correctly
+
+Co-authored-by: ChatGPT",Phi Va Lo,2023-11-24T16:12:02.000+01:00,https://github.com/ITU-BDSA23-GROUP27/Chirp/commit/b6e237239b10c62b29ef3ab45d23d76c03187df2

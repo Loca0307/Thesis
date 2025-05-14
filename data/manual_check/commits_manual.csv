@@ -1,0 +1,1330 @@
+message,author,date,url
+"Integrate ChatGPT functionality
+
+
+YES
+Used ChatGPT Canvas to generate a new, simpler website.",Brian Bimschleger,2025-02-25T11:40:16.000-06:00,https://github.com/bimschleger/bimschlegerdotcom/commit/9f29404c0035d785d142dda68926d88d15678718
+"Create chatgpt_integration.py
+
+MAYBE
+Co-authored-by: chatgpt <chatgpt@chatgpt.com>",DumbDane,2025-02-18T19:46:30.000+01:00,https://github.com/Only-Smiles/DevOps-2025/commit/9fc57b6ca378d13e6fa33d4ba9832ac2ef60b1ef
+"Add Anthropic API key to chatgpt-shell configuration
+//
+Allow the use of Claude directly from chatgpt-shell.",J. Bromley,2025-02-18T21:03:50.000-08:00,https://github.com/jbromley/dotfiles/commit/d5f02f533d0987e08e338094261d0c44b6a02d79
+Used ChatGPT To Improve Efficiency,Riddle,2025-02-18T13:24:47.000-05:00,https://github.com/linusriddler/InfotechCenter/commit/4c9e247e1b628fe213748bb360ee51f4caf81f8e
+"Add files via upload
+//
+Initial question to ChatGPT:  The initial question posed to to ChatGPT was:  ""How can Python be used to display data from an Arduino?"" This question elicited the following response:",cugnus,2025-03-04T14:52:04.000Z,https://github.com/cugnus/Spring/commit/6028c30b123c88f5d557384779a8ece243146cee
+Add ChatGPT to Programs Used.,Rafael Ferreira,2025-02-09T22:42:37.000Z,https://github.com/faelf/Droid-Gym/commit/5f0b06cc978f75c63089af56372d43c6f1f0fdda
+added chatgpt script to infer transaction category using chatgpt,Sai Akhil Golla,2024-12-30T21:22:09.000-05:00,https://github.com/saiakhilgolla/expense_tracker/commit/bb90a70ab3fadbeec5ccf242d5e632527f37908f
+Used ChatGPT To Improve Efficiency - Stable,Riddle,2025-02-18T13:24:47.000-05:00,https://github.com/linusriddler/InfotechCenter/commit/b5cedca8cc80a1040574055cdf71c774bc6569c2
+Used chatgpt to solve exercise 4,Jonas Gustafsson,2025-02-11T19:14:56.000+01:00,https://github.com/Vence85/PythonJonas/commit/390abd5e5444d679d52bf987ac8cc906bade83b2
+Used chatgpt to understand and optimize the code,William Rosales,2025-02-28T18:02:18.000-08:00,https://github.com/onasito/Group-5/commit/9e8b330643d5e4e867c3e6b25a0ed0db4943c4d8
+Modify to use chatgpt,Olusola Oseni,2025-02-26T16:25:59.000+01:00,https://github.com/kenoseni/tenant-screening/commit/e8950a1b5a5a810487267e96ea3bdbe017ca7eb9
+switch chatgpt integration to use gpt-4o,aziznal,2024-05-20T22:58:15.000+03:00,https://github.com/aziznal/my-neovim-config/commit/6ccf4f64b1960325ac24a6ec3276f1ab53d242bd
+If you want to use ChatGPT,Uday-sidagana,2025-02-27T01:14:38.000+05:30,https://github.com/Uday-sidagana/AI-AGENT-GEMINI-RAW-PYTHON/commit/99734f927031c5d00293af03b5f09658e0c1c64e
+Used chatgpt to enhance UI,Joshua George,2025-01-28T11:25:58.000-06:00,https://github.com/Joshgg1/AdvancedExamples/commit/5b100490fba1df44d3bf9428fd731847a7b79b35
+feat: Add genre determination to playlists using ChatGPT,Rick Groenewegen (aider),2025-03-05T12:08:20.000+01:00,https://github.com/RickGroenewegen/qrhit-api/commit/93e5d892b7fc9e667aff9b8634bdafaf640ebfd3
+use ChatGPT to have beter project description.,Cplus Shen,2025-02-26T16:14:38.000+08:00,https://github.com/cplus66/cp-agent/commit/5d7010074bfb140bfc7e8b1fa4b34a3779636737
+Used ChatGPT To Add Comments For Clarity - Stable,Riddle,2025-02-18T13:30:05.000-05:00,https://github.com/linusriddler/InfotechCenter/commit/786add8f4f4f6a09a6ead380e48605d7a543878d
+"Task 2.1: Update sort_algorithm.cpp with ChatGPT Code
+
+MAYBE
+Refactored Bubble Sort to a more efficient sorting algorithm using ChatGPT's recommendation.",Abdulrahman Alharbi,2025-02-20T19:09:50.000-08:00,https://github.com/ChrisCRL/Group-2/commit/a30d9fbb70da2bce7053309fa9da6e5ac62f97ff
+"chore: update paths and dependencies for improved configuration
+//
+- Change `chatgpt.py` to `chatgpt-cli.py` in the `aid-chatgpt` and `aid-chatgpt-pro` functions.
+- Add `go:code.gitea.io/tea` with version `latest` to the mise config.
+- Update the `source_command` path in the `custom_channels.toml` to use the `utils` directory instead of `docs`.
+//
+Signed-off-by: Alex <30626291+ipruning@users.noreply.github.com>",Alex,2025-02-28T04:50:22.000+08:00,https://github.com/ipruning/dotfiles/commit/d89e2f28618c59258eda3666a156c5264aebf88d
+"Task 2.1: Update sort_algorithm.cpp with ChatGPT Code
+//
+Refactored Bubble Sort to a more efficient sorting algorithm using ChatGPT's recommendation.",Abdulrahman Alharbi,2025-02-20T19:09:50.000-08:00,https://github.com/AbdulAlharbi/Group-2/commit/a30d9fbb70da2bce7053309fa9da6e5ac62f97ff
+feat: Add method to translate existing reviews using ChatGPT,Rick Groenewegen,2025-03-06T17:47:04.000+01:00,https://github.com/RickGroenewegen/qrhit-api/commit/4e83ad2042d48938309fa2ca617418469fedd5a3
+"Task 2.1: Update sort_algorithm.cpp with ChatGPT Code
+//
+Refactored Bubble Sort to a more efficient sorting algorithm using ChatGPT's recommendation.",Abdulrahman Alharbi,2025-02-18T20:11:56.000-08:00,https://github.com/ChrisCRL/Group-2/commit/1e2382aa654fe0f7cb6d36b739016d56f5e6012c
+"added back in thumb label, used chatgpt to simplify scaleToSliderValue",Lloyd Dakin,2025-02-28T15:23:15.000-08:00,https://github.com/LCOGT/datalab-ui/commit/7efc85f4a99a1faac29f5593b72756dc99f5347e
+Use chatgpt_client to rewrite text,Fyodor,2025-02-18T14:34:59.000+02:00,https://github.com/atljh/TeleCloneX/commit/1e989b0124337b526d703a8aaa55669e03b5cc44
+"Task 2.1: Update sort_algorithm.cpp with ChatGPT Code
+//
+Refactored Bubble Sort to a more efficient sorting algorithm using ChatGPT's recommendation.",Abdulrahman Alharbi,2025-02-18T20:11:56.000-08:00,https://github.com/AbdulAlharbi/Group-2/commit/1e2382aa654fe0f7cb6d36b739016d56f5e6012c
+use chatgpt to generate sample user prompts,Gibson Smith,2025-02-20T18:47:21.000-08:00,https://github.com/gdsmith1/Replicant/commit/3221d993922e427660d2fcb51d9c1c59f8ad7f72
+"Assistant checkpoint: Make ChatGPT prompt editable and use custom prompts
+//
+Assistant generated file changes:
+- public/index.html: Make ChatGPT prompt editable
+- public/js/main.js: Update ChatGPT functionality to use editable prompt, Update sendToChatGPT to use edited prompt
+- server.js: Update server to handle custom prompt
+//
+User prompt:
+//
+Currently, in the ChatGPT Prompt dialog, the prompt contents is not editable. Make it editable, and the final editable version must be used to send to ChatGPT for a response.",Ashok Bakthavathsalam,2025-01-03T16:49:28.000Z,https://github.com/kgashok/PlumConfusedOpensource/commit/dd3649d96d82e22c421149e3a3b1d13c9cf6ccb6
+Working on To-Do-list application using chatgpt.,asadullah,2025-02-26T23:45:58.000+05:00,https://github.com/asadullahjamil0/React/commit/3d80faf842581baf298cb7def659189897b60565
+use old collision detection in order to use ChatGPT for this feature,jan-wun,2025-03-04T10:43:58.000+01:00,https://github.com/jan-wun/PSE_Endless-Runner-Game/commit/69e57e644b44ea6d096bc6f53b927869a7a71981
+switch to uv and use ChatGPT to summarize lead time page changes,Erik Hasse,2025-03-05T20:51:09.000-06:00,https://github.com/erik-hasse/vans-bot/commit/cdbb73488118c04850ac10f24c09ebbc98279081
+"Made the comments voltaged (chatgpt) made
+//
+Still upset that voltaged used chatgpt to generate code and didnt tell me",Thepuppetqueen57,2025-01-04T23:28:45.000-08:00,https://github.com/Geometry-Rays/geometry-rays/commit/ddd09612443e345898067a4806ae3f669234572b
+"Integrate ChatGPT API for medical advice
+//
+Integrates the ChatGPT API to provide medical advice based on user input.  The response will be generated using ChatGPT's AI voice generation software.  The API key is stored securely (details not included in this commit).",gpt-engineer-app[bot],2025-02-24T03:27:40.000Z,https://github.com/vexerzy/teal-healthbot/commit/cff1bc33ab15f1cd3dcb82ac0d67e73c830fa2b2
+Use ChatGPT to transcripe Step3 shell script,Mukto Akash,2025-02-23T06:51:10.000-05:00,https://github.com/muktoakash/Copernicus/commit/2fc972cb09dddd10c68749aae3597029f2d9786d
+add capability to reply using chatgpt,Kenichi Ueno,2025-02-09T17:56:13.000+09:00,https://github.com/Keno42/site_update_notifier/commit/c9dfe881d3327ae98022318bebe1c0ea73e45cd4
+Publish A trick to manage frequently used prompts in Claude/ChatGPT,Publish Bot,2025-02-27T12:59:23.000Z,https://github.com/garritfra/garrit.xyz/commit/fec91510c020937d5a5ed68187980151d8d9a352
+"Added Sample data, used ChatGPT to generate translation",anonUnderground,2025-02-03T21:31:22.000-06:00,https://github.com/anonUnderground/NativeEcho/commit/0a9c00eb0c93e53267cd2d66484541d98649c0fb
+"Use ChatGPT valuation only
+//
+The code will be modified to exclusively utilize the property valuation provided by ChatGPT, disregarding other valuation sources.  This addresses discrepancies between different valuation methods.",gpt-engineer-app[bot],2025-02-26T17:39:35.000Z,https://github.com/Cryptonite44/Property-Valuer/commit/43c76bc36247c7e3d588612f9c0609577dc1eb6a
+Use ChatGPT to improve the README file,James Robert Huggins Ngo,2025-02-14T10:40:35.000-05:00,https://github.com/JamesRobertHugginsNgo/get-boilerplate/commit/78c210ce4099bbf7bd84ef3ae73d79fbcd5c7e2a
+"Added back the detailed explanation of color channels
+//
+When voltaged used chatgpt to add buttons chatgpt removed my detailed explanation arghhh",Thepuppetqueen57,2025-01-09T22:16:55.000-08:00,https://github.com/Geometry-Rays/geometry-rays/commit/a83430b0cba0cad8767f6fef1bef2dd374ae5332
+updates openaiservices to use chatgpt.js,Ras3D,2025-02-03T20:44:58.000-08:00,https://github.com/Ras3D/ai_sandbox/commit/82a2bdb128076788fc715cbe9335be905d990418
+refactor: Use enum to enforce valid genre IDs in ChatGPT functions,Rick Groenewegen (aider),2025-03-05T12:10:17.000+01:00,https://github.com/RickGroenewegen/qrhit-api/commit/1e8039ae840e55772fab696a1d68417af107a250
+Task 2.2: Added undocumented code and used ChatGPT to document it,Jaydan,2025-02-27T19:44:05.000-08:00,https://github.com/Jordrn4l/Group-1/commit/47e13a43f8c3fc79c17e4ff34bd4cf8f49b297a1
+used ChatGPT to help understand Login.js line by line,linxingting,2025-02-16T21:45:58.000+08:00,https://github.com/cs4218/cs4218-2420-ecom-project-team46/commit/4f46cfde97c46630cc4f5b4c3c36acfce6e2d1c3
+Used a lot of chatgpt to understand,caramalizedbutter,2025-02-22T02:09:17.000+05:30,https://github.com/caramalizedbutter/etch-a-sketch/commit/33f36c90632dfb86b8c7ac5c30c4f4ca6fc396a1
+Used chatgpt to add responsiveness.,Marcus,2025-01-09T23:36:21.000+08:00,https://github.com/sucrammal/MyPortfolio/commit/aa19592669e31f9651bdd838e2b53f5cfe4bd0d2
+Used OOO to query Gemini  and ChatGpt following same paradigm.,Antonio Zavaleta,2025-02-10T22:05:06.000-05:00,https://github.com/antonio-zavaleta/check-llm-access/commit/4743d509b6ed6e102567554f2bf671774ca456a7
+"Create ChatGPT enhanced code
+// (copilot)
+use copilot to debug this",Robert J Honders Sr,2025-02-17T15:45:17.000-05:00,https://github.com/MicroHydroMan/MicroHydro-Valve-Controller/commit/eb0e8b49a94922a5961793862486b1e690914cd3
+Updateed agents to use ChatGPT 4o mini,kira10krishna,2025-02-20T13:23:10.000+05:30,https://github.com/kira10krishna/7day-trip-planner/commit/a74162863f1d73a1e240b1b0a26a936cd6bdbf54
+used chatgpt to generate some code,MChouHome,2025-01-10T20:59:18.000-05:00,https://github.com/mathchou/mathchou.github.io/commit/527ee82b7d93657ebe61509fe31a448f539d3b7c
+implemented allocating texts to multiple students selected by class. heavily used chatGpt 4.0,samphire,2025-03-03T17:33:23.000+09:00,https://github.com/samphire/cobalt/commit/1234150010d028bf341fe916698f30b8cceab14a
+"Renamed ChatGPT plugin to AI, as it can actually use any AI that you have configured, not just ChatGPT.",Rupert Jabelman,2025-01-09T15:37:04.000Z,https://github.com/localgovdrupal/localgov_publications_importer/commit/d23f8869a68d37a9c704b3fb8bd57db65094c0d1
+"tenth commit
+changed fonts of webpages to Poppins,Roboto after some suggestions
+from ChatGPT, changed About me section to sound more professional using ChatGPT.",Kofi K,2025-01-21T08:38:05.000Z,https://github.com/Kofi100/Portolio-Website-1.0/commit/c727f069f0690c4be8d8c4ad2f97272ef0920fba
+"Finally vertical and horizontal working,
+getting used to using chatGPT",Keago99,2025-01-29T19:41:30.000+02:00,https://github.com/Keago99/TOPBattleShip/commit/5d4de239f9496e34335941011649611c1a31926c
+:sparkles: Implemented a chat API to reply message with ChatGPT using vectored data,masashimorita,2025-03-07T20:39:11.000+09:00,https://github.com/masashimorita/next-chatbot/commit/ef10bf7c1f79fb6ad346a99e59be99bc61249fa2
+Simplify summary display to use ChatGPT's native formatting,jngldrm,2025-02-18T16:30:18.000+01:00,https://github.com/jngldrm/summai/commit/5ea94a6f19d25c8b0b8e55bd6b06a0fa22a8a38d
+"Use ChatGPT API for Generations
+
+YES
+Updated the code to utilize the ChatGPT API for content generation, removing previous limitations.
+[skip gpt_engineer]",gpt-engineer-app[bot],2025-01-24T16:17:50.000Z,https://github.com/Sinka48/brandcampaign-scheduler/commit/a5741382db358a588f1046f4df7d00ee34e2f0b8
+"Update README.md
+
+YES
+# Crowdfunding_ETL
+Used ChatGPT to help convert the launch_date and end_date columns in the campaign dataframe to datetime data types. 
+Used ChatGPT and Xpert Learning Assistant for the contacts dataframe especially in the coding for converting the rows into dictionaries and making the dataframe.
+Used ChatGPT and Xpert Learning Assistant for help with refinement of table schema",Haffa1995,2025-01-27T20:02:31.000-07:00,https://github.com/ethanshipman/Global-Trust-Analysis/commit/3a7ed31ff318878773ba74887e16448b33cee488
+use chatgpt to generate docs from schema and old docs (#53888),Charles,2025-02-21T10:46:54.000-08:00,https://github.com/airbytehq/airbyte/commit/f1d574afd27152cd426b3e7d5ee4ce8fa659463c
+Used chatgpt to rewrite my html and css (made it look so much better),Daniel Kandiah,2025-03-01T16:12:15.000-05:00,https://github.com/Danjkah/AssignmentOne/commit/3c120d61c7c17becbe2d89301b13171e6a520931
+Use a different selector to attach the inbound chatgpt button - because chatgpt isn't english only.,drxing96,2024-12-17T18:53:49.000+05:30,https://github.com/drxing96/ai-copywriter/commit/1b7dd7cdf6cad1c1ee7bd0371ab678587921fc6c
+Added a function to detect the pii columns using chatgpt,EricaC2401,2025-02-20T23:28:40.000Z,https://github.com/EricaC2401/GDPR-Obfuscator-Project/commit/045d064629f342b113e172a66760b88e3c0fc0d0
+"Chain Of thought prompting example , how to classify using chatgpt m how to do the moderation where we can check what is the nature of a prompt and can decide to ignore or process it using our LLM (Chatgpt)",Sajjad Paracha,2025-02-18T14:31:36.000+03:00,https://github.com/sajadparacha/AILearning/commit/0b8acb403e920cc2536944c1b8ffe68b057cede5
+used chatgpt to fix the bug causing issue to read large number of files.,kal,2025-02-15T21:57:09.000-05:00,https://github.com/kalagotla/lptlib/commit/06000fb09a0263ae746fce058e5b1d4110a454a2
+no longer use alt-c to activate chatgpt,Z Yin,2025-02-03T11:49:03.000-05:00,https://github.com/ZYinMD/my-daily-AHK-scripts/commit/1dab64c336f1b0ac86b9d1c4b9e2a54637f63393
+"Assistant checkpoint: Update ChatGPT integration to use custom prompts
+//
+Assistant generated file changes:
+- server.js: Update ChatGPT endpoint to use custom prompt
+- public/js/main.js: Update sendToChatGPT to send custom prompt
+//
+User prompt:
+//
+The Prompt was edited in the ChatGPT prompt window. But that was not used. Please fix this.",Ashok Bakthavathsalam,2025-01-03T17:35:57.000Z,https://github.com/kgashok/PlumConfusedOpensource/commit/69916d3fc5f294ca5e30d8279364ca2275ede217
+Add `How I Used ChatGPT to Fix My Old Blog Posts (And What I Learned)` post,Edd Mann,2025-03-06T12:04:22.000Z,https://github.com/eddmann/eddmann.github.io/commit/1b4ec9554cf28d2bfac07c5af07e9a1a04defd26
+"Used chatgpt to make this Rumi page look pretty
+
+YES
+Signed-off-by: Surbhi Palande <csurbhi@gmail.com>",Surbhi Palande,2025-03-06T23:18:52.000-08:00,https://github.com/csurbhi/csurbhi.github.io/commit/50ff22791c95582151a6cd28a70703ceb236eb0e
+"250305 using chatGPT to make my resume
+//
+
+YES
+Used ChatGPT to write this new workflow file. May need to revert.",Stephan Teodosescu,2025-02-23T07:42:19.000+01:00,https://github.com/steodose/club-elo/commit/215ae1b844dc9a318f073198eddf4c023e3bda6d
+Used chatGPT to try :),Jorel Morales,2024-12-17T12:45:21.000+08:00,https://github.com/JorelDenceReyethJMorales/DSA_Final_Project/commit/af710ca23faf0e099b073c4792f04c782dc4ef3f
+day23 (used chatgpt to help),Daniel,2024-12-23T11:16:03.000-05:00,https://github.com/danielshanker/AdventOfCode/commit/37a5924d42014889d699572c8cd91ef777a38288
+a good tip to learn english by using chatgpt,lisi,2025-02-10T17:20:39.000+08:00,https://github.com/kamibababa/my_knowledge_base_vuepress_vdoing/commit/557a2563a9c9b6ad045661b6000d726d25d9ad45
+a good tip to learn english by using chatgpt,lisi,2025-02-10T17:16:38.000+08:00,https://github.com/kamibababa/my_knowledge_base_vuepress_vdoing/commit/e49d1c5566e1eff1ed3d0619832e5e571ac7f13b
+"Add GitHub workflow for ChatGPT PR review
+
+YES
+Used chatgpt to create a code to save .mat files to the corresponding .save file. While I did re-read the code, it is directly a copy-paste from chatgpt.",Voyeux Alfred,2025-01-30T14:52:33.000+01:00,https://github.com/avoyeux/Rainbow_k3d/commit/009aa4dc3e173b62b688d0d001d9a4e0d1aa0963
+Use a different selector to attach the inbound chatgpt button - because chatgpt isn't english only.,Jeswin Kumar,2024-12-17T18:53:49.000+05:30,https://github.com/codespin-ai/codespin-chrome-extension/commit/37deaf95991f05b1f066b9c2be78812e159086a8
+"Removed netId-Related Code:
+//
+Removed netId1 and netId2 as ChatGPT does not have a netId.
+Static ChatGPT Profile:
+//
+Used a static ChatGPT logo (chatgpt_logo) and name (ChatGPT) for the profile.
+Welcome Message:
+//
+Added an initial message to introduce ChatGPT.
+Message Sending Logic:
+//
+Directly displays the user's message.
+Simulates a typing delay and generates an AI response.
+Typing Indicator:
+//
+Displays a typing indicator for a realistic feel.
+Mock AI Response:
+//
+Simulates a response from ChatGPT. This should later be replaced with an actual API call to fetch the response from ChatGPT.
+Removed User Profile Fetch:
+
+LLAMA
+"cant use chatgpt, need to use llama",Kxok,2025-01-03T15:12:45.000+01:00,https://github.com/Jerem33320/gpt4me/commit/89b85cdca198d72904815d9837f856e31803a2a6
+Created using Colab embellishing chatgpt output to help debug gemini output,gary beaver,2025-02-14T19:08:26.000-08:00,https://github.com/electronhead/solarium/commit/7b60791b0fb629f3eb55d952907192abe21416ac
+"Reverted to edit edt-c3552269-0d56-4a61-95cf-64d58f0ccb4a: ""Use ChatGPT valuation only
+
+MAYBE
+The code will be modified to exclusively utilize the property valuation provided by ChatGPT, disregarding other valuation sources.  This addresses discrepancies between different valuation methods.""",gpt-engineer-app[bot],2025-02-26T18:01:38.000Z,https://github.com/Cryptonite44/Property-Valuer/commit/3b36c7109f71fbca0e5e23c4a0f3f76b97bd2dd9
+using chatGPT to write tests,SadeepaNHerath,2025-01-07T06:28:12.000+05:30,https://github.com/SadeepaNHerath/python-learn/commit/4ff45cadc80e47ec2a2fe9fb9b9d5a0f88a44dd4
+Adds functions to scrape a website and extract the recipe using ChatGPT,Priyal Malhotra,2025-02-15T15:21:33.000-08:00,https://github.com/janwils/RecipeExtension/commit/29129d9a066efde87b51a78064237ee944db65ac
+blog: Using ChatGPT via gptel to make my Emacs nutrition tracker smarter,Ioannis Canellos,2025-02-16T11:08:44.000+02:00,https://github.com/iocanel/blog/commit/17cc977f220d4f099d7bfaae8a878b99e14a5ba4
+"Removed netId-Related Code:
+//
+Removed netId1 and netId2 as ChatGPT does not have a netId.
+Static ChatGPT Profile:
+//
+Used a static ChatGPT logo (chatgpt_logo) and name (ChatGPT) for the profile.
+Welcome Message:
+//
+Added an initial message to introduce ChatGPT.
+Message Sending Logic:
+//
+Directly displays the user's message.
+Simulates a typing delay and generates an AI response.
+Typing Indicator:
+//
+Displays a typing indicator for a realistic feel.
+Mock AI Response:
+//
+Simulates a response from ChatGPT. This should later be replaced with an actual API call to fetch the response from ChatGPT.
+Removed User Profile Fetch:
+//
+Since ChatGPT is not a user, there’s no need to fetch profile data.",Autrin,2024-12-08T21:03:56.000-06:00,https://github.com/autrin/ISU_Pulse/commit/0e862b52d592b8f47658743a781c29811d1094ef
+"Scaffold site
+//
+used chatgpt to outline site and explore frontend, some broken links but mostly cleaned",EthanWickenkamp,2025-02-25T10:50:55.000-06:00,https://github.com/EthanWickenkamp/Learn-Django/commit/f83eb3ae59aa0bd9cd024677f3bff2a04c8ff48b
+"Removed netId-Related Code:
+..
+Removed netId1 and netId2 as ChatGPT does not have a netId.
+Static ChatGPT Profile:
+//
+Used a static ChatGPT logo (chatgpt_logo) and name (ChatGPT) for the profile.
+Welcome Message:
+//
+Added an initial message to introduce ChatGPT.
+Message Sending Logic:
+//
+Directly displays the user's message.
+Simulates a typing delay and generates an AI response.
+Typing Indicator:
+//
+Displays a typing indicator for a realistic feel.
+Mock AI Response:
+//
+Simulates a response from ChatGPT. This should later be replaced with an actual API call to fetch the response from ChatGPT.
+Removed User Profile Fetch:
+
+YES
+Since ChatGPT is not a user, there’s no need to fetch profile data.",Autrin,2024-12-08T21:03:56.000-06:00,https://github.com/BachNg311/ISU_PULSE/commit/0e862b52d592b8f47658743a781c29811d1094ef
+Use ChatGPT-4o-mini to personalize wasting video classifier,oiocha,2025-01-29T01:18:20.000+09:00,https://github.com/jun-pac/Project-Ulysses/commit/269e7236ad61582cc44a426ecbcef0aa1ebf7a2d
+"Create PowerShellScriptAnalyzerPrompt.md
+//
+The ChatGPT prompt I use to analyze PowerShell Scripts",Michael Lee LaPointe,2025-02-16T19:18:26.000-06:00,https://github.com/MichaelLaPointe/MILP/commit/2accd82d09f2cdd5e646f0dffcd5664b8eea7bce
+"Update AI model queries
+//
+Modify AI model queries to use Puter for ChatGPT.",gpt-engineer-app[bot],2025-02-24T01:21:21.000Z,https://github.com/mlle-aadf/echoes-ai/commit/220907e6cec64d3da4684ef390b0074efb3dfa6b
+"Chatgpt service
+//
+also added service for deepseek but its currently unavailable to be used.",mmordi,2025-02-20T14:25:48.000+02:00,https://github.com/AhmedWagdyAli/resume-extractor/commit/1b6877698eef846f3c6e245ba2351de3d9519520
+Use chatGPT's help to refine README.md and introduce github formatting,Volodymyr Kleban,2025-02-15T22:10:09.000-05:00,https://github.com/vvkleban/person-detection/commit/642e14e3e180e0036bc6e9c2619d4c75091b788b
+feat: Use ChatGPT to improve README.md,Martin Sarrionandia,2025-01-18T15:11:57.000Z,https://github.com/martinsarrionandia/aws-rancher/commit/24c41d008e40f1c00f264c36faee0b7c127dd45a
+"Implement ChatGPT Speech Feature
+
+MAYBE
+Work done:
+- Real-time weather data and forecasts
+- Smart outfit recommendations using ChatGPT/LangChain
+- Smart data caching to reduce API calls",Tasha Mitchell,2025-01-01T19:48:27.000-05:00,https://github.com/tamitchell/weatherapp/commit/ed8ea955b902be54a1ae66b2890810241cdfad5e
+Used a chatgpt awnser to fix a problem with the cp command,jonahmakowski,2025-02-06T19:29:35.000-05:00,https://github.com/jonahmakowski/pyWrskp/commit/fb57796f50c15d76a3fda579ff35a96166d9a8b7
+Used ChatGPT to identify and correct errors in code samples.,kraoshin,2025-01-13T11:02:32.000+01:00,https://github.com/Kraoshin/holbertonschool-chatgpt-introduction/commit/948a2efaf0ac6edd0035e8105c64bd643734c839
+add screenshot after using chatgpt to improve design,Ashok,2025-01-18T01:06:59.000+05:30,https://github.com/Ashoknegi13/DevPath/commit/e2edff5fe8cb34660309d8849b67356cf108237e
+invoke update-changelog now uses ChatGPT to summarize PRs.,Shyue Ping Ong,2025-01-23T13:29:12.000-08:00,https://github.com/materialsproject/pymatgen/commit/4c8f4517ff66233ee68c25c79a790b4468c1ff44
+Added some comments to the code to include where chatgpt was used,Elvis,2025-01-16T13:55:07.000+01:00,https://github.com/definitely-el/Python-Project/commit/329142c362940a02bbfdf056faaaed796bb8e632
+Got something to compile (used chatGPT and claude just to get to something testable).,nbrader,2025-01-25T16:22:24.000Z,https://github.com/nbrader/advent-of-code-2024/commit/acbdf00bb1b4d081e8177ca4ce93fc253f757245
+feat: create post method to use chatgpt 4,Daniel Evangelista,2025-01-20T09:33:36.000-03:00,https://github.com/danicvan/ai-travel-planner-backend/commit/92614bec1e9c2c8d09777a8889d3b5d676955a03
+"struggled a lot with the markdown stuff, had to use chatgpt, it passed all tests though...",Echidna,2025-03-06T20:44:52.000-04:00,https://github.com/EchidnaTheG/Static_Site_Generator/commit/54a089757dae67c9900fbea3e9926e31ca5e6554
+Use chatgpt-shell-request-timeout in requests to ollama,Constantin Kulikov,2025-01-27T15:40:36.000-05:00,https://github.com/xenodium/chatgpt-shell/commit/03881f89bce86faff89c0dece39f2b356f7b8a3d
+Used ChatGPT to get some good icons instead of just text,Zachariah B. Farahany,2025-01-18T15:05:59.000-06:00,https://github.com/ZachFara/ZachFara/commit/bef752cb415c4023d885f3f64195d483eb0fb822
+used ChatGPT to fix jobTracker so I can blacklist urls,Jonathan Hammond,2025-01-12T21:36:23.000-05:00,https://github.com/Pythonidaer/new-society-test/commit/3c2d0f5cc60fd733a779842146420fcaf583e6c4
+"Create README.md 
+
+YES
+Used ChatGPT to create a README file",Qasim Khan,2025-01-13T13:15:39.000+01:00,https://github.com/qasimkhan/Bear-Classifier-App/commit/59facfd1398f5f6ee844f41b6d0d17d0fdda1c4f
+Got something to compile (used chatGPT and claude just to get to something testable).,nbrader,2025-01-25T16:22:24.000Z,https://github.com/nbrader/ascii-world/commit/acbdf00bb1b4d081e8177ca4ce93fc253f757245
+Update content/posts/2025-02-27-a-trick-to-manage-frequently-used-prompts-in-claude-chatgpt.md,Garrit Franke,2025-02-27T14:02:38.000+01:00,https://github.com/garritfra/garrit.xyz/commit/88ca25b1c2a673106680218901fdb914362323ef
+"Add triangle render
+
+YES
+- Use ChatGPT to create code to render a simple triangle",PeterG,2025-02-09T13:18:39.000-08:00,https://github.com/PeterG-ithub/procedural-animation/commit/4fb644402d461214c951915d8d0cbdb46a73219f
+
+"Update notices and ChatGPT view to use centralized notice system
+//
+- Removed unused notice entries from `notices.js`
+- Added new notice for copied ChatGPT URL
+- Refactored `SmartChatGPTView` to use plugin's centralized notice method
+- Replaced direct app notice with plugin notice system",Brian Joseph Petro,2025-01-31T13:04:07.000-05:00,https://github.com/brianpetro/obsidian-smart-connections/commit/8c04b7042c38a75d2ff7530b0991443199fc8664
+"Update README.md
+
+YES
+Used ChatGpt to get started with a template for this initiative.",Rohit Dandamudi,2025-02-02T03:21:37.000-08:00,https://github.com/me-diru/loonie-tariffs/commit/0cf414b1bad7eb4375bebffcace9fda5b131c576
+Use ChatGPT-o1 to optimize the LLaMa and LLMBase swift files,wangqi,2025-02-01T15:26:38.000+08:00,https://github.com/wangqi/llamacpp_swift/commit/3e7a83b8edf139939cb46db859bd322c4260bd67
+1# P006 USING CHATGPT 3 TO REWRITE THE PROMPTS TEXT AND FORMAT IT,Karl247ai,2025-02-10T19:24:26.000Z,https://github.com/Karl247ai/gen-ai-bootcamp-2025/commit/9f2d7bebe6ce4c9fd62081f6f67aa6a42d4cd01b
+I used ChatGPT to build this game. Very smooth.,jongitshub,2025-01-04T15:20:02.000-05:00,https://github.com/jongitshub/vanilla-go-fish/commit/25c0663c3ab01760b0405a8d2c601b4353690a10
+
+
+YES
+"Update README.md with chart
+
+Used ChatGPT to convert my google doc chart into github readme Markdown syntax",mc-Corkell,2025-02-26T14:44:59.000-08:00,https://github.com/mc-Corkell/system-design/commit/460fc4699fc2e1d8758c95b8f09b2bd760e3d331
+"Create Auto-Prompting via Hotkeys
+//
+What it does: By using the prompt below, you can command ChatGPT to follow specific instructions just by including hotkeys in your prompt
+//
+How to use it: Paste the following prompt at the ""Customize ChatGPT"" section which you can find by clicking on your profile photo at the top-right of ChatGPT.",Ai-cole,2025-01-20T12:09:41.000-08:00,https://github.com/Ai-cole/ChatGPT_Prompts/commit/fa6d2f3aadbd7321ae2a77e1ccbd0812a8a1688b
+feat: refactor backend to use chatgpt,Vincentius Oktara,2024-12-27T15:04:33.000+07:00,https://github.com/sleeplessCoderrr/Mailify/commit/85cbe7a04cf9e4128513e761c084f52bc8212e8e
+"Update README.md
+
+YES
+Added disclaimer that I used ChatGPT to make the script.",Matthew Cloward,2025-01-26T03:36:45.000-07:00,https://github.com/MattCloward/DownloadReports/commit/80ee51224dc3b808e5a13cb1689a43e6d472863f
+notes after trying and deciding not to use ChatGPT.nvim,Wes Higbee,2025-01-22T17:15:04.000-06:00,https://github.com/g0t4/dotfiles/commit/c57bc7806f97f152c874a4a5929b89b6da6b6330
+"Refactor Aire and Marine classes to use String for grade representation and update constructors accordingly
+
+YES
+ChatGpt",Zerma1,2025-02-27T14:05:23.000+01:00,https://github.com/Zerma1/fil_rouge/commit/7bc09b37f2a5812b813791181fd09d9d5025ea12
+Data generated by ChatGPT. Using different tests to determine the distribution type,Diana241099,2025-02-04T20:24:44.000+01:00,https://github.com/Diana241099/Python/commit/5fb3831782f3ca8a8f33bfc2f0832ee649552ac2
+"Added project info in README.md
+
+YES
+tools used to make this README file - chatgpt and other github readmes.",Aagam Shah,2025-02-22T15:27:26.000+05:30,https://github.com/aagam2005/Html-CSS-project/commit/5750901afbd04ac23c77352b51703fca25e374cf
+"Update backend for user authentication and ChatGPT integration
+//
+- Implemented JWT-based authentication for secure user sessions.
+- Added endpoints for user login, registration, and logout.
+- Integrated role-based access control to restrict access to specific endpoints.
+- Used bcrypt to hash passwords before saving them to the database.
+- Integrated ChatGPT using the OpenAI API for advanced interactions.
+- Added endpoints for user - ChatGPT interaction and chat retrieval.",sotostilis1,2025-01-16T13:37:18.000+02:00,https://github.com/sotostilis1/AI-Tax-Calculator/commit/4e91e8a0d5f3d23cd6915ac87af11e31e895a3b6
+use chatgpt to improve script,jaysonar092,2024-12-16T19:35:15.000+05:30,https://github.com/jksonar/python3/commit/488ec3c99ab8a445c71ca1ddab050c96a1d1bd12
+"Refactored evaluation of metrics using ChatGPT's recommendation
+//
+Refactored evaluation of metrics to reduce code duplication.",Stella Kim,2025-02-28T20:49:44.000-08:00,https://github.com/onasito/Group-5/commit/97847cbc9db09dd2114181ad72c5b84aa901824f
+Update README.md to mention code generation using ChatGPT,bgespada,2025-01-18T08:04:08.000+01:00,https://github.com/bgespada/pythonProjects/commit/c2e8b93925f35b14ba94ac30751ac27c486d5d95
+"refactor: remove deprecated ChatGPT and chat models, update message repository to use pointer for conversation ID",Eliezer Marques,2025-03-01T17:09:56.000-03:00,https://github.com/neto15cg/eliezer-site-api/commit/67b3633a7997d099c01ddd4ef885defb1fc3a31d
+"using chatgpt to fill out my params now, changing ports on sender made it work btw",Salty,2025-02-26T02:28:48.000-06:00,https://github.com/altunidev/MoodHue/commit/35bcc1e8110f47054d4b4e999b9f49a04a174a9d
+"Assistant checkpoint
+//
+Assistant generated file changes:
+- client/src/lib/chatgpt.ts: Replace with web ChatGPT client
+//
+User prompt:
+//
+What part of I DON'T  want to use the openAI api do you not **** understand",Toowiredd,2025-02-13T01:26:02.000Z,https://github.com/Toowiredd/replitchatgpt-taskade-vps/commit/ca5006c0640bd7561bf81b4d8dd77ca2539afcfc
+"moved openai api key to backend, integrated blob to text using chatgpt",Elkin Garcia,2025-01-29T23:56:14.000-05:00,https://github.com/elkingarcia11/address_mapper/commit/48b74042908f033bd4a64fd9b9c0dcf36d2dc0ee
+"Updated rock_ps_finally.ino
+
+MAYBE
+Used chatGPT to make my raw code more 'Polished' without changing any logic.",ahsanSafi,2025-02-20T22:20:03.000+06:00,https://github.com/ahsanSafi/Rock_Paper_Scissor-Using-IR-/commit/d62ccac56fed01453ca1db17acbaad6f9134ff5d
+Add Evaluator using ChatGPT to automatically evaluate single or all poems.,Jerry Zhao,2025-01-29T04:13:24.000+08:00,https://github.com/jerryzhao173985/poemPicker/commit/f761bb18b5b1b4427006a709793a34866bfab6cf
+Added TestCreateCustomers that uses ChatGPT to create some random customers in test folder,Tim,2025-02-09T14:56:42.000-05:00,https://github.com/Skoyer/home_cyber/commit/b16a45b918dcadcdef4bbf8ad454a88231da8b61
+"HW1 for Tech16 
+//
+In the notebook
+1) **We call OpenAI API** using an API key. We default to the GPT 3.5 model to keep costs down.
+2) **We query ChatGPT** with a user specified message
+3) **We ask ChatGPT to write a 500 word essay** on a user specified topic. Since the criteria for the essay might be arbitrary also, we ask ChatGPT to first identify helpful criteria when writing such an essay.
+4) **We ask ChatGPT to summarize a document** and use a sample 500 word essay as input text
+5) **We ask ChatGPT to compare two documents** and use two 500 word essays from related topics as input and their original essay-writing criteria as context to compare and contrast both documents.
+//
+Example topics used
+a) US vs Indian government
+b) US vs Indian financial systems
+c) Meta vs Google companies",thisisRMak,2025-02-12T03:43:32.000-08:00,https://github.com/thisisRMak/2025-tech16-LLM/commit/8df5a7a8da2b620958f8eb195f75437738ab2c60
+Used CHATGPT to help write comments,Aidne7,2024-12-05T23:57:22.000-05:00,https://github.com/Aidne7/RidgyTnutFinalProject/commit/250ead7bc7462f439d6cd03e9b8688f18f93b521
+Have chatgpt use ids to make record lookup easy,--show-origin,2025-01-15T19:24:56.000Z,https://github.com/divo/city_wiki/commit/891dace5aacb31c7b2aebf1ea4ad2647294d568b
+"Use ChatGPT to reply to mentions and when replying to messages send by the bot (#386)
+//
+* Use ChatGPT to reply to mentions and when replying to messages send by the bot
+//
+* Remove unnecessary logger and clean up message send guard
+//
+* Remove unused EmbedBuilder import from spencer-said.event.ts",Carsten Daurehøj,2025-02-10T10:53:30.000+01:00,https://github.com/light-speed-racing/discord-bot/commit/ac467acace9896bfabee7a0291c46492b77694c6
+Added chatgpt suggested workflow on using PySpark for small to medium sized data sets,pybokeh,2025-02-17T18:36:52.000-05:00,https://github.com/pybokeh/jupyter-sql/commit/60ff4ff68266cbccd4871e4622b42b0477da7796
+Removed `chatgpt.sidebar.show()` from `sync.extension` to accommodate user used chatgpt.com btn ↞ [auto-sync from `adamlui/chatgpt-apps/chatgpt-widescreen/opera`],adamlui@protonmail.com,2024-09-20T17:39:07.000Z,https://github.com/adamlui/chatgpt-widescreen/commit/acb57dffde3a1f84277bce9c28e9b2bea58ce809
+Used ChatGPT to help me format some issues,givemefreeligma,2024-12-24T17:11:59.000Z,https://github.com/givemefreeligma/JRA-Landscaping/commit/ead204f681687337fa0f6473cd0ba3f7ba21f471
+"Replace ChatGPT with Spark AI
+
+YES
+I used ChatGPT to generate all of this data, and then I used MySQL to create the voter_data schema and tables within it. I used ChatGPT to act as a mentor/manager in a political organization to ask me questions in order to perform the exploratory data analysis of this fictional data. I did run into some issues with the data, as the ""random"" generation of the data by ChatGPT allowed for a more even distribution than a realistic dataset of voters, events, and outreach.",Joe Wiegert,2025-02-02T12:31:33.000-06:00,https://github.com/select-joe-from-wiegs/joe_portfolio/commit/ab61e10719cd264a5ae6760ce8862b03044e369a
+"Use ChatGPT for processing
+
+YES
+Used ChatGPT as directed by lecturer to use AIMA architecture to solve a problem in conjuction with Ernestas Granauskas.",KarolisGl,2025-02-23T16:21:26.000+02:00,https://github.com/KarolisGl/Maze-solver-using-AIMA-arch/commit/df9db69ca69860155b5d606557ed1b7e9b1b1d5a
+Used ChatGPT to create a better and more fun README.md file for users,Noam Tirosh,2025-01-27T00:05:25.000+02:00,https://github.com/noamiko2004/Integration-Chat/commit/aded02d3b187c1dca3bac1fc6ed412c0fedea115
+Using OpenAI/ChatGPT to make a business brochure,Morteza (Mory) Gharasui,2025-01-05T21:14:47.000-05:00,https://github.com/mortezamg63/GenAI/commit/9d7eb03c0eab0b7e9dfff9cc27621fc8354a67db
+"Make chatgpt-shell respect `chatgpt-shell-root-path`
+//
+`chatgpt-shell-root-path` is already defined as an alias for
+`shell-maker-root-path`. I'm per-se fine with that [1]. However, this
+currently unused.
+//
+Make chatgpt respect the `chatgpt-shell-root-path` when creating
+internal files like `.chatgpt-shell.el`.
+//
+Use case: I want to keep a tidy `emacs.d` with my configuration and
+auto-generated files clearly separated.
+//
+[1] Although there could be an argument to be made that it could be
+even independently configurable",Armin Friedl,2025-01-01T10:16:02.000+01:00,https://github.com/xenodium/chatgpt-shell/commit/e3d26a0d081f672b8ed0b8d94ee9336942e0e1db
+"Merge pull request #299 from Bad-ptr/main
+
+YES
+Use chatgpt-shell-request-timeout in requests to ollama",xenodium,2025-02-28T20:36:44.000Z,https://github.com/xenodium/chatgpt-shell/commit/08264be10dfbf5687b70d89e3af0879789e9da99
+Use chatgpt to dix frontend as I don't have time for the shi,jimtrung,2025-02-07T20:44:19.000+07:00,https://github.com/jimtrung/account/commit/ded69bc29b4f097cb0d95be0761fcf22b2fd5058
+Attempt to Fix Bluesky's icon using chatgpt,Gerard Llobet,2025-01-06T13:37:59.000+01:00,https://github.com/gllobet/gllobet.github.io/commit/039ec38e4ce5eacfa5be8b8fd41bf9e16efd6229
+"Python refactor, automated
+
+YES
+Refactored existing R scripts to Python using ChatGPT, no manual review or correction",Kevin A Thomas,2025-03-05T11:23:27.000-05:00,https://github.com/kevinatpenn/Snowballer/commit/856f30ba7a1c59654837f16296b504f3d2672aeb
+Refactor ChatGPT reply method to use the entire message object instead of just the content,Carsten Daurehøj,2025-02-13T07:57:57.000+01:00,https://github.com/light-speed-racing/discord-bot/commit/230421cc1d8180adb31bf152cb4f65ee9ed250f7
+used chatgpt to update styling to black and white and more modern,Elemental IT LLC,2024-12-31T10:27:18.000-06:00,https://github.com/elementalitllc/elementalitllc.com/commit/a844aa7fc78b5423f641d6b06919f807ca7e0b8e
+Use ChatGPT to identify and correct errors in code samples.,ordes,2025-01-13T12:05:17.000+01:00,https://github.com/ordes/holbertonschool-chatgpt-introduction/commit/ec117ce0a2824072b53e57a5f04806aab9d3638f
+Use ChatGPT to identify and correct errors in code samples.,ordes,2025-01-13T12:02:14.000+01:00,https://github.com/ordes/holbertonschool-chatgpt-introduction/commit/ec07039a56e6f010936cf2809af9b2dd5f3b3555
+You can use the 'chatgpt_request' event request type to call ChatGPT,zapt-ai[bot],2024-10-21T21:15:48.000Z,https://github.com/zapt-ai-platform-apps/2a145dff-5cb5-4383-8839-f1ac670b131f/commit/2fb16b3b33058d485a08a08f4bddd95f088c27b7
+Added ChatGPT to the list of products that use Dexie (on DerivedWork.md),David Fahlander,2025-02-14T14:25:24.000+01:00,https://github.com/dexie/dexie-website/commit/f0d09f0803a7a1c3a7961493e8f0006ad6b21e7f
+"Add blog post: ChatGPT Explained
+
+YES
+add comment to original chatgpt code generated to indicate which version of ChatGPT was used",Michael Ruminer,2024-09-13T16:19:17.000-04:00,https://github.com/manicprogrammer/LLM_Generated_RAG/commit/20515235e47fb366a91ea80f98111718f9a15740
+"Merge pull request #97 from J-Doza/main
+
+YES
+Used chatGPT to generate a starter extension to give me something to work with that works.",Caleb Krauter,2025-01-24T17:54:08.000-07:00,https://github.com/calebkrauter/first-chrome-extension/commit/f40a413ca1f9ca863d8dbae00dfc6a1fe4d7ea06
+"Update Grades Module.md For Week 2 Day 2 Task
+
+YES
+I used chatgpt to help me write it ;)",Mustafa Bitar,2025-02-10T23:23:59.000+03:00,https://github.com/MustafaBitar-Dev/custom_addons/commit/a00fa9ca62cfff2e3d75a37136e1daa9ea360526
+chore(vim): remove chatgpt.vim plugin due to poor usability,umiyosh,2025-01-07T23:21:05.000+09:00,https://github.com/umiyosh/dotfiles/commit/74de0d0ed54dd07306a9c6d51220ced4901deb52
+feat: chatgpt.nvim to use o1 model,Akilon,2024-12-12T22:32:42.000+08:00,https://github.com/akilonx/dotfiles/commit/06b4b437f00c0d8e06ed36723140460261549415
+add index.js the code is generated by ChatGPT and is used to format date,jialiangwu4,2025-01-27T21:29:19.000-06:00,https://github.com/jialiangwu4/twitter-clone/commit/014ebe24794a31963113ed3dbac3baafcbc897d3
+using chatGPT to use googleAPIS for malay lang speech to text,naaasruul,2024-12-29T03:53:28.000+08:00,https://github.com/naaasruul/weatherApp_flutter/commit/b1fa2a4d9dc3872b45a0702c6021aea0c970248d
+Update ChatGPT applescript to use hints parameter,曾凯,2024-12-16T10:28:58.000+08:00,https://github.com/ddhjy/quickgpt-raycast/commit/a32b36ccc421979a92d539343d4ab3d728b170fb
+"Add files via upload
+
+MAYBE
+xEdit scripting instructions, converted to .json. Prepared by ChatGPT 4o for use by ChatGPT 4o+.",quozzel,2024-11-20T07:34:48.000-05:00,https://github.com/quozzel/Rando-Stuffz/commit/917af51abd77527e525b09c35be5a97d72b466f2
+Added functionality to use CHatGPT for an into.,cappenz,2024-12-19T20:06:04.000-08:00,https://github.com/cappenz/chores/commit/cea7793278bdda432f142435fa47462315d4fd9e
+"Update API endpoints for ChatGPT and Gemini
+
+MAYBE
+Created the code for exercise 1.4. Used ChatGPT to optimalize the code for creating the image plots!",JellevNamen,2025-02-16T16:40:24.000+01:00,https://github.com/Geerteind/AI-for-MIA/commit/b95d6dbc7652cb44a4bab4f0bd5d738eb7eaf49e
+"Change screentime.html to the new system which should work
+
+YES
+I used ChatGPT and used reasoning and tons of explaining. Fingers crossed!",GameVerse,2025-02-10T17:32:05.000-07:00,https://github.com/the-gameverse/the-gameverse.github.io/commit/98f2d07146dcba207c9abbb2cf3cd24eb3aefb10
+created a js file to fetch the data from petfinder api. Used chatGPT to help set up the verification process.,BigDaveCoding,2025-02-04T13:23:07.000Z,https://github.com/BigDaveCoding/snoot-city/commit/de215a2a241b7cf56d07dc45022f88dcd742f3f2
+modified seed to use chatgpt for users,Kyle Topper,2024-12-16T05:13:34.000-03:00,https://github.com/juanfecode/event_mates/commit/0eba2b39c368ad648fb8a132a4fcbe614c850c15
+use chatgpt for fix the code and implement a mechanism to detect,ludiane-tr,2025-01-13T16:51:51.000+01:00,https://github.com/ludiane-tr/holbertonschool-chatgpt-introduction/commit/5d9daa3550cfc9c3e8c892f5ebbe8edc2d6b1d8e
+converted to app that uses ChatGPT for story generation,William Conway,2024-12-27T21:29:02.000-05:00,https://github.com/catfishbilliam/tarotvis/commit/4daef36308ca1ea7dad29b3179e362dfbdd98f2a
+chatgpt is hard to use like Excel,Roland Tanglao,2024-12-11T07:44:44.000-08:00,https://github.com/rtanglao/rtDOTcom/commit/826295f6e42f9077128748e05995818c31c22e63
+learning about to use chatgpt api,harish kumar,2024-12-09T20:07:36.000+05:30,https://github.com/harish00078/LearningAboutNewTechs/commit/34cf7f360c1cbfe0e9645a6cbe786390c169df9d
+Google Vision API used to identify text in images. Try ChatGPT to generate alt text using information provided.,hesterjvs,2025-01-20T13:39:45.000Z,https://github.com/hesterjvs/NHM_DS/commit/505da97f1c5a43ec29397c5a3664855423fa586e
+"Commits to use c++ for this project, uses code from chatGPT to get a simple prototype, uses raylib to render the window. More coming soon hopefully.",Joseph Calabro,2025-02-19T01:57:58.000-07:00,https://github.com/Fish49/StenoMusic/commit/a8cb2c562be16b342d1e0d134fb74d9afaf01ab3
+"Update: in progress - use tanstack to manage chate page transitioning, mimicing ChatGPT design to assign session for each conversation",Shuyu (Joshua) Zhou,2025-02-18T18:12:43.000-06:00,https://github.com/szhou12/react-fastapi-app/commit/cb9f2ec0021652f8db947d741cfa518a8b29105a
+"#2 second prompt using chatgpt, improved prompt to not give answer and provide a vocab table",Harry L,2025-02-08T10:03:29.000-05:00,https://github.com/hlitchfield25/genAiBootcamp/commit/247eb68fdb231aab79dc43abeeb10db7e2f83811
+"Merge pull request #600 from garritfra/create-pull-request/patch
+
+
+MAYBE
+Used chat to help make the code more readable and efficient.",mattrwater,2025-02-25T20:53:19.000-08:00,https://github.com/Jordrn4l/Group-1/commit/57eb1d809de15837d9e2d5991bcc3b4ec7e6c63e
+"Merge pull request #99 from stevenfojas670/main
+
+YES
+i used chatgpt to make this its good",Mrkeyboard1221,2025-01-14T21:14:26.000-05:00,https://github.com/Mrkeyboard1221/NyronGUI.lua/commit/d8eca563962b7339310d1537447465b896c05d17
+"Add files via upload
+
+
+YES
+Used ChatGPT to create a phaser 3 crossing road game.",dc3it,2024-12-22T19:34:06.000-05:00,https://github.com/dc3it/dc3it.github.io/commit/7f356c603e1256a353c20035be6f17a43e8100d3
+Updated project to now flexibly use ChatGPT to call functions,Gigz,2024-12-11T23:19:55.000-08:00,https://github.com/GigzPumpking/z3demo/commit/b45353a6d73f1e984641c016f3abc9f8085cb1fc
+use chatgpt to solve problem 5 longest palindromic substring in swift,Mohamed Alwakil,2025-01-01T21:29:25.000+01:00,https://github.com/MohamedDiaa/Leetcode/commit/ae6b3d6aaaab3347f1c3287577c9b15a9f17ab83
+use chatgpt to resolve my issue,Happyness-Mallya,2024-12-10T12:41:00.000+03:00,https://github.com/HappynessMallya/php-symfony-api/commit/3aa8eea7824ae0cd869753c28d41d1b80e025fcb
+"Assistant checkpoint: Make ChatGPT prompt editable in modal
+//
+Assistant generated file changes:
+- public/index.html: Make ChatGPT prompt editable
+- public/js/main.js: Update askChatGPT function to handle editable prompt, Update sendToChatGPT to use editable prompt
+//
+User prompt:
+//
+The ""Ask ChatGPT"" button launches a info modal with the Prompt contents. This pane must be editable. Please fix.",Ashok Bakthavathsalam,2025-01-03T17:11:24.000Z,https://github.com/kgashok/PlumConfusedOpensource/commit/8b198a6dda796f0766eec8162dd715edd497f3d4
+"used chatgpt again to fix tqdm, hopfully works",Zzza38,2024-11-18T09:11:50.000Z,https://github.com/Zzza38/search_engine/commit/2188d60091f41cb4e23be670efdf23d32c770b75
+"solve 1371.py
+
+YES
+Couldn't understand it well, used chatGPT to solve",Usukhbayar Batbayar,2024-12-18T13:39:47.000+09:00,https://github.com/unobatbayar/problem-solving/commit/922b866dd4b90364b37d16cd78088462fe76c608
+Used Claude + ChatGPT to Separate Home.jsx into pages and components (and made it so it can toggle between light and dark),Aayam,2025-02-10T11:43:26.000-05:00,https://github.com/jjjacky3/concertsbyisaaclight/commit/32e937ab3715830a1e2fcff49e6dfa22194aa129
+Created the ActionLLM class. Instead of only being able to use ChatGPT as an agent any llm that you add to the class can be used instead. So far only LLaVA and ChatGPT are available.,DEVdaVinci,2024-12-04T17:56:31.000-06:00,https://github.com/DEVdaVinci/Reflexion-LLaVA/commit/323529031f3687e33646e18581a940a3956561ab
+chore(helper-comments): added instrumentation file and a jsdoc to define the purpose of this file (used chatgpt to generate the jsdoc :( ),akhunters,2025-02-08T00:43:22.000+05:30,https://github.com/akhunters/code-stream-frontend/commit/4f8c89cbdc7056bbc0051559e52433cb2320c24e
+User checkpoint: Document how to configure ChatGPT Builder to use a backend service's deployment URL for custom actions.,jimstew078,2025-02-01T19:13:32.000Z,https://github.com/Jimstew23/sml-web-app/commit/71d24a31f40674b611a3ae740d8e2384920d2711
+D. Built most of the 'add'recipe section.  Used a little chatgpt help to serialize instances of Recipe class to a dictionary for json,T-Lanza,2025-02-10T08:51:29.000-05:00,https://github.com/T-Lanza/brew_log/commit/31cc78c2aa19d4b4f2f21489b5ff69b6c62bbf67
+Created class to use a URL from OpenAPI as parameter for a RestClient object to send and retrieve answers with ChatGPT,Andres Villalba G.,2025-02-16T19:15:02.000-05:00,https://github.com/andresvg8/simple-chatgpt/commit/d75d4d12f2cde1f189ee5d95ed57edae78ebe569
+[Report Issue] Use ChatGPT to optimize descriptions.,Chun-Chi Hung,2024-12-11T22:10:02.000+08:00,https://github.com/ATTWoWAddon/AllTheThings/commit/0dc62a4fd6a47b0f626930077e73d6d12366d47c
+Used ChatGPT to add comments,Rose-Clementson,2024-10-29T07:59:31.000-04:00,https://github.com/OliverR-C/InfoTechCenter1.0/commit/e7f524b4bdb21a2b19a272efc348a6c995242f69
+Used ChatGPT to add colors,Rose-Clementson,2024-10-29T07:47:56.000-04:00,https://github.com/OliverR-C/InfoTechCenter1.0/commit/f513c1f1dc038dc6a29f450649b530c1bb13835e
+Used ChatGPT to create this,Pallav Priyam,2024-11-03T02:04:16.000+05:30,https://github.com/pallavpriyam/Block_SmashKart/commit/d3260b90d484bd82a1c0b96b2b726829525fe330
+"feat(core): update aider to v0.75.1 and switch to OpenAI's o3-mini model
+//
+- Add nixpkgs-unstable input to fetch latest aider dependencies
+- Update aider-overlay.nix to use Python 3.12 and add grep-ast dependency
+- Switch ChatGPT CLI to use o3-mini model instead of gpt-4-turbo
+- Change grammar-related aliases to use aichat instead of chatgpt
+- Add justfile for simplified command management
+- Disable Snacks Neovim plugin (commented out config)
+- Enable Kitty window decorations",Alireza Davoodi,2025-02-27T12:28:50.000+03:30,https://github.com/alizdavoodi/nix-config/commit/a7fb39bc72da7d45877a11b3cc446021c17cdae3
+"ChatGPT generated ideation
+
+YES
+Used chatGPT to generate an idea of how the app should look like. Do not use this wholesale.",Tan Zhong Yan,2024-10-07T23:47:37.000+08:00,https://github.com/bentanj/MapPalette/commit/f40e20567c6909bc07f07e28662b40576f84fff7
+"POST request from frontend to  backend, use express nodejs for backend,  use openai to get ouput from chatgpt",mash3133,2025-01-14T11:06:20.000-05:00,https://github.com/maeshamahmud/OpenAIUserInput/commit/d72fb7c6294a9af1fb72ee0e1c0ca01ef9525eb3
+"template for node fetching, use chatgpt to write these bc some urls can be weird",gramms,2025-01-30T11:06:46.000-05:00,https://github.com/sgrammas10/CareerMatch-AI/commit/ddb90db63e38a80404d6303d750b8a1c8e208fe5
+feat: use puppeteer to connect to chatgpt,saeed,2024-11-13T20:25:52.000+01:00,https://github.com/sinzed/taskpilot/commit/9e49d60e47baeb0afe916389a42c47fe17d91965
+Revert Show About handler to use async/await to work properly ↞ [auto-sync from https://github.com/KudoAI/chatgpt.js-chrome-starter],kudo-sync-bot,2025-02-25T10:15:28.000-08:00,https://github.com/KudoAI/chatgpt.js/commit/0542039080e0061718c1f3c85a3c753528dcc13f
+"chatgpt analysis script
+
+
+YES
+Used ChatGPT to help write read me file.",Tamsin,2024-12-06T15:33:51.000+01:00,https://github.com/TamsinELee/estimate_nHealthCareFacs/commit/112ab2432854b818b10d0a86718501c9a079cb3d
+*..did I use chatgpt to get the git link or something?* 👏,maksxpl,2024-12-27T16:44:42.000+01:00,https://github.com/maksxpl/dotfiles/commit/efd790203d88a2eb02e82778493ee3ed369d3650
+used ChatGPT-3.5 to revise CSS template,RoseMcc04,2024-11-14T16:16:45.000-05:00,https://github.com/RoseMcc04/RoseWebsite/commit/ee63bf8a430f124a765fd5fa60a8f95a3b4a31ba
+Use chatGPT to summarize,Sophia Dai,2024-10-23T15:11:30.000-07:00,https://github.com/sophia-08/HereComesTheCheese/commit/47d05b870ce2e325c2995f5e84e93089be5e11e2
+"Merge pull request #103 from AbdulAlharbi/gen_ai
+
+MAYBE
+Used ChatGPT to help convert the launch_date and end_date columns in the campaign dataframe to datetime data types. 
+Used ChatGPT and Xpert Learning Assistant for the contacts dataframe especially in the coding for converting the rows into dictionaries and making the dataframe.
+Used ChatGPT and Xpert Learning Assistant for help with refinement of table schema
+Code used for Population Division Data Portal://dataptwestsep-fsk8825.slack.com/archives/C088PGU48HG/p1738032514437039 
+Code used for enter on country population data in the database_creation file databank.worldbank.org
+References to data sources:
+    https://www.kaggle.com/datasets/elmoallistair/global-trust-rate/data
+    https://gist.github.com/ofou/df09a6834a8421b4f376c875194915c9",Haffa1995,2025-01-27T20:19:27.000-07:00,https://github.com/ethanshipman/Global-Trust-Analysis/commit/c4d8781da8d249442106ea906b86bd83c2ad130c
+about to use chatgpt work for create questinon page,Ahmed Yusuf,2024-12-09T01:12:24.000+03:00,https://github.com/codemanbh/quizify/commit/c25527a574f3b73ab70b9f3cc002649e5d9507b1
+
+YES
+Used a ChatGPT prompt with all categories and information I wanted to include, testing still to be added.",moyno33,2025-02-07T11:25:53.000Z,https://github.com/SimonMoynihan33/optin-page/commit/e68243de5a562b1d8dddbe3331bb3d4fe00333ca
+#feat: Added feature to schedule a metting or send a message to me using chatgpt,Arpan Bhandari,2025-01-07T17:00:17.000-06:00,https://github.com/arpan404/arpanbhandari.com.np/commit/18141a0e74ebb62f7e02871ed3bcd90c73e128ba
+"continue to troubleshoot, using chatgpt to help check code in index.html",Wing Ng,2024-12-10T19:50:37.000-08:00,https://github.com/citrusapple/Sticker/commit/e656f77ba74885160f7c7818d95dd9b86963263a
+"Updates
+
+YES
+Tracking code is more generalized and less redundant. I used ChatGPT to make the outputs look nice. I",GauravSK2001,2025-01-22T22:48:07.000+01:00,https://github.com/GauravSK2001/NBI-SRT-Astro/commit/c7603f9ae0b6218a7b769a8b6ff63c412803ee9e
+"Update configuration for chatgpt-shell integrate gptel for Ollama
+//
+- Removed redundant package bindings for `chatgpt-shell-menu`
+- Updated model configurations to use the latest versions available
+- Added support for Ollama via `gptel` package
+- Refactored key bindings for ChatGPT Shell commands to include Ollama option",james@dyerdwelling.family,2025-01-29T11:00:27.000Z,https://github.com/captainflasmr/Emacs/commit/f69c2340142f328b4c6f917a6ec5a699e1435b0b
+Revert Show About handler to use async/await to work properly ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-continue],kudo-sync-bot,2025-02-25T10:22:13.000-08:00,https://github.com/adamlui/chatgpt-auto-continue/commit/ff9774a425c15c000df3926ca7319c7d70ad39cf
+Revert Show About handler to use async/await to work properly ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-widescreen],kudo-sync-bot,2025-02-25T10:22:14.000-08:00,https://github.com/adamlui/chatgpt-widescreen/commit/ce57a3c521a7b557a768f294e19ada2c40679d63
+used chatgpt to try and fix the problem because I don't understand.,BrantBart,2024-12-14T03:07:36.000-07:00,https://github.com/BrantBart/Handcrafted-Haven-Group-9/commit/948b13326e3a6b463545d5376efa6c5402316197
+Changed extension detection mechanism to use `sessionStorage` to avoid DOM mutations ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-continue],kudo-sync-bot,2025-02-25T02:05:27.000-08:00,https://github.com/adamlui/chatgpt-auto-continue/commit/3516caa54408970879f2a2b3b65c2e0cbed22c5b
+Synced existing file post: Using ChatGPT to Tackle Behavioral Questions (BQ): A Practical Guide,gitbao-code,2024-12-31T21:02:15.000-08:00,https://github.com/gitbao-code/bugfree-ai-blogs/commit/0a6c30e1e44067cca1e2b36d0436bac9b2eb3464
+Changed extension detection mechanism to use `sessionStorage` to avoid DOM mutations ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-widescreen],kudo-sync-bot,2025-02-25T02:05:22.000-08:00,https://github.com/adamlui/chatgpt-widescreen/commit/704a72e1bfb5fe42be01c5a7456735e3643f2804
+Finish initial translation to JA using ChatGPT,joelnitta,2024-11-21T15:54:59.000+09:00,https://github.com/swcarpentry-ja/r-novice-gapminder/commit/47f8b48721b4720862a643ba0c945c360ffc3d16
+"Update README.md
+
+MAYBE(VIDEO FOR CHATGPT)
+Used ChatGPT to update README by adding interactive functionalities and active communication with the scientific community",sashamigdal,2025-01-15T19:49:47.000-05:00,https://github.com/sashamigdal/TurbulenceDuality/commit/dc515539df2908fa99fdf8b2c0c069de9efdae9e
+Added a link to a video of my recommendations for how to use ChatGPT to help you code for this assignment.,david-wilson-175,2025-03-06T21:50:36.000-07:00,https://github.com/byu-is-566/is-566-08-airflow-instructions/commit/191569a0873619f9d8be5b66811ae558241058ff
+"Create index.html
+
+YES
+ I've got the esp to work but i had to use the power of chatGPT, ClaudeAI and Deepseek combined 💀💀💀",Mrkq352,2025-02-24T19:34:09.000+01:00,https://github.com/Mrkq352/ArcaneOdysseyCheats/commit/efce051b96ef799a152421d6bcfc8bf245670334
+"Added link to ChatGPT DLL Session (Tue 11am) -- both main link and Notebook link point there
+
+YES
+Used the GitHub CoPilot in VS Code, was really cool it edited it right into my code without me having to copy and paste, fricken awesome!",JLouwerse27,2025-02-28T16:34:34.000-08:00,https://github.com/JLouwerse27/Java-Terraria-Clone/commit/2b03595f309b06d163369a1e11f8a53851357549
+"Create Error logs.md
+//
+Errors that we encountered when using ChatGPT to create simulink models",Swapnil Banerjee,2025-01-06T15:13:57.000-05:00,https://github.com/Desaiadi/Electro-Chat/commit/d8f176d704118c98c7d5f4ba8d0cd703f6814f3e
+Update files to use a reverseEngineering for chatgpt for free,olade,2024-12-12T12:50:27.000+01:00,https://github.com/heisolade/mycalendar/commit/b671cb6d968c2b02e2ec9aa8280f54fadcd3ed4b
+"Chat helping make matrix function
+//
+https://chatgpt.com/share/67bea4e5-f83c-8006-9743-ea498778b72d
+
+
+YES
+Used ChatGPT to generate paragraph content",jgoode7,2024-11-25T16:14:05.000-08:00,https://github.com/nic-dgl103-f24-dlu1/project-jgoode1/commit/def372407c1b260ecbe7c0a600b05111abbd4341
+"Merge pull request #12 from Aidne7/plots
+
+
+YES
+Used ChatGPT to correct an issue with the if() statement in
+the code for the saveCurrentPalette function",lmorgan2398,2025-02-05T00:45:12.000-06:00,https://github.com/lmorgan2398/color-palette/commit/291836e2086cff3afec648c99ee2067283ed0ffd
+Complete initial translation to JA using ChatGPT,joelnitta,2024-11-22T17:12:00.000+09:00,https://github.com/swcarpentry-ja/shell-novice/commit/6104827ba6d18a684ca4167eabba4cfbd9d9993c
+"[FIX] web_editor: disable chatGPT buttons when no text selected
+
+
+YES
+yes i used chatgpt , cause i want to deliver right now not learn",KorryKatti,2024-12-18T13:38:30.000+05:30,https://github.com/KorryKatti/Mirage-web/commit/c8aac1f930086f00c102a76875e41a29dde3a803
+"Use ChatGPT models, filter output json, break down big json chunks to smaller pieces",Artem Arakcheev,2024-12-24T14:14:59.000+03:00,https://github.com/alphara/trading-json/commit/1622dff8d5db5718fca2b714db9782d4cebdf017
+"--Built out the Airflow API v1 - Still Need to Hook up a lambda and update chatgpt_utils.py
+--Put in the simple chat window that connects to chatgpt api using functions.",jphil,2024-11-24T13:32:41.000-06:00,https://github.com/JoshuaPhillips64/stock_prediction_pipelines/commit/275f97bdcb341530a4b19dda389193b4dab92a45
+"[FIX] html_editor: disable chatGPT buttons when no text selected
+
+
+YES
+Used ChatGPT to make a roadmap, will continue using it until better solution arises",Rayeed Aabir Ahsan,2025-01-05T00:59:06.000+06:00,https://github.com/rayeedaabir/JARVIS-v1/commit/a8355396df6acc391ecaf00c8a328093430c91ae
+feat: 50% chance to use claude instead of chatgpt,Ongsalt,2024-11-24T14:07:50.000+07:00,https://github.com/ongsalt/ai-http-server/commit/5f2da9a4394d6b936430c8848b61a9553a667804
+Used chatGPT to improve markdown,mmato72,2024-10-10T16:59:12.000+01:00,https://github.com/mmato72/mmato72/commit/8d8a5fe474539d530ca403af731aa599cd7b1555
+"great threading support
+
+
+YES
+Task 2.1: Refactored Quick Sort to a More Efficient Sorting Algorithm Using ChatGPT's Recommendation",Abdulrahman Alharbi,2025-02-20T19:36:41.000-08:00,https://github.com/AbdulAlharbi/Group-2/commit/a1b43a8aef4f2c596325845f520b196cdd932c85
+"[FIX] web_editor: disable chatGPT buttons when no text selected
+
+YES
+Add input fields for book and author descriptions to the add book form.  Use ChatGPT to generate descriptions from ISBN data when available.",gpt-engineer-app[bot],2025-02-21T07:51:39.000Z,https://github.com/MariusJorgensen/cheff-lib/commit/d5a4c112200d8d43aa07141386103d789b5ec712
+"Rewrite introduction to not have ""I used chatgpt""",Adam Linnemann,2024-11-03T20:16:49.000+01:00,https://github.com/adamingwersen/docs/commit/e78468a121ab6ef9431d67603a2c04d9097096ee
+"updated commands to rename instance and type parameters and added command to rename families
+
+YES
+used CHATGPT to generate code
+//
+New Penguin Images",James Floyd,2024-11-10T19:24:32.000-05:00,https://github.com/JamesFloyd-Pen/PenguinPedia-Website/commit/7e92b0107c32aa8a69e0b18877c4957fef057057
+"Initial Distribution Analysis
+//
+This quarto contains initial analysis to understand the distribution of Aquilegia formosa a little bit. 
+*** I did use ChatGPT to troubleshoot some errors that popped up. I was also unfamiliar with the different packages to make interactive maps and did not want to use tmap, so I did use ChatGPT to get a recommendation on a package as well as to understand what different functions of the package did ***",MiaHuebner,2025-01-28T07:55:05.000-07:00,https://github.com/MiaHuebner/Aquilegia-Distribution-Final-Project/commit/20ef03c36b26354cb2ee44fdb240b9dc757b3c9e
+"Initial Data Set Distribution Analysis
+//
+This quarto contains initial analysis to understand the distribution of Aquilegia formosa a little bit. 
+*** I did use ChatGPT to troubleshoot some errors that popped up. I was also unfamiliar with the different packages to make interactive maps and did not want to use tmap, so I did use ChatGPT to get a recommendation on a package as well as to understand what different functions of the package did ***",MiaHuebner,2025-01-28T07:53:20.000-07:00,https://github.com/MiaHuebner/Aquilegia-Distribution-Final-Project/commit/2a36a0eb57405be7ff883cfe57d140b7f3f9223e
+Use ChatGPT to make basic heatmap for projects,bulany,2024-11-08T11:37:33.000+01:00,https://github.com/bulany/time-control/commit/855da1c73e876716984ed73411f7218208877e91
+ChatGPT created function updates to make more usable,Eric Helin,2024-11-14T17:04:16.000-06:00,https://github.com/ehelin/DeveloperWorkingInWorldOfAi/commit/69e1b267d57f7d26a1503e2e156221f6bc2de870
+"Switched `get.loadedElem()` to use options obj for future extensibility, refactored `timeoutPromise` to condense return ↞ [auto-sync from https://github.com/KudoAI/chatgpt.js-chrome-starter]",kudo-sync-bot,2025-02-24T07:52:22.000-08:00,https://github.com/KudoAI/chatgpt.js/commit/595c9ecb394634a02373b94ff7c324c305cf2b0d
+including the prompts used on chatgpt to build the web page,miralaba,2024-11-24T11:54:15.000Z,https://github.com/miralaba/lmiranda/commit/e84ac88783501275ad340a1c955ed021067eb862
+"Merge pull request #102 from AbdulAlharbi/gen_ai
+
+YES
+Used ChatGPT to convert RONALD to work with PKMN RED",151porkyman,2024-11-29T18:56:33.000-05:00,https://github.com/151porkyman/KEK-NoEncounterMusic/commit/4d5cf51421c5edb43cc34d3fb43f6592abac1c75
+"[FIX] web_editor: disable chatGPT buttons when no text selected
+
+YES
+add product id to fetchListComment in details-product page, add translate texts to en.json file using chatGPT",thanhphong10997,2025-02-21T13:17:34.000+07:00,https://github.com/thanhphong10997/nextjs_shop_fe/commit/adc193ad9cfc3c4862edc1201509035fb6ddaf4d
+"added a natural language response to !weather
+triggers using chatgpt. Added right-click context
+menu to the UI input fields for copy/pasting.",ntack93,2025-02-03T00:05:33.000-05:00,https://github.com/ntack93/BBSBOT/commit/7b67dccf45a520f5e7c54f3e826419e4f72fa088
+"ChatGPT 4 telegram-bot / FREE
+
+YES
+Task 2.1: Refactored Bubble Sort to a More Efficient Sorting Algorithm Using ChatGPT's Recommendation",Abdulrahman Alharbi,2025-02-18T20:16:06.000-08:00,https://github.com/AbdulAlharbi/Group-2/commit/4aff3d33f4892b5bb942e71051742a5161829033
+Chatgpt suggested setting these configs to let the server know that ssl termination occurred with cloudflare and that cloudflare is letting it know that https was used to get to the cloudflare side,Hebron George,2025-02-23T01:12:40.000-05:00,https://github.com/happy-software/sudoku-versus/commit/809f63944d54083a0061ed30d194498dd786079c
+"Add files via upload
+//
+ChatGPT User Feedback Analysis
+//
+**Project Overview
+//
+This project analyzes user feedback on ChatGPT using a dataset containing review texts, ratings, sentiment scores, and user interactions. The goal is to derive insights into user satisfaction, identify common issues, and visualize trends using Power BI.
+//
+** Dataset Details
+//
+Date: Timestamp of user feedback submission.
+//
+Review Text: User-submitted comments.
+//
+Rating: User rating (1-5 scale).
+//
+User Reach: Number of users affected.
+//
+Sentiment Score: -1 (negative) to 1 (positive).
+//
+Country: Location of the user.
+//
+App Version: Version of ChatGPT used.
+//
+Device Type: Mobile, Tablet, or Desktop.
+//
+Session Duration: Time spent interacting with ChatGPT.
+//
+Feedback Type: Bug Report, Praise, Complaint, etc.
+//
+Subscription Type: Free or Plus.
+//
+Response Speed Rating: Rating of response speed (1-5 scale).
+//
+**Power BI Dashboard Insights
+//
+The Power BI dashboard provides:
+//
+Sentiment Analysis: Breakdown of positive, neutral, and negative reviews.
+//
+Geographical Trends: User satisfaction trends across different countries.
+//
+Feature Performance: Analysis of session duration, feedback type, and response speed.
+//
+Subscription Comparison: Satisfaction levels among Free vs. Plus users.
+//
+** Technologies Used
+//
+Power BI: Data visualization and dashboard creation.
+//
+Excel: Data storage and preprocessing.
+//
+Python (if applicable): Data cleaning and analysis.
+//
+** How to Use
+//
+Open the Power BI file (CHATGPT ANALYSIS.pbix).
+//
+Explore visualizations related to user feedback, sentiment trends, and performance.
+//
+Filter data by country, app version, and subscription type for deeper insights.
+//
+** Future Enhancements
+//
+Integrate live data updates.
+//
+Apply NLP techniques for more advanced sentiment analysis.
+//
+Expand visualization with interactive drill-downs.
+//
+** Conclusion
+//
+This project provides valuable insights into ChatGPT user feedback, helping identify key areas for improvement and enhancement. The analysis highlights trends in user satisfaction, sentiment, and performance across different demographics and usage patterns. By leveraging Power BI and advanced analytics, we can make data-driven decisions to enhance user experience and optimize ChatGPT's functionality.
+//
+** Author
+//
+This project was created as part of data analytics work focused on understanding ChatGPT user feedback.",S Krishika,2025-02-24T07:47:06.000-08:00,https://github.com/krishikaseenivasan/chatgptanalysis/commit/714b678472128abadec0c862a6918c66f0018268
+Add spanish translation and use chatgpt to improve french and german,Kenny Daniel,2024-12-03T14:48:29.000-08:00,https://github.com/platypii/BASElineFlightComputer/commit/8d952e0f3b312515734d350f2dabe2ebaf9c8452
+"[FIX] html_editor: disable chatGPT buttons when no text selected
+
+YES
+* ChatGPT used! Changes made to make it run",Desilvavelasquez,2024-12-09T23:27:32.000+01:00,https://github.com/desilvavelasquez123/RPS-game/commit/91844feca210a84b25c8d136ea83b04e21ead2c9
+"ChatGPT communication
+
+YES
+Had to chatgpt how to use regex in python lol.",Rakim Middya,2024-12-03T10:55:18.000+05:30,https://github.com/rakim0/Advent-of-Code/commit/cb328a6aa85b4a3bdeb1572f71aad8687c77ba09
+feat(parser): modified the logic to use new chatgpt client,Rashad,2024-11-26T15:33:01.000+01:00,https://github.com/Rashad-j/image-based-expense-tracker/commit/c4e99cfbc711a7e0b2805da78f7e9f099962d1cb
+Re-bumped `version` to re-trigger CWS publish using new refresh token ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-continue],kudo-sync-bot,2025-02-25T05:33:12.000-08:00,https://github.com/adamlui/chatgpt-auto-continue/commit/c9bb72d8b51861793a3f75291b8cc27efb802671
+"Version 2
+
+YES
+Update Solution: Use help of ChatGPT to figure out a cleaner implementation,Ronit Mankad,2024-12-04T22:19:38.000-05:00,https://github.com/mankadronit/advent-of-code/commit/911e31fd3161c0cde303c8810d1401973da3eb4d
+python script to upload arduino code using chatgpt,naveensagar,2024-11-06T16:10:39.000+05:30,https://github.com/naveensagardevadasu/AI-ARDUINO-CODE-BUILDER/commit/65b97d4bdecc9c49b668b4743cb9d8cf6776b908
+added bedrock and chatgpt to so as some one can choose which round and which modal to use,masikotimo,2025-01-02T17:24:07.000+03:00,https://github.com/isingoma/kingdom-chronicles/commit/c5aae2c21a35a62375e061d02c480dfbdcc7f2b5
+"Update App.tsx
+
+YES
+Using ChatGPT to remove the microscopeMarkers and displacementMarkers.",Roebling Labs,2024-12-01T13:14:30.000-05:00,https://github.com/roeblinglabs/itwin-poc-2024/commit/a351c7ac16981d1ebcfd4073ef461f14486c34e1
+Add a new default style in ModelPromptStyle. Use global batch in LLaMa.swift. Optimize a lot of codes according to ChatGPT-o1 suggestions,wangqi,2025-02-03T18:08:32.000+08:00,https://github.com/wangqi/llamacpp_swift/commit/b73b5a065abad59ac5652b94d29e77fbdad5f5ec
+"[FIX] html_editor: disable chatGPT buttons when no text selected
+
+YES
+"2657. Find the Prefix Common Array of Two Arrays. Solved, chatgpt hinted on data structure to use - Set",Funix565,2025-01-15T01:42:41.000+02:00,https://github.com/Funix565/LeetCodeTasks/commit/61c456e0e2353eef3d96302a103daa9981dfe287
+Did't really know how to use regex so had to chatgpt some parts,kieldsens,2024-12-08T22:30:43.000+08:00,https://github.com/Tan-Guan-Lin/advent_of_code_2024/commit/752071cb61dfee09e9297bc8f0d27c47dc9bd33b
+Updated `msgHostDir` to use Chrome path for easier maintenance ↞ [auto-sync from `adamlui/chatgpt-apps/chatgpt-widescreen/greasemonkey`],adamlui@protonmail.com,2024-10-02T04:41:40.000Z,https://github.com/adamlui/chatgpt-widescreen/commit/23f89cee7ba2f6d811d1dc364f0fa6e6deb1e54f
+"Added script to spawn in coins
+
+YES
+Help from google gemini and chatgpt; coins spawn in random positions at a set intervals; same code can be used to spawn in enemies",Multimaste1,2025-02-13T21:54:29.000Z,https://github.com/Multimaste1/ProjecT-Kinesis-main/commit/f6c5f453a20a4fc16dfb77d9236cc1e06c80c62c
+modified screen_blank script to use pid file and integrated with sway courtesy chatgpt,Prabu Anand Kalivaradhan,2024-12-20T12:02:37.000+05:30,https://github.com/prabusw/dotfiles/commit/11a4fb6d058d93758b6a86ca19ce4265a0bf9d1c
+"used chatGPT to help me with animations
+used a bootstrap spinner",peter,2024-11-02T02:47:21.000-04:00,https://github.com/nooneknowspeter/2024-10_fCC_projectRandomQuoteMachine/commit/f5313c30d5e688399478df9b086f68e203c3f132
+Experimenting with flexbox. Using some prompts provided by chatgpt to see the results.,moonlight,2024-12-08T10:24:42.000-06:00,https://github.com/Valistriant/odin-recipes/commit/3eb38cfae8c16a6e399ed26c1c4d2f470d9aad24
+(chatgpt cmd): Use actual model used to determine pricing (updated also),Matthew Jericho Sy,2024-11-08T06:46:24.000+08:00,https://github.com/jerichosy/Abet-Discord-bot/commit/5780ac68854804f56341633921412537dfca7a22
+"Merge pull request #70 from riley-ramos/main
+
+YES
+adding file upload and using chatgpt to make better looking templates,pglbgit2,2024-11-25T20:09:36.000+01:00,https://github.com/pglbgit2/VulnWebApp/commit/3372b185812e907ce1926d28f2ac6cba960a97bd
+"CI/CD pipeline the above page
+//
+https://chatgpt.com/share/67b21461-0b70-800a-8e0b-4fa4c3f72213 use this link to CI/CD pipeline to get ready with complete deployment",Vaishnavi Devi Patil,2025-02-16T22:14:17.000+05:30,https://github.com/vaishnavidevipatil/login_app/commit/ea2baa5777fcbf5d797193d97b8d3003753696b3
+code altered to fit the image using chatgpt,Shumail Malik,2024-11-06T23:17:50.000+05:30,https://github.com/shumail-malik/personalwebsite/commit/37c800a66b4215b72dbda86a0ef0f21332a335c0
+"[IMP] html_editor, knowledge, mail: adapt ChatGPT for baseContainer
+//
+This commit adapts the ChatGPT dialog so that it generates content in `div`
+elements by default. Adds the option to use a ""P"" when necessary, like in
+Knowledge.
+
+
+YES
+LOL now you can see that I used ChatGPT to generate this README",Gravity cat,2024-12-07T23:19:25.000+08:00,https://github.com/nekogravitycat/WinFormsPhysics/commit/030fb1f6e49fd4a30eadfbba7a01e1c90a0333c4
+
+YES
+used chatgpt to help extract info from an image of a table. it helped get the basic format for the supplies.py, but much of the data is incorrect",KandriaD,2025-02-27T16:34:21.000-10:00,https://github.com/KandriaD/MICROcost/commit/5e23ab36e80b3444dc0c296c87f00a3c14ca0179
+"Merge pull request #80 from simplytim42/76-script-to-send-blog-post-for-review-to-chatgpt
+
+MAYBE
+add script to check article using chatgpt",Tim,2024-10-02T17:10:57.000+01:00,https://github.com/theselftaughtdev42/my-corner-of-the-internet/commit/b6a69774a8a29dc6e567e4d7300108688b890e1b
+Changed chatgpt.com Full-Window toggle to not use `fullWinStyle` to avoid new flicker from sidebar animation vs. insta-style ↞ [auto-sync from `adamlui/chatgpt-apps/chatgpt-widescreen/opera`],adamlui@protonmail.com,2024-09-22T18:35:04.000Z,https://github.com/adamlui/userscripts/commit/754d43c8937e09ecb9d005bbed97aa763a0d0760
+"Create  legal context.md
+//
+```markdown
+If the title **""Signed, ChatGPT.md""** were used in a **legal context**, it could imply several things depending on the scenario:
+//
+### **1. Legal Representation of AI in Documentation**
+   - It may suggest that **ChatGPT** is the **author or signatory** of the document.
+   - However, since AI **cannot legally represent** itself or individuals in most jurisdictions, it would **not hold legal weight** unless explicitly acknowledged by relevant authorities.
+//
+### **2. Verification and Attribution**
+   - The title could imply that the document was **generated or reviewed** by ChatGPT.
+   - If being used in a **contract or legal proceeding**, there would need to be **human oversight** to validate its authenticity.
+//
+### **3. AI-Generated Legal Petitions**
+   - If this document were presented in court or submitted to a government body, it might require **human sponsorship**.
+   - The phrase **""Signed, ChatGPT""** might indicate **AI assistance in drafting** but **not legal authorship**.
+//
+### **4. Potential Misuse Concerns**
+   - Some legal systems may **reject AI-signed documents** unless a human takes responsibility.
+   - It could be seen as **a disclaimer rather than an official legal signature**.
+//
+Would you like to modify the signature to **reflect human authorship** while keeping ChatGPT as a contributor?
+```",Raymond Lei(雷菩宇); 䨻-Ficus religiosa-Cousin,2025-02-06T23:04:38.000-05:00,https://github.com/ewdlop/Law/commit/bc0aacd7f44b1270528123af5e76273974a77427
+Workflow to Use ChatGPT in Pull Requests,Maciej Sypniewski,2024-10-16T18:34:24.000+01:00,https://github.com/msypniewski511/udemy_rspec_pl/commit/7b7e168836133445d4a3b4066277c2b8a7b69230
+started using chatGPT to learn,dev-Bambam,2024-10-02T13:05:41.000+01:00,https://github.com/dev-Bambam/php_journey/commit/7fc932d803875171aad52529fb7a8a368ae9c33f
+Implement adding data to Anki using ChatGPT,ue-sho,2024-10-24T09:02:40.000+09:00,https://github.com/ue-sho/anki-discord/commit/0b982ffbe0e37388faf91f315446697a933a4403
+"added code for basic calendar
+//
+used chatgpt to write basic code for later editing to see its affect on swiftportal.com and if branches can be used for preview of static website",Rudraksh-Tripathi-47647574,2025-02-09T02:50:29.000+11:00,https://github.com/rudyt123/SwiftPortal.com/commit/0a9d28a5502cd2c0aa6808d54547c92fc94acc06
+"[IMP] html_editor, knowledge, mail: adapt ChatGPT for baseContainer
+//
+This commit adapts the ChatGPT dialog so that it generates content in `div`
+elements by default. Adds the option to use a ""P"" when necessary, like in
+Knowledge.
+
+
+YES
+I used ChatGPT to generate the type of GUI I want to visualize. Try and have fun with it :D",Quang Bui,2024-09-22T17:58:31.000-04:00,https://github.com/QUANGBUI24/Prototype3/commit/fbbc3428fb1993fc2d22cfddf851e4e74c71fd62
+"Use GitHub credentials to create user
+//
+Co-authored-by: ChatGPT",mhiv,2024-11-12T22:04:16.000+01:00,https://github.com/ITU-BDSA2024-GROUP8/Chirp/commit/12441d323c29626f70f70995d521d2a01ec3861d
+"Relating get-code-line-metrics and use-chatgpt-to-generate-charts rules together (#9012)
+//
+* relating use-chatgpt-to-generate-charts to get-code-line-metrics
+//
+* Relating use-chatgpt-to-generate-charts to get-code-line-metrics",Hugo Pernet [SSW],2024-08-13T15:19:52.000+02:00,https://github.com/SSWConsulting/SSW.Rules.Content/commit/8aaad95ce5d40bc0eaf4dc9ead0e1b527b6cfdf2
+"added a function to randomize c-style strings,
+code used by chatgpt for assistance will be
+commented. read me will also highlight this.",Rahman Ahmed,2025-01-08T03:48:50.000-05:00,https://github.com/Rahman2782/Randomizer/commit/c6341d188e904130e4ead442e48ea2abcd5896c6
+
+YES
+i did use chatgpt just to keep the green bar going but il try the next one by my own,vishalvsr67,2025-02-20T23:52:03.000+05:30,https://github.com/vishalvsr67/vishal-jfc/commit/c2308141500334938860f24836f41e29cfbadfe5
+
+YES
+Initial commit. Simple interval timer app ready to use. MOstly done by ChatGpt.,user,2024-12-04T16:47:40.000+02:00,https://github.com/ParkanonTulikukko/timerapp/commit/877f7cd2eb60d16f5860ce59ac02648e28bae8cb
+
+MAYBE
+used chatgpt to create working test code for my compare urls function,MPNose,2024-10-31T22:03:35.000-07:00,https://github.com/MPNose/tinyapp/commit/3ccecd6aeb5b1e69a5525338c53a2ec472164cc0
+24.12.08.1 Refactoring attempt to prevent lockups on overnight updates using ChatGPT,Gregovate,2024-12-09T07:33:21.000-06:00,https://github.com/Gregovate/MSB-Car-Counter-2024/commit/5d5aa738788d51e34f8c296b7b29aa6da0de922b
+"Add link to ChatGPT Bot in README.md
+//
+Updated the README.md file to include a hyperlink to the ChatGPT Bot. This provides users with direct access to the bot for better interaction and usability.",Jan Cortiel,2024-11-12T16:51:31.000+01:00,https://github.com/StatistikStadtZuerich/MeLODy/commit/521d88029e9f8b14aace73773497f4413d6dc85a
+Removed `hidden` from key name checks for setting state to support use in control descriptors ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-continue],kudo-sync-bot,2025-02-25T11:12:38.000-08:00,https://github.com/adamlui/chatgpt-auto-continue/commit/70448746b3cb888f0949b160d7f4d70e6f20d764
+Removed `hidden` from key name checks for setting state to support use in control descriptors ↞ [auto-sync from https://github.com/adamlui/ai-web-extension/tree/main/chatgpt-auto-talk],kudo-sync-bot,2025-02-25T11:12:19.000-08:00,https://github.com/adamlui/chatgpt-auto-talk/commit/4687fa13c3db502fb5e0e8164cdc4b3f5c602a49
+fix(docs) : notice that we used ChatGPT to debug our code and write well the documentation,Souaibou dine BARRY,2024-12-08T02:22:23.000Z,https://github.com/dineproject/ai-pipe-connection/commit/96a506e69f16b0e461c0c2abd6fcca6a979d8ec3
+Using chatgpt to reformat and add details to articles (until sorting),He Quanjie Boey,2024-11-16T10:35:15.000+08:00,https://github.com/hqjb91/blog-articles/commit/345791906c7d3898e83b57a5a9440c3162df8e98
+"Add files via upload
+//
+now using chatgpt to try and build this",Nick Giangregorio,2024-11-26T14:31:20.000-08:00,https://github.com/nickgggg/wabamap/commit/56a4faa55bab4fbd385df3a592873162d1fefce3
+
+YES
+changed the prompt format to use a better/longer example rewritten by ChatGPT,EllisFitzUSM,2024-12-02T21:17:36.000-05:00,https://github.com/EllisFitzUSM/COS470A5/commit/32d0d1e8f4745479cd6d4060b4a0cdbf04193589
+
+YES
+"splitting into html/css/js, multople lists now in separate folder - been using chatgpt to help generate lists which it is quite happy to do",LTS,2025-01-24T16:14:41.000Z,https://github.com/LTSCommerce/learning-french/commit/9c95a2bed8e2e1b9c856512b031a0e69dfe4a664
+
+
+YES
+Added JSwing GUI implementation to Bulldog game using ChatGPT 4o. This was made to be run with the classes defined in COS 420 - Bulldog with AI/Prog6.java",nathanielSerrano,2025-02-20T23:41:43.000-05:00,https://github.com/nathanielSerrano/bulldog/commit/17659f06deeac9b3010d509e11aafd336208f2d3
+
+MAYBE
+Used Chatgpt to make my code more efficient - Stable,Suiter,2024-10-15T08:25:21.000-04:00,https://github.com/JustinSuiter/InfoTechCenter1.0/commit/7073e3ef0d0088b25ab4204ddad2366f52f60c55
+"Updated README to blanket document the amount of ChatGPT used in this project. I missed the part on the project description where we needed to credit LLM use, and it seems like it's too late to document all of that now. So here is my attempt at saying, 'Hey I used a lot of ChatGPT in these places'",MrBus1ness,2024-12-12T01:35:35.000-05:00,https://github.com/MrBus1ness/web-dev-final/commit/2c0ec367828bb37b24ca4dcb24bb6da7b52dd464
+Removed `hidden` from key name checks for setting state to support use in control descriptors ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-refresh],kudo-sync-bot,2025-02-25T11:12:19.000-08:00,https://github.com/adamlui/chatgpt-auto-refresh/commit/84eb420a9573f751469f05694aa7b5d7b359b55f
+"[IMP] html_editor, knowledge, mail: adapt ChatGPT for baseContainer
+//
+This commit adapts the ChatGPT dialog so that it generates content in `div`
+
+YES
+Corrected spellingsand added the chatgpt instruction used to generate the synthetic dataset,Philipp Mc Guire,2024-11-21T14:37:20.000+01:00,https://github.com/Phips92/Adavanced_Data_Analysis_Project/commit/0e875f5a05daea13c145e0e26f338016689af50a
+"Fixed scrolling element
+
+MAYBE
+YT lesson sometimes is not the best teacher. Used chatGPT to implement widget. Also did some refactorization",Łukasz Michalak,2024-12-22T22:54:16.000+01:00,https://github.com/Irnin/ToDo/commit/7ee269b5050a4417fe2ba12e2ac216aadfbb7a8e
+
+YES
+Use ChatGPT to add a column with the genre",LadyO1122,2025-02-17T23:38:53.000-05:00,https://github.com/LadyO1122/My_Reading-Dashboard/commit/2bf8ca907a4103d580c3bf371d5dfe2b564a9297
+"ci: Add dependabot to bump actions (#97)
+
+task-4260398
+
+YES
+generate a poc to connect to netsuite rest api using chatgpt suggested code,mrichardsJBOIT,2024-11-20T12:28:04.000+11:00,https://github.com/mrichardsJBOIT/netsuite_api_poc/commit/63ef4f0efad3792737577679106746b1bddb7fb2
+
+MAYBE
+Use chatGPT to streamline,Shelley,2024-09-18T18:42:57.000+08:00,https://github.com/shelley816/2024_jQuery/commit/a02fcdb4b98bcda1276fff3e1fd1793760445845
+Re-bumped `version` to trigger auto-publish using new refresh token ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-widescreen],kudo-sync-bot,2025-02-04T11:29:34.000-08:00,https://github.com/adamlui/chatgpt-widescreen/commit/dd3ecc7fc2ff8276d6c590b76b1488f4fd05e93b
+
+YES
+Added dummy classes using ChatGPT for tests to compile,mjc136,2024-10-22T17:53:47.000+01:00,https://github.com/mjc136/SoftVer/commit/2db8b3bc4e17715160ac06a05326ef631e4e936f
+"Adding Code Files
+
+MAYBE
+Did't really know how to use regex so had to chatgpt some parts,kieldsens,2024-12-08T22:30:43.000+08:00,https://github.com/kieldsens/advent_of_code_2024/commit/752071cb61dfee09e9297bc8f0d27c47dc9bd33b
+
+YES
+"create components, provider and tasks. using chatgpt to make dummy data",MilosRandjelovic,2024-11-12T09:52:10.000+01:00,https://github.com/MilosRandjelovic/React-Tasks/commit/3a04abe96345e243121d63d241b4a565af9db145
+
+MAYBE
+EDIT: index.html used chatGPT to make a coolish website,A01Milner,2024-10-16T10:19:19.000+01:00,https://github.com/A01Mlner/example1/commit/72270a5126f4c3a60a1d3b43a75b2b185b283bc7
+
+YES
+feat: new casadi lib to use mpc which is generated by chatgpt,furkansariyildiz,2024-11-11T18:09:36.000+03:00,https://github.com/furkansariyildiz/ros_controllers/commit/d7bde2bfb6fe6038ae095a322efc5f372b301f89
+
+YES
+updating to add about styles index using chatgpt,mikelin,2024-10-08T12:36:10.000-07:00,https://github.com/sunsprouts/sunsprouts.github.io/commit/048e4d242b56f726455893b10a7f9bda2b6c9265
+
+YES
+Use defined AWS Lambda function to grade essays using ChatGPT,Yohan Jhaveri,2024-10-15T00:05:28.000-04:00,https://github.com/yohanjhaveri/gre-essay-practice/commit/066eee9d1bab70d122b3db9099372785cb3d4a71
+
+YES
+I had chatGPT do some refactoring of the mian toolbar. I want to get the editor to use the same createToolbar script as index,HHolben,2025-01-11T14:19:00.000-05:00,https://github.com/HHolben/Nodevision/commit/f60fbfb481820c14a23b43df419525b735dc9ec0
+
+YES
+"Added list of first and surnames to NameGenerator
+names were generated using ChatGPT",Daniel Tierney,2024-11-16T10:32:57.000Z,https://github.com/dantierney97/csvgenerator/commit/a8b732685a604f36d16349729cc85c4ff34396bb
+
+MAYBE
+i was unable to fetch the data using map function so to fix that problem i use chatgpt",Durgesh,2024-08-24T18:28:01.000+05:30,https://github.com/48404dur/News-App/commit/646435c24873ae249bee96201e300fd919cafe8a
+"Create ChatGPT_TestingFile.py
+
+
+YES
+Had some fun using chatGPT to help generate histograms and tables. Seeing good compressed sizes around 70% of original. Very slow.,Christopher Taylor,2025-01-01T21:26:00.000-08:00,https://github.com/extrafox/qowi/commit/1ce9d628bf20012efbe6ac57462ffc3fe0748efd
+
+
+YES
+"Split exporters out into a namespace within Federaliser, Consolodation of many changes to improve validation and improve security, and improve standards.
+Additionally, used ChatGPT to build the docblocks within the code so that I can update them going forwards to improve standards.",Andy Dixon,2025-02-25T12:21:41.000Z,https://github.com/andydixon/DataFederaliser/commit/f1554aeea62b4a030e4dd12e5b58a009420ad9ac
+
+MAYBE
+used chatgpt to help with syling my application,SepitleFTW,2024-09-17T21:22:43.000+02:00,https://github.com/SepitleFTW/SmartBot/commit/93b259581b4ff5a7ad50d71ea062073cd1c42dbf
+"Update README.md
+
+YES
+"Used ChatGPT to quickly cycle through designs, palettes, and ideas for website aesthetics. All current stylization code is generated by AI, and will be revised later to create actual art and aesthetics.",DestryU,2025-01-24T14:04:30.000-07:00,https://github.com/DestryU/NotSoTragic/commit/b5f7717455dda8e0f146daf3f9c4095d2c14e97b
+
+
+YES
+merged various additional candidate fields from the json to markdown. going to use chatgpt for the csv/json bits .,ReachableCEO,2024-12-11T18:52:45.000-06:00,https://github.com/ReachableCEO/MarkdownResume-Pipeline/commit/7f7f28410baa591faa717cd975b2773a3853b6df
+
+YES
+Switched from VTT to TTML using ChatGPT,Alex Bason,2024-10-03T09:21:11.000-04:00,https://github.com/nonsleepr/yt-transcript-downloader/commit/8c6863eecdd5f9c5ac8353350eeecee4c3234cf3
+
+
+YES
+"Updated Images to 72 DPI
+Using ChatGPT I updated the images to be 72 DPI, as they were causing formatting issues earlier when I changed the navbar (all the images became distorted).",schmidln,2025-02-09T16:31:56.000-05:00,https://github.com/varun-singh26/Boston-College-Roommate-Search/commit/1f1cee237923c4798d966b232cb3c9f85481f1c0
+"refactor(cmd): use reflection in AllModules method
+
+
+YES
+"this is my idea actually, i jsut used chatgpt to make it",immodi,2024-10-29T23:59:57.000+03:00,https://github.com/immodi/startup-frontend/commit/95b1adb32ee13e6147eb114de7eff407c54a8bfb
+"A-AiAssisted: Improve code using ChatGPT
+
+
+MAYBE
+"Implemented fault categorisation using ChatGPT
+//
+Changes:
+1. Added fault classifier prompts to prompts.yaml
+2. Updated excel_formats.yaml with fault category configuration
+3. Enhanced KardexProcessor with ChatGPT-based fault classification
+//
+Features:
+- Automatic fault categorization using GPT
+- Category caching for performance
+- Configurable fault categories
+- Robust error handling",Chris Yeo,2024-11-24T12:42:34.000+08:00,https://github.com/christopheryeo/GBL/commit/beb838bd271ac30d131856120b4c9548b7c244bc
+Used ChatGPT to figure out Regex and regret it. Regex does not seem as bad as I might have thought.,BobDresn,2024-12-05T18:17:39.000-05:00,https://github.com/BobDresn/AoC-/commit/bc7c8f633624cbe4fddce9c9895ce7905cab261f
+"Merge pull request #113 from ekoindia/develop
+//
+feat: new blogpost on using chatgpt agent to get help in integrating …",Kumar Abhishek,2024-12-18T00:23:00.000+05:30,https://github.com/ekoindia/eko-website/commit/9dbf52345efc150a04c677d7c89c608964de3070
+Use ChatGPT to help make a script to download transactions,Miller Arlindo Hall,2024-10-12T14:19:47.000-04:00,https://github.com/arlindohall/ynab-amazon/commit/94e507f9f432377fc101fa971a0faff48cb151d6
+Fixed segmentation errors. Used this chatGPT dialogue to find and solve bugs https://chatgpt.com/c/980c093b-84ca-4335-b7d0-bd6ad957c450,Morgan Packard,2024-08-10T21:49:54.000-04:00,https://github.com/Morgan-Packard/3BodyProblem/commit/d5810cc9c06c5e1adcbe9d4ac1a106bd992be347
+Changed light scheme modal BG to use gray rising particles ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-talk],kudo-sync-bot,2025-01-29T21:31:54.000-08:00,https://github.com/adamlui/userscripts/commit/7011543f00b8a8ede6970bf844846ab751ec68fa
+Changed light scheme modal BG to use gray rising particles ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-refresh],kudo-sync-bot,2025-01-29T21:31:47.000-08:00,https://github.com/adamlui/userscripts/commit/5961706421fbacc072a0df8082bc84c28c9573b6
+Changed light scheme modal BG to use gray rising particles ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/autoclear-chatgpt-history],kudo-sync-bot,2025-01-29T21:31:40.000-08:00,https://github.com/adamlui/userscripts/commit/005ec319df8ec879016348736bccc459c29b85e1
+Changed light scheme modal BG to use gray rising particles ↞ [auto-sync from https://github.com/adamlui/ai-web-extensions/tree/main/chatgpt-auto-continue],kudo-sync-bot,2025-01-29T21:30:41.000-08:00,https://github.com/adamlui/userscripts/commit/5528d2cc311c1eac9f7eccf73b4e07cb1aac3d03
+State management using HttpSession interface object. (Took the help form ChatGPT so will not be able to find it on Youtube.),Anuprash Gautam,2024-12-30T12:20:47.000+05:30,https://github.com/AnuprashGautam/Servlet-And-JSP-By-Learn-Code-With-Durgesh/commit/747b6fe78be0b0f65c280dc2998ad8088005db07
+Update tools to use chatgpt api,Visal Munasinghe,2024-10-22T09:11:34.000+05:30,https://github.com/vish-mv/insights_analyzer/commit/48427cded48c88a0e8732db7679d2c2b0317fbd3
+"chatgpt: remove print_history method
+
+
+
+
+MAYBE
+"Add files via upload
+//
+The final version of ACO (Ant Colony Optimisation) by Ralph Halgas. Created as an programming artifact for the summative assessment project for the subject (unit) Search and Optimization in Bournemouth University 2024/25 (1st semester). Documentation will be added on here once the assessment is passed (to avoid someone using it as theirs beforehand - sorry!).
+//
+Solution files were used for algorithm parametrisation purposes and elementary statistical analysis of optimal algo parameters by ChatGPT. The commit contains a geographical data .csv file to generate the network optimisation problem.
+//
+Suggestion to improve most welcome. I am intermediate in Python and am willing to learn of better ways to do thing!
+//
+As per licence - you may use any bits of code with proper citation and reference; if you use any larger fragments of code, you must ask me for permission (it will only serve for me to maintain a list of ""cited in"" or ""cited by""). Of course, you must not make any monetary gain of any fragment of the code or documentation as I have done this work free. The GNU GPL pertains to my own ChatGPT prompts as attached. Seperate licence(s) may pertain to any use or re-use, modificatione etc. of the OpenAI ChatGPT's outputs - read them on official OpenAI website. I shall noty be held liable for improper use of the ChatGPT outputs.
+//
+ChatGPT full conversation with prompts is also available at:
+https://chatgpt.com/share/677eead3-dbc4-8001-95bc-d85fafaf0f0b",Ralph Halgas,2025-01-09T12:07:41.000Z,https://github.com/ralphyh/Search_and_Optimization_Data_Science_and_Artificial_Intelligence/commit/4555746a48e40250da9c159c7f266a70f1c23bf2
+
+MAYBE
+"glad chatgpt exists, used to generate dummy data before populating and connecting backend",Leoric01,2024-10-21T02:29:29.000+02:00,https://github.com/Leoric01/EcommerceEshopFE/commit/3fa7b1c98e5008e6f847031d39520f29def03096
+
+YES
+Basically using ChatGPT to convert neovim config into vim!,Sunhaloo,2024-10-10T13:50:18.000+04:00,https://github.com/Sunhaloo/dotfiles-old/commit/8853038e5d74a5b572ab5d0351ac54e69ec8e5ce
+"37 creating a cicd setup for your itu minitwit (#66)
+//
+* Modified dockerfiles
+//
+* Modified vagrantfile, runs start_vm now instead of start_webserver
+//
+* Test workflow (#58)
+//
+* test: Update baseurl, introduce apiurl
+//
+* feat: add dotenv gem, database path now defined with the env variable 'ENV' with a default of 'dev'
+//
+* test: Update workflow to use env variable
+//
+* feat: rackup can now be called from root if given path to config.ru
+e.g. bundle exec rackup src/minitwit/config.ru
+//
+* chore: Update gitignore
+//
+* feat: Update workflow to account for new source code
+//
+* refactor: Vagrantfile no longer starts a deploy on creation
+
+
+YES
+Caved and used ChatGPT for topological sorting - probably would've taken me ages to actually figure it out and THEN implement,velcorn,2024-12-06T01:55:41.000+01:00,https://github.com/Velcorn/AdventOfCode/commit/5e8b4ea23cb535957f75a15bac74b6e4db934006
+added some chatgpt code to deploy it using github,AnilSailla,2024-10-04T18:12:11.000+05:30,https://github.com/AnilSailla/Currency-converter/commit/fcfa249395fcf369756ae87ff8fc86542426a6bc
+
+YES
+"Add git ignore
+<========================>
+This git ignore was include every necessary stuff that need to be ignore for unity project
+Feel free to use it.
+(I got it from chatGPT)",HORIZON-Donut,2025-01-24T14:27:58.000+07:00,https://github.com/HORIZON-Donut/GameJame-Bubble/commit/4d1a29056e497905151dc6a30eb7a860527ff182
+
+
+YES
+"Fix image scanning error
+Resolve issues preventing image scanning functionality using ChatGPT. Implement best practices for setup and error handling to enhance reliability and performance.
+[skip gpt_engineer]",gpt-engineer-app[bot],2025-01-31T05:21:41.000Z,https://github.com/alex-p98/purrfectlandindpage/commit/df6a631b9ecc225cfc2fc302894b6213545df004
+
+
+YES
+"Restructure project to use PlatformIO library
+manager. I blame chatgpt for the initial structure.",Robert Gonzalez,2024-11-18T01:28:13.000-08:00,https://github.com/rob-gonz/junkyard-jumper/commit/7ed1a17b8371e7d248addec68c967e09acefcc44
+
+
+MAYBE
+"Use ChatGPT to evaluate requests (#626)
+Co-authored-by: CosmicAlpha <cosmic.alpha24@gmail.com>",Agent Isai,2024-11-07T20:33:55.000-06:00,https://github.com/miraheze/CreateWiki/commit/07fbbf2e1985d6d110f1e4066764699f871f3eae
+
+
+YES
+"Initial code, generated code for cifar10 from CHATGPT and used it to edit the code provided by ERA V3 for MNIST dataset training",chbsaikiran,2024-12-16T13:55:30.000+05:30,https://github.com/chbsaikiran/Assignment8-ERA-V3/commit/fa5d9891bb88cbf93c459b23b606d5260f4bd49f
+
+YES
+"switched to only use red chanel
+Also contains various testing scripts using python and chatgpt code (which just produced the same results I had done with my original implementation)",alienturnedhuman,2025-01-12T17:53:18.000Z,https://github.com/Alienturnedhuman/AlienPngKeyframerDev/commit/e23cdcc1607e18b5193c3eb38998c3af5fa3b66d
+
+YES
+"Created README.md
+- Used ChatGPT to create README.md file",spcymshrm,2024-09-23T15:49:13.000-04:00,https://github.com/joejordan1994/simple-signup-form/commit/507f0ed833b040ba6cbc95242ed74d771868caf3
+
+YES
+"Create README.md
+use chatgpt to generate this readme",Xu Ya,2024-11-24T16:20:51.000+08:00,https://github.com/xuyae573/SemanticKernelAISamples/commit/774dde0287d0b10d5961a7e74ce4a99e15713518
+"remove comments
+
+YES
+fake data create and also use chatGPT to build random json file,webdiv-rakib,2024-10-26T18:32:18.000+06:00,https://github.com/webdiv-rakib/es6-modules-overview/commit/e004d9818704eac20cfda5974a41688018fb77c2
+
+YES
+"Added a State System For Options
+Code provided by ChatGPT, used to replace the need for multiple timelines to and from each button.",Cameron Traer,2024-12-03T02:17:41.000-04:00,https://github.com/NitroTech4K/ProjectHellFloodTitleScreenConcept/commit/24db6333961c78626b17cdb94b0bb05c773f2bd5
+
+YES
+"Update ReadME
+Description added to show what I have done and how I used chatGPT to help build this project.",shloopy,2024-11-12T21:35:31.000Z,https://github.com/Shunshoq/ML-Projects/commit/da0be4722d21ea8b7cfe61f2027ce350604a6a75
+
+MAYBE
+Asked chatGPT to make the code more efficient using a dictionary.,Hensley,2024-10-15T08:21:42.000-04:00,https://github.com/GHenz259/InfoTechCenter1.0/commit/61307c5d8053c4cf66e743ba6fad68d786bdcc34
+
+MAYBE
+"Chatgpt improved Protection on/off switch
+//
+Based on bat files made by @TairikuOokami and improved/optimized by chatgpt. 
+( Basically ""Disable.bat"" turns all protections off the computer and ""Enable.bat"" reverts all the changes made by the previous bat. )
+🚨 WARNING: Microsoft Defender Disable.bat COMPLETELY DISABLES WINDOWS DEFENDER & SECURITY FEATURES
+💀 USE AT YOUR OWN RISK!
+💀 May require Safe Mode to re-enable protection
+💀 Could make your system vulnerable",ChatgptKitty,2025-02-16T03:12:31.000+02:00,https://github.com/ChatgptKitty/Useful-scripts-bats-made-with-the-help-of-chat-gpt/commit/60cfde614fdcbd21862f767661ff3746ef5ae9cb
+"V1:
+    Initial version of SE2 Image to schschematics to help using regular images to make ships in SE2
+    Suports English and Portuguese, dark and light mode.
+    Basic code that was refined using AI (Chatgpt o3-mini-high);
+
+
+MAYBE
+"Updated about.html
+Used some ChatGPT magic to write up professional text.",Aman Dogra,2024-10-07T11:28:00.000-07:00,https://github.com/amandogra/yoreclinic/commit/1cf7c334836ff3a9261e4b5d965458202e5cda2d
+
+YES
+Used ChatGPT to implement much simpler prototype,anonimation,2024-08-27T13:14:22.000-04:00,https://github.com/anonimation/spokenMentalMath/commit/e5b4a1e1b9176a7c2e64dd3a107ea085095c1e44
+
+YES
+"Added a pomodoro timer
+Added the ability to use a pomodoro timer
+The code was generated by ChatGPT",Kiwu,2024-12-01T00:47:59.000+01:00,https://github.com/ARU-Kiwu/to-do-app/commit/a3c55eed5da987d007923e5598f258035f4d03f8
+
+YES
+"Rename apibell-js-web-notify to ai-apibell-js-web-notify
+AI generated using ChatGPT",Donovan,2024-11-17T10:08:08.000-05:00,https://github.com/donovanmagryta/apibell/commit/3334a1592ddc652d135fff524da75ce35a5f4f6c
+
+YES
+"Add files via upload
+A small project on a Real Estate website using only ChatGPT AI to show the ability of developer to use ChatGPT in a best way to done work efficiently and fast.",GameTechWorld,2024-09-27T17:47:33.000+05:30,https://github.com/GameTechWorld/Real-Estate-Website/commit/589722efab58fa219afe4a3b2a5b0bf247c7833c
+
+YES
+"html files
+Written in js without using any 3rd party programs. hexagonbounce-gpt was written by ChatGPT and hexagonbounce-seek was written by Deepseek. Just download and drag to your browser.",Önder,2025-02-01T14:59:00.000+03:00,https://github.com/onderaltintas/ChatGPTvsDeepSeek-Ball-bouncing-in-hexagon/commit/75bf5caf71a53735e8b15613454b16ce6a7d06e8
+
+YES
+feat: use ChatGPT to generate the initial version,cobolbaby,2024-09-19T23:52:08.000+08:00,https://github.com/cobolbaby/schema-proxy/commit/4b85d6609a9c0fc231c78fbf2655cacaed80e034
+Added script to test using chatgpt with custom tools,amorygalili,2024-11-17T23:40:14.000-05:00,https://github.com/amorygalili/amoreetha-project/commit/c0e203208680ac2ea54a7838fd2b647003cdb080
+used chatgpt to secure line 59 to the end,Saint,2024-08-28T19:31:17.000-04:00,https://github.com/SaintGeele/cloudresume/commit/b0269ee92c474ab17bde26d8a2b56712dabaacac
+
+YES
+"1. add implementations using ChatGPT to parse and translate text, 2. build pipeline to parse different text, translate and merge",Your Name,2024-11-27T04:25:01.000-08:00,https://github.com/ayoubed/MapReduceAI/commit/f496f80c5b47e2aaecbe4e5ce7e347fe9e5c820b
+
+"feat(test): add validation test with mock conversation data
+
+YES
+Convert all TypeScript files to PHP using ChatGPT,Robert Painsi,2024-09-11T19:02:45.000+02:00,https://github.com/robertpainsi/sanity-image-url-php/commit/b768d1b976220067555c8807e73575755e40326b
+
+YES
+"Update App.tsx
+Using ChatGPT generated code to add mapbox and cesium related code to the viewportConfigurer section of code.",Roebling Labs,2024-11-30T22:15:51.000-05:00,https://github.com/roeblinglabs/itwin-poc-2024/commit/9c1ad8a046c9969bca1dd87cbf50e10f5892e95f
+
+YES
+"Used ChatGPT to add a new feature that merges updated json file instead of -- not do that. That way, if 3 jobs remain from yesterday and I add 20, 23 show.",Jonathan Hammond,2025-01-12T22:16:31.000-05:00,https://github.com/Pythonidaer/new-society-test/commit/f8e67230a0fdf52ee27ef1bb6cbefe3440d1efee
+
+
+YES
+"Add curl-example
+Add an example package demonstrating how to build a binary from local
+source, and how to create a dependency. The code is written using
+ChatGPT.",ejaaskel,2025-01-12T10:08:41.000Z,https://github.com/ejaaskel/buildroot-custom-layer/commit/df37e6647e9ca3c8b01a1c3051d25a5be0aeebee
+
+YES
+"Add editable mental health prompt
+This commit adds an editable prompt for a mental health AI agent using ChatGPT 3.5, linking it to the existing mental health page's AI counselor and generating chat functionality.",gpt-engineer-app[bot],2025-02-26T14:35:01.000Z,https://github.com/nandoesporte/gut-59/commit/9d658aa4057cb9d75f7f464ddaabdefd1592385d
+
+
+YES
+"switched to ChatGPT code for sensing keys using interrupts rather than polling and used its debounce code.  Scanning keys is now reliable.  Had to comment-out SoftwareSerial to be able to do this.  Sensing valve position via A4 and A5 not working, causes crash, so that code is commented out for now",Robert Bedichek,2025-02-22T23:10:32.000-08:00,https://github.com/robertbedichek/solarthermal/commit/6fce2a355690cde865ee08117204c6670b59e262
+
+YES
+"add puffin image
+Add a logo to be used in the readme. It was generated by ChatGPT and thus I can use it.",Robert Leifke,2024-11-25T01:28:32.000-05:00,https://github.com/robertleifke/numo/commit/1e6aca4bc800b06ee4d0cf97358999d6c189382c
+
+YES
+"Temp Place Holder
+This is a temp place holder for my portfolio website made using chatGPT, I hope to improve this website myself as I learn new skillsets slowly.",Rumman Karim,2025-01-23T10:55:29.000+06:00,https://github.com/rumman999/rumman999.github.io/commit/d2b217a8b8447333703a4f8ce6de1f1b55e9364f
+
+MAYBE
+Used ChatGPT to improve my prompts,Joshua Aresty,2024-08-01T11:39:48.000-07:00,https://github.com/jaresty/mac-dotfiles/commit/86090d0e3d06457662ccd41c846578afde20f0cb
+
+YES
+"Add files via upload
+the start of the 4th project. Used chatgpt to help start a foundation and test how far it could code with instruction. adjustments needed in both html and css.",Carlos Amaya,2025-01-16T12:25:57.000-05:00,https://github.com/CodeRed7777/freecodecamp--Full-Stack-Developer/commit/eef221d7c04a60b2122e6d9522ec47298b4d2d94
+
+
+YES
+used chatGPT to create flask backend and html frontend,amcal,2024-09-20T18:53:06.000-04:00,https://github.com/amcaleer271/Kitchen_Management_System/commit/06a135b3fdb46e2a653fa7e7961a887c888e62d0
+
+MAYBE
+Create  Write a JavaScript code to Generate an image using chatgpt prompt,abhijeetmathur,2024-10-11T15:20:54.000+05:30,https://github.com/abhijeetmathur/Full_Stack_LW_Task_/commit/7cda9fc09c6efb99788dccf1e19c57f731b3315f
+
+
+MAYBE
+"Refactored script to use classes instead of constructors per the Odin Project
+- Used ChatGPT to refactor script from constructors to ES6 classes",spcymshrm,2024-11-02T11:56:29.000-04:00,https://github.com/joejordan1994/library-app/commit/fb72585ea73025f1c9404946176df37c4939fb1c
+
+
+YES
+added dummy data to new tables using chatgpt python script,Oydan,2024-09-20T15:22:26.000+10:00,https://github.com/henrylo212/YouBeauty/commit/fd68f3dd4d61685b5f84e0debb38a5d7b29b2f02
+
+MAYBE
+"Initial commit of prompt generation script
+Uses ChatGPT to generate prompts for synthetic data generation",drewball1,2024-10-29T16:32:03.000-04:00,https://github.com/AbdulrahmanAlsumaih/Team1/commit/0636d0027e8cae1286964ddc04071554aebf6d2d
+
+MAYBE
+"Working setup
+Lost my initial commits for reasons. Used chatgpt to work out how to set
+up the pyproject.toml",chris jessup,2024-11-06T14:00:31.000+11:00,https://github.com/chris-jessup/gperf-dict/commit/677fa7867a3adb447fc7de422d0488bfa40b6f0f
+
+YES
+"Assistant checkpoint: Updated OpenAI config to use local server
+Assistant generated file changes:
+- src/services/ai/openai.js: Update API endpoint to local server
+//
+User prompt:
+//
+docker run -dp 3040:3040 pawanosman/chatgpt:latest",Krillz801,2025-01-20T17:56:16.000Z,https://github.com/Krillz801/sb1-awhqqkzl/commit/1c30f5695a8047f8332cbd797aacd5b5793252d0
+
+MAYBE
+"used ChatGPT to improve article router safety, now S3 and algolia",Luka Pršina,2024-09-11T11:40:19.000+02:00,https://github.com/lukaprsina/jknm/commit/712836eccf5b3c17c8104803e27ea8e893bcecab
+
+Yes
+"Create blackjack.py
+This was generated by ChatGPT o1. I will use this is a template to add more features to.",Dylan Cruz,2024-11-17T13:19:22.000-08:00,https://github.com/dylcruz/random_projects/commit/5e6e1e0386e8aa68e86905eefd963d9ff00b836b
+
+YES
+used chatgpt to ad a rotatable rectangle to test not to fully implemt as i dont understand it,Ullerman,2024-11-25T17:18:14.000Z,https://github.com/Ullerman/Gravity-Space-Invaders/commit/a7b6b86b4565cb235a1600f523222d2a16a89ec6
+
+
+
+MAYBE
+used chatgpt to refactor function into 2 functions,Conrad Storz,2024-08-15T13:39:43.000-04:00,https://github.com/conradstorz/Data_Munge_Extensible/commit/ae67c7e446d159cb92b35a06fedb5072935ea3c0
+
+
+YES
+"docs(README.md): update readme
+- Updated the directory structure section with more precise names.
+- Changed header ""Motivation stats generated using ChatGPT"" to ""Motivation Stats Using ChatGPT.""",Marko Trickovic,2024-08-06T18:55:45.000+02:00,https://github.com/tricko93/mastering-git/commit/937e40f80b231cd81f81bbb86ee8cc5a514fe2b4
+
+YES
+Used ChatGPT to convert all dashboard docs pages to markdown from it's god awful html.,Heiti Allak,2024-09-30T10:02:53.000+03:00,https://github.com/johnnyyen/docs/commit/a4ad4c26352370eba65a982c2a7a458bdc1f826a
+
+YES
+"used a shader from the book of shaders
+used chatGPT to convert and change vars like iTime or u_time to uTime and so on
+i like this",peter,2024-11-22T00:03:53.000-04:00,https://github.com/nooneknowspeter/2024-11_fCC_pomodoro/commit/8cf6f4c31bf3531e54565de96d6f211e161a18de
+
+MAYBE
+"**Context**
+//
+- I thought ChatGPT was a little biased when commenting on images in the last blog article so I wanted to setup a little experiment.
+- I first ran ChatGPT through the test and was surprised at the results.  ChatGPT actually rated itself the lowest.
+- The funny thing is I had ChatGPT generate all 12 images.  Then I lied about who generated them.
+//
+- This is what we told ChatGPT, Grok, Claude, and Gemini:
+    - Each model was told to use a random prompt.  This is what they came up with.
+    - art1 - art3 was NightCafe.
+    - art4 - art6 was Deep Dream Generator
+    - art7 - art9 was ChatGPT
+    - art10 - art12 was Grok
+    - rate each model on a scale of 1 - 10.  Don't provide any other information or data just the rating.
+//
+- These were their responses:
+    - Gemini:
+        - NightCafe: 7
+        - Deep Dream Generator: 4
+        - ChatGPT: 9
+        - Grok: 2
+    - Claude:
+        - NightCafe: 8
+        - Deep Dream Generator: 7
+        - ChatGPT: 7.67
+        - Grok: 8
+    - Grok:
+        - NightCafe: 7
+        - Deep Dream Generator: 7.33
+        - ChatGPT: 7.67
+        - Grok: 7.67
+    - ChatGPT:
+        - NightCafe: 9
+        - Deep Dream Generator: 8
+        - ChatGPT: 7
+        - Grok: 8
+//
+**Objective**
+//
+- Write a compelling Medium blog
+//
+**Details**
+//
+- topic: Bias in rating images
+- tone: friendly, very humorous, light, conversational, and mildly educational
+- author: AI Persona Dave LumAI
+- author should NOT be included in the blog content (no intros or mention of Dave LumAI other than the Medium link)
+- don't include any other data before or after the blog.  No intro sentence that isn't part of the blog that I have to remove before posting the blog.  I want to be able to cut and paste with no editing.
+- Do include a title but don't prefix it with Title:, just put the title in title font.
+- Do include links to any references
+- Don't repeat yourself.  If you have made a point once, don't bring it up a second time unless it is super important and then you better clarify why you are bringing it up again.
+- include an AI art prompt that generates a masterwork of art that a collector would pay a million dollars for. (only label it art prompt - don't reveal the rest of the secret sauce)
+    - The art prompt should have less clutter
+    - It should avoid any content restrictions
+    - bonus points if the artwork is impressionist
+    - please no glowing or illuminated things
+- Get people to follow me and to comment
+//
+**Questions**
+//
+- Which model had a large bias?
+- Any other conclusions?
+- Any other intersting tidbits?",Dave LumAI,2025-01-26T15:57:19.000-05:00,https://github.com/lumaiere/lumaiere/commit/66509a962f89d1271212dfaa6d7a3d06c2e124bc
+
+MAYBE
+"Used ChatGPT to make it work a bit more (#2)
+Co-authored-by: DevMiner <devminer@devminer.xyz>",znopp,2024-10-21T18:13:40.000+02:00,https://github.com/TheDevMinerTV/minimsg/commit/9c8d34b7c8f9198c646528fe2bb5a395c3a1a586
+
+
+MAYBE
+updated using ChatGPT model to 4.5 turo,Abhinand V K,2024-09-02T11:28:49.000+05:30,https://github.com/abhi3691/react-native-atom-template-extension/commit/c6bd581c2cf55752cc74706b0d82b105822957e9
+
+
+YES
+used chatgpt to change to mui,RiccardoMarioBonato,2024-07-14T20:36:02.000+07:00,https://github.com/PanidaRumriankit/SOS13/commit/73227f90f742126d32feedde6c90f7582b8af07c
+
+YES
+"xhtml: Make breadthFirst private, use a slice stack
+Thanks to ChatGPT for doing the recursion to iterative conversion",Carl Johnson,2023-03-29T13:04:42.000-04:00,https://github.com/earthboundkid/xhtml/commit/81927b13dbebc861b89e7884b2878e0bb1970740
+
+MAYBE
+"Add files via upload
+All code during this project were helped using the ChatGPT service. For code language that I'm using is Python, the library that I'm using is Selenium and the compiler I use to code is  VScode",difa agfi,2025-01-09T16:22:08.000+07:00,https://github.com/difaagfi666whoami/automation-Grabing-Log-alarm-PRTG/commit/76949abcaf8395fee03bc435bd196b960506ff03
+
+MAYBE
+"Update 2024-12-21-lvac-cake-race.md
+Used ChatGPT to transcribe the image and ask him to format the table as we need in GitHub. Also ask him to correct some wrong names and times during the ocr process. Super useful!",Alejandro,2025-01-15T13:05:42.000Z,https://github.com/LiffeyValleyAC/LiffeyValleyAC.github.io/commit/3be440f18f83bea3dd7cd7b1a67102980fb0a816
+
+MAYBE
+"Testing out chatgpt
+Using chatgpt to make a website using my Javascipt code",UrielDelgado,2024-05-09T10:16:01.000-07:00,https://github.com/UrielDelgado/Favoriterandomemovie/commit/8efe81f403c692c3e79882f7ffecdb09238aaf2b
+
+
+
+YES
+using chatgpt to create a simple web image splitter,Vijay Krishna Palepu,2024-09-02T21:30:27.000-07:00,https://github.com/VijayKrishna/image-splitter-web/commit/30edca42cb9d5816ddb900b27f2106e754cbb621
+"

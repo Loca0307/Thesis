@@ -1,0 +1,23 @@
+message,author,date,url
+"Added handler for latest endpoint
+
+Co-authored by ChatGPT",Philip Boesen Blomholt,2025-02-19T21:28:21.000+01:00,https://github.com/devops-q/devops/commit/d12837851da2b7febfe1f94617d9782ad6e8809c
+"Implemented Helper functions for Login
+
+Co-authored by ChatGPT",Philip Boesen Blomholt,2025-02-16T22:54:27.000+01:00,https://github.com/devops-q/devops/commit/100108ae83cd7a815b0bb1bbeb78e51840af9660
+"Implement messages API
+
+Co-authored by Daniel Grønbjerg dangr@itu.dk
+Co-authored by Trond Rossing
+Co-authored by ChatGPT",Hopeberg,2024-02-22T15:09:59.000+01:00,https://github.com/Eagles-DevOps/MiniTwit/commit/6259253a8571c5b6f8efc6fc1073800d29724838
+feat: initial commit co-authored by chatgpt,JIMMY JOSE,2024-05-26T04:39:41.000+05:30,https://github.com/FlawlessByte/flawlessbyte.github.io/commit/620fa41a59f063bf80cb04e32a3d772ac47c7416
+co-authored by chatGPT,bui,2023-06-07T16:43:28.000+02:00,https://github.com/crowdsecurity/crowdsec-wasm-playground/commit/a701de1f201deb8c96b3b1d1f5ddfb6e590b984e
+"website
+
+- Website structure
+- Contact information
+
+Co-authored by ChatGPT.",Mônica Nunes,2023-05-05T13:56:57.000-03:00,https://github.com/MonicaNunes/monicanunes.github.io/commit/2e90910c4c8b0f87fa4e0216607933e8f7e97a62
+"decode base64 entries;
+co-authored by ChatGPT :)",catalyst17,2023-02-13T16:19:42.000+03:00,https://github.com/blocktorch-xyz/data-collections/commit/ed618b44c94fc3fa642c428b3381f0a47ac104de
+"fixed flash errors in login/register and refactored timeline to show user's and follower's messages, Co-authored by ChatGPT",Hopeberg,2024-02-17T19:25:30.000+01:00,https://github.com/Eagles-DevOps/MiniTwit/commit/27ffa23dc624b6cd73c5368d2eef82c7a8c07b4a

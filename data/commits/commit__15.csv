@@ -1,0 +1,174 @@
+message,author,date,url
+"feat: github copilot: used github copilot to generate UI interface description based on stitched UI prototype diagram, so as to generate web UI with github copilot in the future",Bin Wu,2025-04-15T22:19:23.000+08:00,https://github.com/wubin28/lab-ai-programming-assistants/commit/267b6bc26d804a1a4b204f53d6cbfbb9b14a2c86
+Used copilot to generate dockerfile and compose files,Josiah Quant,2025-04-10T09:34:16.000-05:00,https://github.com/jlquant/jqwagerz/commit/0a2fbaef2ffdc25c9351ee336ce90564063cfbbf
+Attemp using the Github Copilot to generate Checkout Page,quanuh,2025-04-22T16:54:19.000+07:00,https://github.com/quan3c10/playwright-practice/commit/2eede02cc4eb63007b3e610186435ef72fcc7379
+"Update CONTRIBUTING.md to include GitHub Copilot usage
+
+Added instructions for using GitHub Copilot to generate commit messages, enhancing the contribution process. This aims to streamline the workflow for contributors and improve commit message quality.",Rob Sewell,2025-05-08T17:26:36.000+01:00,https://github.com/dataplat/FabricTools/commit/377b2510a8bd3767558ea205dbd37f1104b630b6
+"Update README.md
+
+used GitHub Copilot to generate the content",Ed,2025-04-03T21:01:16.000-06:00,https://github.com/edf/cur/commit/897d1bb80647d0623e89ea865ef79e00b7d57a65
+updated readme. used copilot to generate the readme as a test.,Christoffer Back,2025-04-14T09:04:36.000Z,https://github.com/backchristoffer/IRQ-Monitor/commit/fa30898cbe8cebecdcadadec96a48ec64c11ba6b
+"ok, I have enough of it. Using Github Copilot to generate rust_release.yml",Leonard Siebeneicher,2025-04-21T18:24:20.000+02:00,https://github.com/leonard7e/flohole/commit/d2e57015a54a1aa5b58f11a3b371816c09d2eb37
+"Comments
+
+Added comments about where we used GitHub copilot to generated code to speed up the process.",sbredenberg26,2025-04-23T00:32:26.000-04:00,https://github.com/sowlet/TODO-Frontend/commit/a3f0139f97ca5e73c0cb4f57e6e14b2c0e66b95e
+initial repos after using copilot to generate the demo.,Vishal Bhogade,2025-03-01T22:30:41.000+05:30,https://github.com/vishalbb-git/streamlint-demo/commit/b8c63465983971acb9209999b4b83816eb7611e0
+Using Microsoft Copilot to Generate Blazor Code,soyfidelfm,2025-02-12T22:12:36.000-08:00,https://github.com/soyfidelfm/EnhancingBlazorDevelopment/commit/329ea7c59ca020b7e13a9d791d4ad56caa0f02c1
+GRamado OS: Creating new test files using Copilot to generate functions.,Fred Nora,2025-03-12T22:20:10.000-03:00,https://github.com/frednora/gramado/commit/daf3915fd689de2105cf44a3dcff44d77f03fa8a
+"Basic countdown site
+
+Used github copilot to generate",Joe Kirschnik,2025-02-05T21:01:09.000-06:00,https://github.com/jkirschnik12/olive-countdown/commit/6ad8cc89231abd7f17f158b6ae3c63d03224691d
+abusing github copilot to generate comments (only tested on outtake),nuh,2025-02-21T23:12:31.000+03:00,https://github.com/X-SHARC/FRC2025/commit/980fff272100dc4c573a73e08f84e4af9453d246
+"Example using GitHub Copilot to generate a BookStore backend API with Kotlin SpringBoot application, Gradle dependency management, and BookController integration test.",Mark Bedoya,2025-05-03T14:41:17.000-05:00,https://github.com/markBedoya/book-store/commit/dee509216e7d843af3b7ea27b8ea891cb3fad9bc
+use copilot to generate,林裕嘉,2024-12-21T04:02:38.000Z,https://github.com/jerrytest0812/2024_api_workspace/commit/f5abe8d8a363980d0f0ff182555899d7dcd0a7aa
+fixed script failures after using copilot to generate code.,HoofHarted,2025-01-16T19:58:11.000Z,https://github.com/JWhiteSS/skills-copilot-codespaces-vscode/commit/e0cc3f813ee7e97c1ab9b6f02cbb7bb08b4a7839
+"Update pull_request_template.md (#20785)
+
+Adding direction to use Copilot to generate PR descriptions.",Tim Cosgrove,2025-03-04T09:43:05.000-08:00,https://github.com/department-of-veterans-affairs/va.gov-cms/commit/ab9edb8af31244bb070c98086d34d27195149a74
+"Merge pull request #3 from backchristoffer/2-update-readme
+
+updated readme. used copilot to generate the readme as a test.",Christoffer Back,2025-04-14T11:06:17.000+02:00,https://github.com/backchristoffer/IRQ-Monitor/commit/0578fc5dd82a25fecce794cb37d568b881aca39b
+"Update README.md
+
+used Github Copilot to generate readme",Mohammad Mansib Newaz,2024-12-31T23:04:45.000+06:00,https://github.com/mnxtr/Manufacturing-DBMS/commit/a65b0c98650e7b39f1e308aaa65f5f9a3c166bf1
+"build: enhance changelog generation with user-friendly summary
+
+Enhance the release.yml workflow to improve the changelog generation process:
+
+- Install GitHub CLI Copilot extension to leverage AI for changelog creation
+- Introduce a new 'User-Friendly Overview' section at the beginning of the changelog.md file
+- Implement logic to generate FULL_COMMITS variable, containing all commit messages since the last tag or version
+- Create a detailed PROMPT for GitHub Copilot to generate a user-friendly summary of the release, focusing on features, improvements, and fixes from an end-user perspective
+- Use AI_SUMMARY variable to store the Copilot-generated summary, with a fallback to a generic message if Copilot fails
+- Restructure the changelog to place 'Key Highlights' after the 'User-Friendly Overview', maintaining the existing 'What's Changed' section",AccursedGalaxy,2025-04-04T01:53:18.000+02:00,https://github.com/zakiimz/noidea/commit/39580280aac34d9c29e3f277024763131012ecff
+"Added matrix-rain background
+
+Used GitHub Copilot to generate the Javascript and CSS for a matrix rain background",Jacob Poland,2025-02-24T15:06:46.000-06:00,https://github.com/JacobDPoland/JacobDPoland.github.io/commit/7b90105c47041bae06d7ac274532676d3684a584
+"feat(ai): Use copilot to generate commit message by triggering command This commit uses the github.copilot.git.generateCommitMessage command directly instead of providing it a prompt.  It then gets the generated message from the source control input box, clears the box and returns the message.",DraconDev,2025-02-06T01:56:41.000Z,https://github.com/DraconDev/git-ai-committer/commit/948fd1f2658ff55ee33d1adcbce7219d1512be5d
+"new updates
+
+using copilot to generate new texts but fully supervised",Tanvir Modhu,2025-01-02T11:55:14.000+06:00,https://github.com/Tanvir000Tonoy/2025/commit/ea5d44de161a2ce35a5693ef3b0e9a3568e1a766
+use copilot to generate basic readme template,Luca-maxwell99,2024-11-12T12:15:06.000Z,https://github.com/Luca-maxwell99/Mental-health-awareness/commit/ccf5b09b1181b545751ae2a31ab2ca0c74dec6bf
+"write the dataset_description.json with each of the 4 pipelines
+
+I used copilot to generate the Python version and deepseek to translate the code to Julia, R, and MATLAB.",Robert Oostenveld,2025-04-12T08:57:48.000+02:00,https://github.com/SIESTA-eu/wp15/commit/e1c0f660535201fe71ffa13533d242d163105168
+Implement comment editing functionality in review detail page; Use copilot to generate js for hiding edit form,Amina,2025-02-03T13:48:46.000Z,https://github.com/aminoacid-01/beat-boxd/commit/364746d10d7860766c3e0b3981a4d320e369cd4c
+"feat(extension): Implement commit message generation with Copilot
+
+- Added Git and Copilot services to handle Git operations and commit message generation.
+- Integrated Copilot to generate commit messages based on staged changes.
+- Added a command to trigger commit message generation and populate the SCM input box.
+- Added a menu item to the SCM input box to trigger commit message generation.
+- Added status bar indicator during message generation.
+- Improved error handling and user feedback.
+- Updated package.json to include the new command and activation events.",abaktiar,2025-03-12T16:16:44.000+05:30,https://github.com/abaktiar/copilot-plus-plus/commit/89a3f95519b42d2f6967d0bd2901c61446ab5569
+"docs(readme): 📝 Update commit message instructions
+
+Revised the instructions for using GitHub Copilot to generate commit messages. The new format emphasizes copying and editing the instructions file for better customization.
+
+- Added a section on copying and editing the `.copilot-commit-message-instructions.md` file.
+- Rearranged the order of instructions for clarity.
+- Enhanced guidance on utilizing GitHub Copilot for commit messages.",Simon Skoda,2025-01-19T23:05:59.000+01:00,https://github.com/SimonSkoda13/Copilot-commit-message-instructions/commit/698f4e20c1e595ca21c7eaf0f66bc163c3843c8e
+21170 Use Copilot to generate sample data that you import into Field Service for demo purposes (#337),Eva Dupont,2024-12-19T11:20:12.000+01:00,https://github.com/MicrosoftDocs/dynamics365-guidance/commit/d78f46eea99f2e6a84bb97006172f7d60dc6145d
+Added the comments js file and and allowed copilot to generate code for me.,PETER MUHUMUKI,2024-11-24T09:42:44.000Z,https://github.com/peterkahumu/solid-octo-fortnight-copilot/commit/d83ee4c7ecf02fcdcd0360776dcb661982aad542
+"#User: Security
+- check for null, also using copilot to generate some sample data.",ZakaNaji,2024-10-31T18:30:52.000+01:00,https://github.com/ZakaNaji/e-commerce/commit/b06b9031cef45ce4e2ee1a043cec4888926626be
+"build: enhance changelog generation with user-friendly summary
+
+Enhance the release.yml workflow to improve the changelog generation process:
+
+- Install GitHub CLI Copilot extension to leverage AI for changelog creation
+- Introduce a new 'User-Friendly Overview' section at the beginning of the changelog.md file
+- Implement logic to generate FULL_COMMITS variable, containing all commit messages since the last tag or version
+- Create a detailed PROMPT for GitHub Copilot to generate a user-friendly summary of the release, focusing on features, improvements, and fixes from an end-user perspective
+- Use AI_SUMMARY variable to store the Copilot-generated summary, with a fallback to a generic message if Copilot fails
+- Restructure the changelog to place 'Key Highlights' after the 'User-Friendly Overview', maintaining the existing 'What's Changed' section",AccursedGalaxy,2025-04-04T01:53:18.000+02:00,https://github.com/AccursedGalaxy/noidea/commit/39580280aac34d9c29e3f277024763131012ecff
+"Add files via upload
+
+### How Microsoft Copilot Assisted My EventEase Development
+
+**Activity 1: Event Card Component Generation**
+I used Microsoft Copilot to generate the `EventCard.razor` component, which included fields like event name, date, location, and description. Copilot helped set up the structure with proper two-way data binding using `@bind`, making it easier to capture user input dynamically.
+
+**Activity 2: Debugging and Optimization**
+Copilot provided helpful suggestions when I encountered data binding issues, especially with nullable values. It also pointed out missing lifecycle methods, such as `OnInitializedAsync()`, which resolved some state-related errors. I also used Copilot to guide my input validation logic — ensuring empty fields couldn't be submitted.
+
+**Activity 3: Advanced Features**
+Copilot assisted in building out advanced routing for pages like `/register`, `/tracker`, and `/eventlist`. It also helped implement session state management using dependency injection, so user sessions could persist across components. I used it to build an attendance tracking component with toggle functionality to mark attendees.
+
+Overall, Copilot helped me write code faster and with fewer bugs, especially for repetitive tasks like setting up forms, routes, and bindings. It acted as a second set of eyes while still allowing me to stay in control of my code logic.",Thebestman2025,2025-03-26T18:57:59.000-04:00,https://github.com/Thebestman2025/EventEase-BlazorApp./commit/80a2ff5bebee43112f0dae950b00e51ccd7397c8
+"Update test.yml
+
+Askep copilot to generate a workflow that installs nix with flakes and tests the code using the dev shell",Rofdo,2025-01-12T14:11:14.000+01:00,https://github.com/rofdo/rofdo_bevy_sandbox/commit/be5b008fdd9dafddc6f627fed1e072dc0a79062d
+"Added function help
+
+Used VS Code Copilot to generate function help for New-CSFolder. Slightly edited is as needed.",Hiran Watson,2024-12-28T18:55:04.000-05:00,https://github.com/dEhiN/CompStart/commit/6f4623ffe89cf54e69c4e0de32074850c42d7c97
+Used Copilot to generate a google home page,spyerspace123,2024-09-20T12:51:25.000-04:00,https://github.com/spyerspace123/git_test/commit/6aea49645261fb29bc6dfde91151370814bddbf5
+"Got help GitHub Copilot to generate readme
+
+After this I should add some picture instead of languages and technologies",Mostafa Lotfi,2024-12-24T22:18:14.000-08:00,https://github.com/MustafaLotfi/MustafaLotfi/commit/6697537bcc4361e05bbed9e2f27bbc89e45f73c0
+testing copilot to generate code,Rdpm0509,2024-06-09T12:15:01.000+02:00,https://github.com/renanpmaciel/ai_coding_github_copilot/commit/433f4074b719a0e28d373bc7569680bafb7d318f
+First using copilot to generate code,Brian,2024-07-12T09:21:59.000+08:00,https://github.com/brian891203/test/commit/c7bf139b88b913e4a395349e5c735cfedf7dea6b
+"Added functionality for calculator evaluating the expression and comments, used copilot to generate some logic and documentation, can still work on more functionality for calculator",rpino,2024-12-28T23:51:39.000-08:00,https://github.com/rpino/webcalculator/commit/37c2c9d88d031cc6d8171447b04f6cccd8d19a20
+demo project using copilot to generate springboot api project,Jay Menorca,2024-08-02T10:07:57.000-04:00,https://github.com/jays-codes/ud-copilot/commit/4a72dce4eb50f08517559b6a1c3f71c384a9af23
+"Added functions and tests
+
+Used Copilot to generate functions with no input from me.  Then wrote the comment about the tests and copilot generated the whole function itself",Jamil Lambert,2024-06-13T18:21:24.000+01:00,https://github.com/jamillambert/skills-copilot-codespaces-vscode/commit/180e7107fd70a929d964b1f31e44e6f8e8c85050
+"Added Batch comments to CompStart.bat
+
+Used VS Code Copilot to generate Batch comments in the style of PowerShell comment help complete with a .SYNOPSIS, .DESCRIPTION, .PARAMETER, .EXAMPLE, and .NOTES section.
+
+Took the .Notes section from CompStart.ps1. The generated comments were all in the style of REM comments, but modified them so the lines with the categories (.SYNOPSIS, etc.) were in the style of the double colon comments and the actual content was a REM comment.
+
+Copilot also generated REM comments for each line of code.",David H. Watson,2024-12-30T23:09:09.000-05:00,https://github.com/dEhiN/CompStart/commit/7aa8b32f5f8d3df2b262c56ae3d5071d4f41ac6f
+"Added comment help for New-ReleasePackage
+
+Used VS Code Copilot to generate comment help for the New-ReleasePackage function and modified it as necessary.
+
+Also updated the .NOTES section of all the function comment help.",David H. Watson,2025-01-30T23:13:51.000-05:00,https://github.com/dEhiN/CompStart/commit/8db0ce1949964b8abc9ff73e6797fa7fbf28ba11
+Using Copilot to generate readme,Lucas,2024-03-31T14:46:33.000-07:00,https://github.com/lhahut96/url-shortener-nextjs/commit/a11a00724eeba82a64f94a78c205dbdbb9bdb80b
+using Github Copilot to generate comments,leoatchina,2024-05-11T14:07:50.000+08:00,https://github.com/leoatchina/pve_k8s_deploy/commit/952b8f79de557162339323ce57087f36f4ef84f7
+using Github Copilot to generate comments,leoatchina,2024-05-11T12:01:23.000+08:00,https://github.com/leoatchina/pve_k8s_deploy/commit/f8665f8b37d60785cccd44c8388c7fd69b227379
+"Add VSCode settings for GitHub Copilot code generation and commit message instructions 🎉✨
+
+- Created a new settings file for VSCode at `.vscode/settings.json` 📁
+- Configured GitHub Copilot to generate JavaScript code with specific formatting guidelines:
+  - Use camelCase for variable names 🐍
+  - Use PascalCase for class names 📦
+  - Use spaces for indentation and single quotes for strings 🔧
+  - Set indentation to 2 spaces for better readability 📏
+- Added detailed instructions for commit message generation to encourage thoroughness and the use of emojis in messages 📝💬",Rob Conery,2025-02-20T09:11:24.000-10:00,https://github.com/robred4/tailwind-store/commit/f5016d4926ac25c2a8b5fb2ffc11f8cec4bf6de1
+"feat: Add instructions for using GitHub Copilot to generate code from UML diagrams
+
+The commit adds instructions for using GitHub Copilot to generate code from UML diagrams in the workshop. It includes a step-by-step guide for copying or saving the UML diagram image and sending it to the AI chat service along with the prompt to generate Java classes and methods. This change aims to demonstrate the integration of GitHub Copilot with AI services and provide participants with hands-on experience in utilizing AI for code generation.
+
+Co-authored-by: Kaisei Tsujimoto <katsujim@microsoft.com>",tenjoufire,2024-08-24T04:32:20.000Z,https://github.com/marumaru1019/GitHub-Copilot-Handson-Global/commit/5f108c1ce852a836325e799226d0b0b930450ae9
+feat: use copilot to generate tests to config objects,Ryan Tran,2024-04-20T11:23:16.000-07:00,https://github.com/rhtran/pet-clinic/commit/6d2eb8eca20e88f9f74182fee7b4b44e8e52728b
+"REVIEW NEEDED
+asked copilot to generate a function to print segments with vertical divisions based on pre-defined size ratios
+it just spat out some code, but cuz im in a library i cant completely review it. that ususally involves me shouting at my pc and the ai for a minimum of 15 minutes. so just gonna add it for now. ill test is and review the code later",BastaMasta,2025-04-13T10:15:45.000Z,https://github.com/BastaMasta/boxy-cli/commit/3201623a5d1c6546fa1a53284cee0beb64025990
+"Added comment help for the Update-PathVars function
+
+Used VS Code Copilot to generate comment help for the Update-PathVars function. Modified the output a little and also updated the comment help for some of the other functions.",David H. Watson,2025-01-12T21:24:20.000-05:00,https://github.com/dEhiN/CompStart/commit/e1bde2ff48e9758a0a76af7160ea3f482b153a69
+"feat: Add instructions for using GitHub Copilot to generate code from UML diagrams
+
+The commit adds instructions for using GitHub Copilot to generate code from UML diagrams in the workshop. It includes a step-by-step guide for copying or saving the UML diagram image and sending it to the AI chat service along with the prompt to generate Java classes and methods. This change aims to demonstrate the integration of GitHub Copilot with AI services and provide participants with hands-on experience in utilizing AI for code generation.
+
+Co-authored-by: Kaisei Tsujimoto <katsujim@microsoft.com>",tenjoufire,2024-08-24T04:32:20.000Z,https://github.com/tenjoufire/GitHub-Copilot-Workshop/commit/5f108c1ce852a836325e799226d0b0b930450ae9
+Used CoPilot to generate some simplistic javadoc.,Todd Fredrich,2024-03-08T16:04:09.000-07:00,https://github.com/tfredrich/NoSchema/commit/704aacf7a5fce66312beafc00204c41d3a93d396
+"readme updates (#1649)
+
+Updates to examples readme:
+- Links to use Pulumi Copilot to generate new examples
+- Adding TOC, Roadmap",James Denyer,2024-06-27T15:57:27.000-07:00,https://github.com/jktoh/budget/commit/45eeabec900da9f8d2446d36879887828560f086
+"readme updates (#1649)
+
+Updates to examples readme:
+- Links to use Pulumi Copilot to generate new examples
+- Adding TOC, Roadmap",James Denyer,2024-06-27T15:57:27.000-07:00,https://github.com/pulumi/examples/commit/45eeabec900da9f8d2446d36879887828560f086
+use copilot to generate commit message,Yusuke SUGAMIYA,2024-01-29T17:12:21.000+09:00,https://github.com/dnpp73/dotfiles/commit/7b88546598ab7d23bda6aaf85f64942185fed1e2
+Used github copilot to generate the code using prompt,Vivek,2024-03-15T05:05:04.000+05:30,https://github.com/vmohit18/Sorting/commit/cb00ea863e236cdd3848a9a0e457313f5f0935e8
+Used Copilot to generate webpage,Kobe Martin,2024-01-03T23:47:48.000-08:00,https://github.com/kobemartin/kobemartin.github.io/commit/271efb733d848e2dc9f0f622f44d3b4eeb0cb2a8
+use gh copilot to generate a commit message,Taka,2024-01-24T14:31:57.000+01:00,https://github.com/amano-takahisa/dotfiles/commit/7d02070c944213365c14e949c685f75007d748dc
+shhhh i did not use copilot to generate this file,River Holstege,2024-01-11T17:33:33.000-08:00,https://github.com/ucdavis/finjector/commit/04b0cf4f8ca6d4d52b27db4a217b3e2f8891db87

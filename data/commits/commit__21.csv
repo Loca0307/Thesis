@@ -1,0 +1,80 @@
+message,author,date,url
+"Create Game.py
+
+I used copilot to write the code.",Meep439,2025-05-12T06:44:10.000-04:00,https://github.com/Meep439/Jump/commit/8e11b7d5347e6b1944720dca424870bd17213430
+Use GitHub Copilot to write NEON intrinsics,Jason Andrews,2025-04-21T15:27:54.000-05:00,https://github.com/ArmDeveloperEcosystem/arm-learning-paths/commit/87be06c18ef41198bee60919ca57e403a20f88a3
+"Merge pull request #1847 from jasonrandrews/review2
+
+Use GitHub Copilot to write NEON intrinsics",Jason Andrews,2025-04-23T11:28:37.000-05:00,https://github.com/ArmDeveloperEcosystem/arm-learning-paths/commit/98fd0b5d60a1daa11b90b5c746dacd4e3af65019
+"main added
+
+copied readfile function from previous lab. Used copilot to write testing print statements",joeyipps04,2025-04-09T20:38:30.000-05:00,https://github.com/joeyipps04/Lab9/commit/c5eb810b00c8d652cf73a6af640db0be3bf2764b
+Use Copilot to write a simple demo,xinchengo,2025-01-22T19:59:24.000+08:00,https://github.com/xinchengo/ustc-csh/commit/6277f36b1f28dd376c0836076550e57e16ba6a07
+"set references display in copilot to write
+
+Signed-off-by: Tomas Slusny <slusnucky@gmail.com>",Tomas Slusny,2025-02-27T00:22:21.000+01:00,https://github.com/deathbeam/dotfiles/commit/5a8e0df8f1ce812990350287e35385325e3a2cc8
+test Copilot to write unit tests,Alexandr Makhin,2024-12-27T17:13:07.000+01:00,https://github.com/makhin/PhotoBank/commit/eeaf8df636cda8566ba0161f746e7fcee57842b5
+:sparkles: New feature copilot to write posts,alyconr,2024-11-25T18:43:45.000-05:00,https://github.com/alyconr/Ai-Cross-Post-Loading-Blog-App/commit/74b90d23987996d8d59c1c9c4590f9cb8f4b1ba7
+Use copilot to write tic tac toe,Kbouti,2024-11-10T09:39:35.000-08:00,https://github.com/Kbouti/Python_Sandbox/commit/71c71a067c92550b15422192c25473aef81abcab
+"First change into refactoring ColorSpace in general -- seems to work great so far.
+- asked copilot to write me a new file to replace GamutMath.py.
+- main functionality is to convert colors, and to sample colors.",imjal/Users/jessicalee/anaconda3/envs/generalized-colorimetry/bin/python,2025-03-27T14:32:44.000-07:00,https://github.com/imjal/TetriumColor/commit/de50846754531a0bec5b6a0a14023bb1f43399c5
+:pray: big Microsoft I promise I will use GitHub copilot to write all my code if this works,BlueGummi,2024-12-07T20:43:08.000-06:00,https://github.com/BlueGummi/belle/commit/a39499e594d19d530dc282b06a6eb92c08d9edd3
+"Used copilot to write comments and standardized
+
+Gotta go through code myself, haven't double check AI results yet",Tim Tran,2024-11-15T16:33:45.000-08:00,https://github.com/Drummingcoder/Chess-clock-arduino/commit/8a4ee22853d86e0dc942ab48c156ca633c4b8aeb
+Used copilot to write more DRY code,James Sheldon,2024-06-01T15:29:35.000-05:00,https://github.com/F3Nation-Community/weaselbot/commit/156e2f226f17abdbbc1025c38384da297a7c92ff
+use copilot to write code for me,Edi Wang,2024-03-26T09:02:56.000+08:00,https://github.com/EdiWang/Edi.AspNetCore.Jwt/commit/3a02fb5de345336281810488b29e4f6b28afd3eb
+Using Copilot to write a commit message,Paulo Castelo,2024-01-22T23:27:10.000-03:00,https://github.com/paulocastelo/javascriptHtml/commit/d149caca37e4ad9007e1f0c49eba06b04c455371
+tried github copilot to write improved function,insomniac807,2023-12-24T00:14:29.000Z,https://github.com/insomniac807/DetectDuplicateStringInput/commit/018efda16620eb1c548c1b3f48d62f6a5b0049ca
+"feat(neogit): enable to use copilot to write commit message
+
+List the commit message buffer so that we can use Copilot to write the commit
+message.",Seong Yong-ju,2023-07-16T23:24:29.000+09:00,https://github.com/sei40kr/yonvim/commit/1214ba668aff0b7f1bfc5c80582e56b8698aad10
+"Copilot, write the program for me please
+
+Prompted GitHub Copilot to write the new colorize_message function given formats I found for pidgin and pesterchum's color markup. As long as it passes the tests!",Nate,2023-10-26T23:38:39.000-03:00,https://github.com/garlic-os/purple-pesterchum/commit/c6b41078349c2cb0c14c287cbe5f586c382bc76a
+asked copilot to write a function to calculate pi,Hans Stam,2023-11-10T17:03:35.000+01:00,https://github.com/hansstam86/hansstam86/commit/a1dc3f329b441c94b64b684a59823dba746bde50
+"Add basic STEF receiver implementation (#50)
+
+Added ConvertTillEndOfFrame() converter that ensures that we
+won't read a record and keep it in memory while blocked on
+further reads. Instead all read data is pushed to the pipeline
+by STEF receiver quickly after decoding. To make this possible,
+introduced a new TillEndOfFrame ReadOption.
+
+I upgraded to new Collector version, that's why lots of go.mod/god.sum
+changes and fixes in the stefexporter implementation due to breaking
+API changes in the Collector.
+
+Used Copilot to write a small portion of ConvertTillEndOfFrame().
+
+Tested implementation with STEF exporter from Collector:
+https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/stefexporter",Tigran Najaryan,2025-03-03T20:51:51.000-05:00,https://github.com/splunk/stef/commit/be6e476c9a8638a09ee9f4950a50b28a992c54ef
+"First changes
+
+First update for assignment code, the code was created before and as no entry was made then i’m updating it now. I have made the main page of the tkinter gui and have started the function for a subsequent page. The main page has placeholders for where each component should be and I have drawn out a simple diagram for what I plan to do. The only challenges when completing this were customising the entries, and buttons and placing/resizing the images which was later resolved.
+
+I have also created a terminal based code (no gui so no tkinter), this code was to test if what I plan to do for my quiz would work, i have written it out and tested it, and it has worked. There weren't any challenges in this part of the production, however I did use copilot to write out my lists, this was only because of the time it would take to write it out on my own. An example is shown below.",AzzAnAq,2025-04-14T11:21:57.000+10:00,https://github.com/AzzAnAq/Chemistry-Quiz/commit/59af40d9550e814b480c7bdc7e1ee7ad5948d4c0
+feat: use copilot to write games,Jianzhu Guo,2023-05-22T20:15:59.000+08:00,https://github.com/cleardusk/test-copilot/commit/ad9351e099b24cdbffe353a9dd78aba9dd564be1
+"Use Copilot to write UT, it works!",Edi Wang,2023-06-19T13:24:23.000+08:00,https://github.com/EdiWang/Edi.CacheAside.InMemory/commit/761ca8be0033364632270f27eac6bccabe0fddd0
+Fix comment to drive copilot to write correct code,Nguyen Le,2023-04-04T22:51:26.000-07:00,https://github.com/lenguyen8888/Algorithm_Coursera/commit/c4f0b62f63049d8424c8b070d1ed49170e7e4acb
+try github copilot to write unit test.,Jun Luo,2023-03-25T18:33:42.000+08:00,https://github.com/luojun96/go-opt/commit/c2487f0cbd25639b8793d15ed8c6040f469bcd3a
+Allow GitHub Copilot to write to shell scripts.,Christian Oudard,2023-03-29T14:12:32.000-06:00,https://github.com/christian-oudard/dotfiles/commit/5e51499206422b8fd7f5c003373d8a5e1e196f98
+"Lab 17 was done on Python with both simple and extended realization. Congratulations to me, I've done every lab needed for first semester on 18.10. I've corrected README.md, lab 16, .gitignore, i've restructured extra structures, added BT_readers in extra_structures, asked copilot to write stack and queue both on Python and C++. In progress of adding new extra structures and tree printer",Roman,2024-10-19T02:37:28.000+02:00,https://github.com/RomanRudin/bfu_ads_labs/commit/7531cc4add1b2f904555b5faffca07f09f18be45
+"Lab 17 was done on Python with both simple and extended realization. Congratulations to me, I've done every lab needed for first semester on 18.10. I've corrected README.md, lab 16, .gitignore, i've restructured extra structures, added BT_readers in extra_structures, asked copilot to write stack and queue both on Python and C++. In progress of adding new extra structures and tree printer",Roman,2024-10-19T02:29:42.000+02:00,https://github.com/RomanRudin/bfu_ads_labs/commit/f4a8698378daa5f42234b89380f08e76f9cc3080
+"Create ai-01.py
+
+Initial commit: [ai-01.py] I asked Bing.com with CoPilot to write me some code that will translate each letter the user types in to become a number, instead.",Paul Ramnora,2024-03-25T14:30:21.000Z,https://github.com/pramnora/python/commit/5092c0a8550a6dbc9b90c1da0164b10f1478d8d5
+"in future, do not allow Copilot to write changelogs ...",AzliRynz,2022-08-26T19:13:13.000+01:00,https://github.com/ClousClouds/XPocketMP/commit/286043ec941775944aa1aaaecd2d5d9eb596f84e
+"Update autoencoder-anomoly-detection.java
+
+Playing with Copilot to write this program!!!",Dan Hardej,2023-03-03T16:32:35.000+08:00,https://github.com/danielhardej/getting-started-with-github-copilot/commit/06b7aff671fdbc3f7c79e45c535ed013f16d324f
+"in future, do not allow Copilot to write changelogs ...",Dylan K. Taylor,2022-08-26T19:13:13.000+01:00,https://github.com/pmmp/PocketMine-MP/commit/b3a13a2f2132de9a6810471e10ba9f05acca06d1
+"in future, do not allow Copilot to write changelogs ...",Dylan K. Taylor,2022-08-26T19:13:13.000+01:00,https://github.com/DavyCraft648/PM-NG/commit/b3a13a2f2132de9a6810471e10ba9f05acca06d1
+Use GH Copilot to write roll,CJ Harries,2021-12-10T17:57:44.000-06:00,https://github.com/thecjharries/r-daily-programmer/commit/9935bf336abfbd67dbc1d0be043d34b19d7c6591
+"in future, do not allow Copilot to write changelogs ...",Dylan K. Taylor,2022-08-26T19:13:13.000+01:00,https://github.com/AlternatifDev/PocketMine-MP/commit/b3a13a2f2132de9a6810471e10ba9f05acca06d1
+Add a sample script generated by Github CoPilot to write git log to a Sqlite database,namuan,2021-11-14T10:56:01.000Z,https://github.com/namuan/bin-utils/commit/820a6f08d1cf77494ee41c56091a593c8e3b39d6
+"Debugging and Testing: 20/09
+
+Debugged a lot of code today regarding the Vertex structure and the Graph class. Since I am using hashmaps with Vertex objects as keys to save information about the graph and its traversal, I had to specify a process for the Vertex object to be hashed. After doing so I leveraged Github Copilot to write testing cases on a C++ file because I have limited experience working with unit tests and testcase development. After these tests I am 100% sure that the class and structures are ready to use as they are intended in order to start developing each zone's algorithm",ferDMS,2023-09-20T23:17:35.000-06:00,https://github.com/ferDMS/Roborregos-2023/commit/44026df5ed8447b28297907ec8c761b429384254

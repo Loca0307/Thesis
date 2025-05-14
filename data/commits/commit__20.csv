@@ -1,0 +1,4 @@
+message,author,date,url
+"Vibe coded refactoring
+
+Asked ""How can this code be improved?"" and then asked Copilot to implement each suggestion with separate prompts. Asking it to do all of them at once didn't work.",Andy Dyer,2025-05-03T15:54:43.000-06:00,https://github.com/abdyer/j-archive-mcp/commit/481b8be710f1ec0ddd310a25837e7d2dc6129bef
