@@ -116,16 +116,16 @@ def process_links_file(link_file_path, result_file_path, min_lines, max_lines, j
                 result_writer.writerow(["Error fetching diff"])
 
 def process_all_links_files(paths, headers, min_lines, max_lines, valid_extensions):
-    os.makedirs("data/stats", exist_ok=True)
-    STATS_JSONL_PATH = os.path.join("data", "stats", "stats.jsonl")
-    os.makedirs("data/results", exist_ok=True)
+    os.makedirs(paths[1], exist_ok=True)  
+
+    STATS_JSONL_PATH = os.path.join("data", "stats.jsonl")
 
     with open(STATS_JSONL_PATH, mode='w', encoding='utf-8') as jsonl_writer:
-        for filename in os.listdir("data/links"):
+        for filename in os.listdir(paths[0]):
             if filename.startswith("link") and filename.endswith(".csv"):
                 index = filename.replace("link", "").replace(".csv", "")
-                link_file = os.path.join("data/links", filename)
-                result_file = os.path.join("data/results", f"results{index}.csv")
+                link_file = os.path.join(paths[0], filename)
+                result_file = os.path.join(paths[1], f"results{index}.csv")
 
                 print(f"📁 Processing {filename} ➞ {os.path.basename(result_file)}")
                 process_links_file(link_file, result_file, min_lines, max_lines, jsonl_writer, valid_extensions, headers)
