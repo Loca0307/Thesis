@@ -1,0 +1,2554 @@
+
+LINK NUMBER 1
+Error fetching diff
+
+LINK NUMBER 2
+Error fetching diff
+
+LINK NUMBER 3
+Error fetching diff
+
+LINK NUMBER 4
+
+File path: NM4_Fermilab/Data_Creation/Create_Training_Data.py
+"        print(""\nERROR DURING SIGNAL GENERATION:"")
+        print(""-"" * 60)
+        
+        import traceback
+        print(f""Error type: {type(e).__name__}"")
+        print(f""Error message: {str(e)}"")
+        print(""\nTraceback:"")
+        traceback.print_exc()
+        
+        print(""\nDIAGNOSTIC INFORMATION:"")
+        try:
+            print(f""TensorFlow imported: {'tf' in globals()}"")
+            if 'tf' in globals():
+                print(f""TensorFlow version: {tf.__version__}"")
+            
+            # Check input parameters
+            print(f""\nInput parameters:"")
+            print(f""  Mode: {args.mode}"")
+            print(f""  Num samples: {args.num_samples}"")
+            print(f""  Add noise: {args.add_noise}"")
+            print(f""  Oversampling: {args.oversampling}"")
+            
+            # Check if frequency range is properly defined
+            print(f""\nFrequency configuration:"")
+            if hasattr(generator, 'center_freq'):
+                print(f""  Center frequency: {generator.center_freq} MHz"")
+            
+            # Check for file system issues
+            print(f""\nOutput directory:"")
+            print(f""  Path: {args.output_dir}"")
+            print(f""  Exists: {os.path.exists(args.output_dir)}"")
+            print(f""  Writable: {os.access(args.output_dir, os.W_OK) if os.path.exists(args.output_dir) else 'N/A'}"")
+            
+            # import psutil   
+            # process = psutil.Process(os.getpid())
+            # print(f""\nMemory usage: {process.memory_info().rss / (1024 * 1024):.2f} MB"")
+            
+        except Exception as diag_error:
+            print(f""Error during diagnostics: {diag_error}"")
+        
+        print(""-"" * 60)"
+
+LINK NUMBER 5
+Not enough lines
+
+LINK NUMBER 6
+Not enough lines
+
+LINK NUMBER 7
+
+File path: arr/LC53_maxSubarr_kadanesAlg.py
+"class Solution(object):
+    def maxSubArray(self, nums):
+        """"""
+        :type nums: List[int]
+        :rtype: int
+        """"""
+        return 2  # Placeholder for you to implement the solution
+
+
+# Test cases
+test_cases = [
+    # Example 1
+    ([-2, 1, -3, 4, -1, 2, 1, -5, 4], 6),
+
+    # Example 2
+    ([1], 1),
+
+    # Example 3
+    ([5, 4, -1, 7, 8], 23),
+
+    # Additional test cases
+    ([-1, -2, -3, -4], -1),  # Single negative number
+    ([2, 1, 3, 4], 10),  # All positive numbers
+    ([0, 0, 0, 0], 0),  # All zeros
+    ([-2, -1, -3, 4, -1, 2, 1, -5, 4], 6),  # Subarray with both positive and negative values
+    ([-2, 1, -3, 4, -1, 2, 1], 6)  # Another example of mix of positive and negative numbers
+]
+
+# Running the test cases
+sol = Solution()
+for i, (nums, expected) in enumerate(test_cases):
+    result = sol.maxSubArray(nums)
+    print(f""Test case {i + 1}: {'Pass' if result == expected else 'Fail'}"")
+    print(f""Expected: {expected}, Got: {result}"")"
+
+LINK NUMBER 8
+Error fetching diff
+
+LINK NUMBER 9
+Error fetching diff
+
+LINK NUMBER 10
+Error fetching diff
+
+LINK NUMBER 11
+
+File path: Scripts/temp.js
+"import fetch from ""node-fetch""
+
+async function fetchTournamentData() {
+    try {
+      const response = await fetch(""https://www.itftennis.com/tennis/api/TournamentApi/GetCalendar?circuitCode=MT&searchString=&skip=0&take=100&nationCodes=&zoneCodes=&dateFrom=2025-01-01&dateTo=2025-01-31&indoorOutdoor=&categories=&isOrderAscending=true&orderField=startDate&surfaceCodes="", {
+        ""headers"": {
+          ""accept"": ""*/*"",
+          ""accept-language"": ""en-US,en;q=0.9"",
+          ""if-modified-since"": ""Fri, 24 Jan 2025 19:57:13 GMT"",
+          ""priority"": ""u=1, i"",
+          ""sec-ch-ua"": ""\""Google Chrome\"";v=\""131\"", \""Chromium\"";v=\""131\"", \""Not_A Brand\"";v=\""24\"""",
+          ""sec-ch-ua-mobile"": ""?0"",
+          ""sec-ch-ua-platform"": ""\""macOS\"""",
+          ""sec-fetch-dest"": ""empty"",
+          ""sec-fetch-mode"": ""cors"",
+          ""sec-fetch-site"": ""same-origin"",
+          ""cookie"": ""ARRAffinity=1a7aff82bc21373b03d8fda86d009014a254fb43661cd4068b45b28f7aa56160; ARRAffinitySameSite=1a7aff82bc21373b03d8fda86d009014a254fb43661cd4068b45b28f7aa56160; nlbi_178373=Ran5N41HZQkbS5zEtoSRdQAAAABom3lJWWsIWcVYqOPhRl1C; visid_incap_178373=7jzkGB/oTpq6/Jc/BRvGgbVdCGcAAAAAQUIPAAAAAADUwUyZ73WafusZyKj+p7zW; OptanonAlertBoxClosed=2024-10-10T23:05:34.074Z; incap_ses_182_178373=as+rMSL0V37QcjIjQZiGAtEBlGcAAAAAORKY7tNtvmc9UA8GrvugGw==; OptanonConsent=isGpcEnabled=0&datestamp=Fri+Jan+24+2025+16%3A11%3A15+GMT-0500+(Eastern+Standard+Time)&version=6.23.0&isIABGlobal=false&hosts=&consentId=a7629d4b-c3f6-4ed2-a3d9-6d1b9259adc2&interactionCount=1&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1%2CC0005%3A1&geolocation=US%3BNY&AwaitingReconsent=false""
+        },
+        ""referrerPolicy"": ""no-referrer"",
+        ""body"": null,
+        ""method"": ""GET""
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+  
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(""Failed to fetch tournament data:"", error);
+      throw error;
+    }
+}
+let dataOut = await fetchTournamentData()
+console.log(dataOut)"
+
+LINK NUMBER 12
+Not enough lines
+
+LINK NUMBER 13
+Not enough lines
+
+LINK NUMBER 14
+Not enough lines
+
+LINK NUMBER 15
+Error fetching diff
+
+LINK NUMBER 16
+Error fetching diff
+
+LINK NUMBER 17
+Error fetching diff
+
+LINK NUMBER 18
+Not enough lines
+
+LINK NUMBER 19
+Not enough lines
+
+LINK NUMBER 20
+Not enough lines
+
+LINK NUMBER 21
+Not enough lines
+
+LINK NUMBER 22
+Error fetching diff
+
+LINK NUMBER 23
+Error fetching diff
+
+LINK NUMBER 24
+Error fetching diff
+
+LINK NUMBER 25
+Not enough lines
+
+LINK NUMBER 26
+Not enough lines
+
+LINK NUMBER 27
+
+File path: lightningd/channel_control.c
+"#include ""config.h""
+#include ""../shutdown_scriptpubkey.c""
+#include <assert.h>
+#include <ccan/array_size/array_size.h>
+#include <ccan/err/err.h>
+#include <common/amount.h>
+#include <common/setup.h>
+#include <common/utils.h>
+#include <stdio.h>
+#include <wire/wire.h>
+
+/* AUTOGENERATED MOCKS START */
+/* Generated stub for amount_asset_is_main */
+bool amount_asset_is_main(struct amount_asset *asset UNNEEDED)
+{ fprintf(stderr, ""amount_asset_is_main called!\n""); abort(); }
+/* Generated stub for amount_asset_to_sat */
+struct amount_sat amount_asset_to_sat(struct amount_asset *asset UNNEEDED)
+{ fprintf(stderr, ""amount_asset_to_sat called!\n""); abort(); }
+/* Generated stub for amount_feerate */
+ bool amount_feerate(u32 *feerate UNNEEDED, struct amount_sat fee UNNEEDED, size_t weight UNNEEDED)
+{ fprintf(stderr, ""amount_feerate called!\n""); abort(); }
+/* Generated stub for amount_sat */
+struct amount_sat amount_sat(u64 satoshis UNNEEDED)
+{ fprintf(stderr, ""amount_sat called!\n""); abort(); }
+/* Generated stub for amount_sat_add */
+ bool amount_sat_add(struct amount_sat *val UNNEEDED,
+				       struct amount_sat a UNNEEDED,
+				       struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_add called!\n""); abort(); }
+/* Generated stub for amount_sat_eq */
+bool amount_sat_eq(struct amount_sat a UNNEEDED, struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_eq called!\n""); abort(); }
+/* Generated stub for amount_sat_greater_eq */
+bool amount_sat_greater_eq(struct amount_sat a UNNEEDED, struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_greater_eq called!\n""); abort(); }
+/* Generated stub for amount_sat_sub */
+ bool amount_sat_sub(struct amount_sat *val UNNEEDED,
+				       struct amount_sat a UNNEEDED,
+				       struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_sub called!\n""); abort(); }
+/* Generated stub for amount_sat_to_asset */
+struct amount_asset amount_sat_to_asset(struct amount_sat *sat UNNEEDED, const u8 *asset UNNEEDED)
+{ fprintf(stderr, ""amount_sat_to_asset called!\n""); abort(); }
+/* Generated stub for amount_tx_fee */
+struct amount_sat amount_tx_fee(u32 fee_per_kw UNNEEDED, size_t weight UNNEEDED)
+{ fprintf(stderr, ""amount_tx_fee called!\n""); abort(); }
+/* AUTOGENERATED MOCKS END */
+
+/* Thanks ChatGPT! */
+static const u8 *construct_script(const tal_t *ctx,
+				  const u8 *data, size_t data_len)
+{
+	u8 *script = tal_arr(ctx, u8, 0);
+	towire_u8(&script, OP_RETURN);
+	if (data_len >= 6 && data_len <= 75) {
+		towire_u8(&script, data_len);
+		towire(&script, data, data_len);
+	} else if (data_len >= 76 && data_len <= 80) {
+		towire_u8(&script, 76);
+		towire_u8(&script, data_len);
+		towire(&script, data, data_len);
+	} else {
+		return tal_free(script); // Invalid case
+	}
+	return script;
+}
+
+static void test_valid_op_returns(void)
+{
+	u8 data[80];
+	const u8 *script;
+
+	for (size_t i = 6; i <= 80; i++) {
+		memset(data, i, sizeof(data));
+		script = construct_script(tmpctx, data, i);
+		assert(is_valid_op_return(script, tal_bytelen(script)));
+	}
+}
+
+static void test_invalid_op_return_too_short(void)
+{
+	u8 data[80];
+	const u8 *script;
+
+	for (size_t i = 0; i < 6; i++) {
+		memset(data, i, sizeof(data));
+		script = construct_script(tmpctx, data, i);
+		assert(!is_valid_op_return(script, tal_bytelen(script)));
+	}
+}
+
+static void test_invalid_op_return_too_long(void)
+{
+	u8 data[100];
+	const u8 *script;
+
+	for (size_t i = 81; i < sizeof(data); i++) {
+		memset(data, i, sizeof(data));
+		script = construct_script(tmpctx, data, i);
+		assert(!is_valid_op_return(script, tal_bytelen(script)));
+	}
+}
+
+// Test case: Invalid OP_RETURN with incorrect push length (e.g., 77 bytes using wrong prefix)
+static void test_invalid_op_return_wrong_push_length(void)
+{
+	u8 script[90] = {0x6a, 0x76, 0x77}; // Invalid push of 77 bytes
+	assert(!is_valid_op_return(script, 3 + 77));
+}
+
+// Test case: Invalid OP_RETURN with incorrect OP_RETURN opcode
+static void test_invalid_op_return_wrong_opcode(void)
+{
+	u8 script[10] = {0x00, 0x06, 1, 2, 3, 4, 5, 6}; // 0x00 instead of 0x6a
+	assert(!is_valid_op_return(script, 8));
+}
+
+// Test case: Invalid OP_RETURN with no data
+static void test_invalid_op_return_empty(void)
+{
+	u8 script[1] = {0x6a}; // Only OP_RETURN, no data
+	assert(!is_valid_op_return(script, 1));
+}
+
+static const u8 *construct_witness_script(const tal_t *ctx, u8 version,
+                                          const u8 *data, size_t data_len)
+{
+	u8 *script = tal_arr(ctx, u8, 0);
+
+	if (version < OP_1 || version > OP_16 || data_len < 2 || data_len > 40)
+		return tal_free(script); // Invalid case
+
+	towire_u8(&script, version);  // OP_1 to OP_16
+	towire_u8(&script, data_len); // Push length
+	towire(&script, data, data_len); // Data
+
+	return script;
+}
+
+static void test_valid_witnessprogs(void)
+{
+	u8 data[40];
+	const u8 *script;
+
+	for (u8 version = OP_1; version <= OP_16; version++) {
+		for (size_t i = 2; i <= 40; i++) {
+			memset(data, i, sizeof(data));
+			script = construct_witness_script(tmpctx, version, data, i);
+			assert(is_valid_witnessprog(script, tal_bytelen(script)));
+		}
+	}
+}
+
+static void test_invalid_witnessprogs(void)
+{
+	u8 data[41];
+	const u8 *script;
+
+	// Test: Invalid versions (0 and >16)
+	memset(data, 0xAA, sizeof(data));
+	script = construct_witness_script(tmpctx, OP_0, data, 20);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	script = construct_witness_script(tmpctx, OP_16 + 1, data, 20);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	// Test: Invalid data lengths (1 byte and >40 bytes)
+	script = construct_witness_script(tmpctx, OP_1, data, 1);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	script = construct_witness_script(tmpctx, OP_2, data, 41);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	// Test: Completely empty script (invalid)
+	script = tal_arr(tmpctx, u8, 0);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+}
+
+// Test runner
+int main(int argc, char *argv[])
+{
+	common_setup(argv[0]);
+
+	test_valid_op_returns();
+	test_invalid_op_return_too_short();
+	test_invalid_op_return_too_long();
+	test_invalid_op_return_wrong_push_length();
+	test_invalid_op_return_wrong_opcode();
+	test_invalid_op_return_empty();
+	test_valid_witnessprogs();
+	test_invalid_witnessprogs();
+	common_shutdown();
+	return 0;
+}"
+
+LINK NUMBER 28
+
+File path: lightningd/channel_control.c
+"#include ""config.h""
+#include ""../shutdown_scriptpubkey.c""
+#include <assert.h>
+#include <ccan/array_size/array_size.h>
+#include <ccan/err/err.h>
+#include <common/amount.h>
+#include <common/setup.h>
+#include <common/utils.h>
+#include <stdio.h>
+#include <wire/wire.h>
+
+/* AUTOGENERATED MOCKS START */
+/* Generated stub for amount_asset_is_main */
+bool amount_asset_is_main(struct amount_asset *asset UNNEEDED)
+{ fprintf(stderr, ""amount_asset_is_main called!\n""); abort(); }
+/* Generated stub for amount_asset_to_sat */
+struct amount_sat amount_asset_to_sat(struct amount_asset *asset UNNEEDED)
+{ fprintf(stderr, ""amount_asset_to_sat called!\n""); abort(); }
+/* Generated stub for amount_feerate */
+ bool amount_feerate(u32 *feerate UNNEEDED, struct amount_sat fee UNNEEDED, size_t weight UNNEEDED)
+{ fprintf(stderr, ""amount_feerate called!\n""); abort(); }
+/* Generated stub for amount_sat */
+struct amount_sat amount_sat(u64 satoshis UNNEEDED)
+{ fprintf(stderr, ""amount_sat called!\n""); abort(); }
+/* Generated stub for amount_sat_add */
+ bool amount_sat_add(struct amount_sat *val UNNEEDED,
+				       struct amount_sat a UNNEEDED,
+				       struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_add called!\n""); abort(); }
+/* Generated stub for amount_sat_eq */
+bool amount_sat_eq(struct amount_sat a UNNEEDED, struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_eq called!\n""); abort(); }
+/* Generated stub for amount_sat_greater_eq */
+bool amount_sat_greater_eq(struct amount_sat a UNNEEDED, struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_greater_eq called!\n""); abort(); }
+/* Generated stub for amount_sat_sub */
+ bool amount_sat_sub(struct amount_sat *val UNNEEDED,
+				       struct amount_sat a UNNEEDED,
+				       struct amount_sat b UNNEEDED)
+{ fprintf(stderr, ""amount_sat_sub called!\n""); abort(); }
+/* Generated stub for amount_sat_to_asset */
+struct amount_asset amount_sat_to_asset(struct amount_sat *sat UNNEEDED, const u8 *asset UNNEEDED)
+{ fprintf(stderr, ""amount_sat_to_asset called!\n""); abort(); }
+/* Generated stub for amount_tx_fee */
+struct amount_sat amount_tx_fee(u32 fee_per_kw UNNEEDED, size_t weight UNNEEDED)
+{ fprintf(stderr, ""amount_tx_fee called!\n""); abort(); }
+/* AUTOGENERATED MOCKS END */
+
+/* Thanks ChatGPT! */
+static const u8 *construct_script(const tal_t *ctx,
+				  const u8 *data, size_t data_len)
+{
+	u8 *script = tal_arr(ctx, u8, 0);
+	towire_u8(&script, OP_RETURN);
+	if (data_len >= 6 && data_len <= 75) {
+		towire_u8(&script, data_len);
+		towire(&script, data, data_len);
+	} else if (data_len >= 76 && data_len <= 80) {
+		towire_u8(&script, 76);
+		towire_u8(&script, data_len);
+		towire(&script, data, data_len);
+	} else {
+		return tal_free(script); // Invalid case
+	}
+	return script;
+}
+
+static void test_valid_op_returns(void)
+{
+	u8 data[80];
+	const u8 *script;
+
+	for (size_t i = 6; i <= 80; i++) {
+		memset(data, i, sizeof(data));
+		script = construct_script(tmpctx, data, i);
+		assert(is_valid_op_return(script, tal_bytelen(script)));
+	}
+}
+
+static void test_invalid_op_return_too_short(void)
+{
+	u8 data[80];
+	const u8 *script;
+
+	for (size_t i = 0; i < 6; i++) {
+		memset(data, i, sizeof(data));
+		script = construct_script(tmpctx, data, i);
+		assert(!is_valid_op_return(script, tal_bytelen(script)));
+	}
+}
+
+static void test_invalid_op_return_too_long(void)
+{
+	u8 data[100];
+	const u8 *script;
+
+	for (size_t i = 81; i < sizeof(data); i++) {
+		memset(data, i, sizeof(data));
+		script = construct_script(tmpctx, data, i);
+		assert(!is_valid_op_return(script, tal_bytelen(script)));
+	}
+}
+
+// Test case: Invalid OP_RETURN with incorrect push length (e.g., 77 bytes using wrong prefix)
+static void test_invalid_op_return_wrong_push_length(void)
+{
+	u8 script[90] = {0x6a, 0x76, 0x77}; // Invalid push of 77 bytes
+	assert(!is_valid_op_return(script, 3 + 77));
+}
+
+// Test case: Invalid OP_RETURN with incorrect OP_RETURN opcode
+static void test_invalid_op_return_wrong_opcode(void)
+{
+	u8 script[10] = {0x00, 0x06, 1, 2, 3, 4, 5, 6}; // 0x00 instead of 0x6a
+	assert(!is_valid_op_return(script, 8));
+}
+
+// Test case: Invalid OP_RETURN with no data
+static void test_invalid_op_return_empty(void)
+{
+	u8 script[1] = {0x6a}; // Only OP_RETURN, no data
+	assert(!is_valid_op_return(script, 1));
+}
+
+static const u8 *construct_witness_script(const tal_t *ctx, u8 version,
+                                          const u8 *data, size_t data_len)
+{
+	u8 *script = tal_arr(ctx, u8, 0);
+
+	if (version < OP_1 || version > OP_16 || data_len < 2 || data_len > 40)
+		return tal_free(script); // Invalid case
+
+	towire_u8(&script, version);  // OP_1 to OP_16
+	towire_u8(&script, data_len); // Push length
+	towire(&script, data, data_len); // Data
+
+	return script;
+}
+
+static void test_valid_witnessprogs(void)
+{
+	u8 data[40];
+	const u8 *script;
+
+	for (u8 version = OP_1; version <= OP_16; version++) {
+		for (size_t i = 2; i <= 40; i++) {
+			memset(data, i, sizeof(data));
+			script = construct_witness_script(tmpctx, version, data, i);
+			assert(is_valid_witnessprog(script, tal_bytelen(script)));
+		}
+	}
+}
+
+static void test_invalid_witnessprogs(void)
+{
+	u8 data[41];
+	const u8 *script;
+
+	// Test: Invalid versions (0 and >16)
+	memset(data, 0xAA, sizeof(data));
+	script = construct_witness_script(tmpctx, OP_0, data, 20);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	script = construct_witness_script(tmpctx, OP_16 + 1, data, 20);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	// Test: Invalid data lengths (1 byte and >40 bytes)
+	script = construct_witness_script(tmpctx, OP_1, data, 1);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	script = construct_witness_script(tmpctx, OP_2, data, 41);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+
+	// Test: Completely empty script (invalid)
+	script = tal_arr(tmpctx, u8, 0);
+	assert(!is_valid_witnessprog(script, tal_bytelen(script)));
+}
+
+// Test runner
+int main(int argc, char *argv[])
+{
+	common_setup(argv[0]);
+
+	test_valid_op_returns();
+	test_invalid_op_return_too_short();
+	test_invalid_op_return_too_long();
+	test_invalid_op_return_wrong_push_length();
+	test_invalid_op_return_wrong_opcode();
+	test_invalid_op_return_empty();
+	test_valid_witnessprogs();
+	test_invalid_witnessprogs();
+	common_shutdown();
+	return 0;
+}"
+
+LINK NUMBER 29
+Error fetching diff
+
+LINK NUMBER 30
+Error fetching diff
+
+LINK NUMBER 31
+Error fetching diff
+
+LINK NUMBER 32
+Not enough lines
+
+LINK NUMBER 33
+
+File path: src/plotProfiles.py
+"import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import simps
+
+# Define the file path
+file_path = ""/home/tma/Desktop/DataValidationScripts/chan395/profiles/chan395.means""
+
+# Number of header rows to skip
+header_lines_to_skip = 24
+
+# Read the file into a pandas DataFrame, skipping the header lines and setting column names
+try:
+    df = pd.read_csv(file_path, delimiter='\s+', skiprows=header_lines_to_skip, header=None, names=[""y"", ""y+"", ""Umean"", ""col4"", ""col5"", ""col6"", ""col7""])  # Use '\s+' for any whitespace delimiter
+    
+    # Extracting the required columns and converting to floats
+    y = df[""y""].iloc[1:].reset_index(drop=True).astype(float)
+    Umean = df[""Umean""].iloc[1:].reset_index(drop=True).astype(float)
+    
+    # Calculate Ubulk (normalized integral of Umean with respect to y)
+    H = 1.0  # Assuming H is the height and normalizing factor
+    Ubulk = simps(Umean, y) / H
+    
+    # Print Ubulk value
+    print(f""Ubulk: {Ubulk}"")
+    
+    # Plotting
+    plt.figure(figsize=(12, 10))
+    plt.plot(Umean, y, marker='o', linestyle='-', color='b', label=r""Moser1999, $Re_{\tau}=395$"")
+    
+    # Labels
+    plt.xlabel(r'$\overline{U}$', fontsize=14, fontname='serif')
+    plt.ylabel(r'$y/H$', fontsize=14, fontname='serif')
+    
+    # Set y-axis range
+    plt.ylim(0.0, 1.0)
+    
+    # Turn off grid
+    plt.grid(False)
+    
+    # Legend
+    plt.legend(fontsize=12)
+    
+    # Use LaTeX interpreter for the figure
+    plt.rcParams.update({'mathtext.default': 'regular'})
+    
+    # Set font to serif for all text elements
+    plt.rcParams['font.family'] = 'serif'
+    
+    # Set global font size
+    plt.rcParams.update({'font.size': 14})
+    
+    # Show plot
+    plt.tight_layout()
+    plt.show()
+    
+except FileNotFoundError:
+    print(f""The file at {file_path} does not exist."")
+except pd.errors.EmptyDataError:
+    print(""The file is empty."")
+except pd.errors.ParserError:
+    print(""Error parsing the file."")
+"
+
+LINK NUMBER 34
+Not enough lines
+
+LINK NUMBER 35
+Not enough lines
+
+LINK NUMBER 36
+Error fetching diff
+
+LINK NUMBER 37
+Error fetching diff
+
+LINK NUMBER 38
+Error fetching diff
+
+LINK NUMBER 39
+Not enough lines
+
+LINK NUMBER 40
+Not enough lines
+
+LINK NUMBER 41
+Not enough lines
+
+LINK NUMBER 42
+Not enough lines
+
+LINK NUMBER 43
+Error fetching diff
+
+LINK NUMBER 44
+Error fetching diff
+
+LINK NUMBER 45
+Error fetching diff
+
+LINK NUMBER 46
+Not enough lines
+
+LINK NUMBER 47
+Not enough lines
+
+LINK NUMBER 48
+Not enough lines
+
+LINK NUMBER 49
+Not enough lines
+
+LINK NUMBER 50
+Error fetching diff
+
+LINK NUMBER 51
+Error fetching diff
+
+LINK NUMBER 52
+Error fetching diff
+
+LINK NUMBER 53
+Not enough lines
+
+LINK NUMBER 54
+
+File path: src/server/db/index.ts
+"import { db } from '.';
+import { champions, items } from './schema';
+import { eq, inArray } from 'drizzle-orm';
+
+export async function insertMissingChampionsAndItems(ddChampions: DDChampion[], ddItems: DDItem[]) {
+  await db.transaction(async (tx) => {
+    // Fetch all existing champions and items in one go
+    const existingChampions = await tx.select().from(champions);
+    const existingItems = await tx.select().from(items);
+
+    // Create a set of existing champion names and item IDs for quick lookup
+    const existingChampionNames = new Set(existingChampions.map((champ) => champ.name));
+    const existingItemIds = new Set(existingItems.map((item) => item.id));
+
+    // Filter out the champions and items that already exist
+    const newChampions = ddChampions.filter((ddChampion) => !existingChampionNames.has(ddChampion.name));
+    const newItems = ddItems.filter((ddItem) => !existingItemIds.has(ddItem.id));
+
+    // Insert new champions and items in bulk
+    if (newChampions.length > 0) {
+      await tx.insert(champions).values(
+        newChampions.map((ddChampion) => ({
+          name: ddChampion.name,
+        }))
+      );
+      console.log(`Inserted champions: ${newChampions.map((c) => c.name).join(', ')}`);
+    } else {
+      console.log('No new champions to insert.');
+    }
+
+    if (newItems.length > 0) {
+      await tx.insert(items).values(
+        newItems.map((ddItem) => ({
+          id: ddItem.id,
+          name: ddItem.name,
+        }))
+      );
+      console.log(`Inserted items: ${newItems.map((i) => i.name).join(', ')}`);
+    } else {
+      console.log('No new items to insert.');
+    }
+  });
+}"
+
+LINK NUMBER 55
+Not enough lines
+
+LINK NUMBER 56
+Not enough lines
+
+LINK NUMBER 57
+Error fetching diff
+
+LINK NUMBER 58
+Error fetching diff
+
+LINK NUMBER 59
+Error fetching diff
+
+LINK NUMBER 60
+Not enough lines
+
+LINK NUMBER 61
+
+File path: js/apps.js
+"  const resultsContainer = document.getElementById('report');
+  resultsContainer.innerHTML = ''; // Clear previous results
+
+  // Loop through allPictures and display results
+  state.allPictures.forEach((picture) => {
+    const resultItem = document.createElement('p');
+    resultItem.textContent = `${picture.name}: Votes - ${picture.votes}, Seen - ${picture.views}`;
+    resultsContainer.appendChild(resultItem);
+  });
+"
+
+LINK NUMBER 62
+
+File path: libboot/src/main/java/com/lpu/lib/config/WebConfig.java
+"package com.lpu.lib.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer 
+{
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() 
+    {
+        return new WebMvcConfigurer() 
+        {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) 
+            {
+                registry.addMapping(""/**"")
+                        .allowedOrigins(""http://127.0.0.1:5500"")
+                        .allowedMethods(""GET"", ""POST"", ""PUT"", ""DELETE"", ""OPTIONS"")
+                        .allowedHeaders(""*"");
+            }
+        };
+    }
+}"
+
+LINK NUMBER 63
+
+File path: src/ArrowMazePanel.java
+"
+    public boolean noBlackArrowsRemain()
+    {
+        for (int r=0; r<NUM_ROWS; r++)
+            for (int c=0; c<NUM_COLS; c++)
+                if (myGrid[r][c].getMyColor() == Color.BLACK)
+                    return false;
+        return true;
+    }
+
+    public ArrowCell targetOfArrowCell(ArrowCell cell)
+    {
+        switch (cell.getDirection())
+        {
+            case ArrowCell.RIGHT:
+                if (cell.getMyCol() == NUM_COLS-1)
+                    return null;
+                return myGrid[cell.getMyRow()][cell.getMyCol()+1];
+            case ArrowCell.LEFT:
+                if (cell.getMyCol() == 0)
+                    return null;
+                return myGrid[cell.getMyRow()][cell.getMyCol()-1];
+            case ArrowCell.DOWN:
+                if (cell.getMyRow() == NUM_ROWS-1)
+                    return null;
+                return myGrid[cell.getMyRow()+1][cell.getMyCol()];
+            case ArrowCell.UP:
+                if (cell.getMyRow() == 0)
+                    return null;
+                return myGrid[cell.getMyRow()-1][cell.getMyCol()];
+
+            default:
+                return null;
+        }
+
+    }
+
+    public void setColorForPath(Color c, ArrayList<ArrowCell> path)
+    {
+        for (ArrowCell cell:path)
+        {
+            cell.setMyColor(c);
+        }
+        repaint();
+    }
+
+    public void colorPathStartingAt(int r, int c)
+    {
+        ArrowCell startCell = myGrid[r][c];
+        if (startCell.getMyColor() != Color.BLACK)
+            return;
+        ArrayList<ArrowCell> path = new ArrayList<>();
+        path.add(startCell);
+        while(true)
+        {
+            ArrowCell nextCell = targetOfArrowCell(path.get(path.size()-1));
+            if (nextCell == null || path.contains(nextCell))
+            {
+                if (nextCell != null)
+                    path.add(nextCell);
+                setColorForPath(new Color((int)(Math.random()*128)+64,
+                                (int)(Math.random()*128)+64,
+                                (int)(Math.random()*128)+64),
+                        path);
+                return;
+            }
+            if (nextCell.getMyColor() != Color.BLACK)
+            {
+                setColorForPath(nextCell.getMyColor(), path);
+                return;
+            }
+            path.add(nextCell);
+        }
+    }
+
+    public void execute()
+    {
+        for (int cellNum = 0; cellNum<NUM_ROWS*NUM_COLS; cellNum++)
+            colorPathStartingAt(cellNum/NUM_COLS, cellNum%NUM_COLS);
+
+    }"
+
+LINK NUMBER 64
+Error fetching diff
+
+LINK NUMBER 65
+Error fetching diff
+
+LINK NUMBER 66
+Error fetching diff
+
+LINK NUMBER 67
+
+File path: csharp-example/AzureManagementTest/Program.cs
+"string subscriptionId = ""YOUR_SUBSCRIPTION_ID"";
+string clientId = ""YOUR_CLIENT_ID"";
+            string clientSecret = ""YOUR_CLIENT_SECRET"";
+            string tenantId = ""YOUR_TENANT_ID"";
+            string resourceGroupName = ""YOUR_RESOURCE_GROUP_NAME"";
+            string vmName = ""YOUR_VM_NAME"";
+            string location = ""YOUR_VM_LOCATION""; // e.g., ""eastus""
+
+            // Authenticate using a service principal
+            var serviceClientCredentials = ApplicationTokenProvider.LoginSilentAsync(
+                tenantId, clientId, clientSecret).Result;
+
+            // Create a Resource Management client
+            var resourceManagementClient = new ResourceManagementClient(serviceClientCredentials)
+            {
+                SubscriptionId = subscriptionId
+            };
+
+            // Create the resource group
+            var resourceGroup = new ResourceGroup
+            {
+                Location = location
+            };
+
+            resourceManagementClient.ResourceGroups.CreateOrUpdate(resourceGroupName, resourceGroup);
+
+            // Create the VM
+            var vmClient = new ComputeManagementClient(serviceClientCredentials)
+            {
+                SubscriptionId = subscriptionId
+            };
+            var vmParams = new VirtualMachine
+            {
+                Location = location,
+                OsProfile = new OSProfile
+                {
+                    ComputerName = vmName,
+                    AdminUsername = ""YOUR_ADMIN_USERNAME"", // Replace with your desired admin username
+                    AdminPassword = ""YOUR_ADMIN_PASSWORD""  // Replace with your desired admin password
+                },
+                HardwareProfile = new HardwareProfile
+                {
+                    VmSize = ""Standard_D2s_v3"" // Replace with the desired VM size
+                },
+                StorageProfile = new StorageProfile
+                {
+                    ImageReference = new ImageReference
+                    {
+                        Publisher = ""MicrosoftWindowsServer"",
+                        Offer = ""WindowsServer"",
+                        Sku = ""2022-datacenter"",
+                        Version = ""latest""
+                    },
+                    OsDisk = new OSDisk
+                    {
+                        CreateOption = DiskCreateOptionTypes.FromImage,
+                        ManagedDisk = new ManagedDiskParameters
+                        {
+                            StorageAccountType = StorageAccountTypes.StandardLRS
+                        }
+                    }
+                },
+                NetworkProfile = new NetworkProfile
+                {
+                    NetworkInterfaces = new[]
+                    {
+                        new NetworkInterfaceReference
+                        {
+                            Id = ""/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/YOUR_RESOURCE_GROUP/providers/Microsoft.Network/networkInterfaces/YOUR_NETWORK_INTERFACE_NAME""
+                            // Replace with the actual network interface ID
+                        }
+                    }
+                }
+            };
+            vmClient.VirtualMachines.CreateOrUpdate(resourceGroupName, vmName, vmParams);
+
+            Console.WriteLine(""Virtual Machine created successfully!"");
+"
+
+LINK NUMBER 68
+Not enough lines
+
+LINK NUMBER 69
+Not enough lines
+
+LINK NUMBER 70
+Not enough lines
+
+LINK NUMBER 71
+Error fetching diff
+
+LINK NUMBER 72
+Error fetching diff
+
+LINK NUMBER 73
+Error fetching diff
+
+LINK NUMBER 74
+Not enough lines
+
+LINK NUMBER 75
+Not enough lines
+
+LINK NUMBER 76
+Not enough lines
+
+LINK NUMBER 77
+
+File path: TouchFaders/RCPParser.cs
+"
+    public class RCPAddress {
+        // parameters: X, Y, min, max, default, unit, type, UI?, r/w, scale
+        // get: X, Y
+        // set: X, Y, value, textValue
+
+
+        public static string ToString (object instance) {
+            Type currentType = instance.GetType();
+            string result = string.Empty;
+
+            while (currentType != null && currentType != typeof(object)) {
+                if (currentType.DeclaringType == typeof(Console)) {
+                    result = $""{currentType.Name}:{result}"";
+                    currentType = null;
+                } else {
+                    result = $""{currentType.Name}/{result}"";
+                    currentType = currentType.DeclaringType;
+                }
+            }
+
+            return result.TrimEnd('/') + "" "" + instance;
+        }
+
+        public class Console {
+            public class MIXER {
+
+            }
+
+            public class CL {
+
+            }
+
+            public class QL {
+
+                public class Current {
+
+                    public class CustomFaderBank {
+
+                        public class SourceCh {
+                            // 4 32 0 11 ""NO ASSIGN"" """" string any rw 1
+                        }
+                        public class Master {
+                            public class SourceCh {
+                                // 4 2 0 11 ""NO ASSIGN"" """" string any rw 1
+                            }
+                        }
+                    }
+                    public class FaderBank {
+                        public enum FaderBanks {
+                            I,
+                            Dont,
+                            Know
+                        }
+                        public class Select {
+                            // 1 1 0 1 0 """" integer any rw 1
+                            // TODO: what does it do?
+                            public enum Selects {
+                                BankA,
+                                BankB
+                            }
+                            private readonly Selects? bank = null;
+                            public Select () { }
+                            public Select (Selects bank) { this.bank = bank; }
+                            public override string ToString () {
+                                return ""0 0"" + bank != null ? "" "" + bank.Value.ToString() : string.Empty;
+                            }
+                        }
+                        public class Bank {
+                            public enum Banks {
+                                Input1,
+                                Input2,
+                                StInDCA,
+                                MixMatrix,
+                                B1,
+                                B2,
+                                B3,
+                                B4
+                            }
+                            public class Recall {
+                                // 1 3 0 8 0 """" integer any rw 1
+                                // TODO: 3 banks, each with 8 options
+                                public FaderBanks? faderBank = null;
+                                public Banks? bank = null;
+                                public Recall (FaderBanks faderBank) {
+                                    this.faderBank = faderBank;
+                                }
+                                public Recall (FaderBanks faderBank, Banks bank) {
+                                    this.faderBank = faderBank;
+                                    this.bank = bank;
+                                }
+                                public override string ToString () {
+                                    return ""0 "" + (int)faderBank.Value + (bank != null ? ' ' + ((int)bank.Value).ToString() : string.Empty);
+                                }
+                            }
+                            public class Toggle {
+                                // 1 1 0 8 0 """" integer any rw 1
+                                // TODO: what does it do?
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }"
+
+LINK NUMBER 78
+Error fetching diff
+
+LINK NUMBER 79
+Error fetching diff
+
+LINK NUMBER 80
+Error fetching diff
+
+LINK NUMBER 81
+Not enough lines
+
+LINK NUMBER 82
+Not enough lines
+
+LINK NUMBER 83
+
+File path: __tests__/utils.unit.test.js
+"/* global global */
+
+import { mod, pick, wait, timeoutId } from ""../source/utils.js"";
+
+// Yes. I generated these tests with ChatGPT. 😎
+
+describe(""pick"", () => {
+  // Test with an array of numbers
+  test(""picks a number from the given array"", () => {
+    const options = [1, 2, 3, 4, 5];
+    const result = pick(options);
+    expect(options).toContain(result);
+  });
+
+  // Test with an array of strings
+  test(""picks a string from the given array"", () => {
+    const options = [""apple"", ""banana"", ""cherry"", ""date""];
+    const result = pick(options);
+    expect(options).toContain(result);
+  });
+
+  // Test with an array of objects
+  test(""picks an object from the given array"", () => {
+    const options = [
+      { id: 1, name: ""Alice"" },
+      { id: 2, name: ""Bob"" },
+      { id: 3, name: ""Charlie"" },
+    ];
+    const result = pick(options);
+    expect(options).toContain(result);
+  });
+
+  // Test with an empty array
+  test(""returns undefined for an empty array"", () => {
+    const options = [];
+    const result = pick(options);
+    expect(result).toBeUndefined();
+  });
+
+  // Test with a single-element array
+  test(""returns the only option for a single-element array"", () => {
+    const options = [""only""];
+    const result = pick(options);
+    expect(result).toEqual(""only"");
+  });
+
+  // Test with a large array
+  test(""picks an element from a large array"", () => {
+    const options = Array.from({ length: 1000 }, (_, index) => index);
+    const result = pick(options);
+    expect(options).toContain(result);
+  });
+});
+
+describe(""mod"", () => {
+  // Test with positive numbers
+  test(""returns the correct modulus for positive numbers"", () => {
+    expect(mod(10, 3)).toBe(1);
+    expect(mod(15, 6)).toBe(3);
+    expect(mod(20, 7)).toBe(6);
+  });
+
+  // Test with negative numbers
+  test(""returns the correct modulus for negative numbers"", () => {
+    expect(mod(-10, 3)).toBe(2);
+    expect(mod(-15, 6)).toBe(3);
+    expect(mod(-20, 7)).toBe(1);
+  });
+
+  // Test with zero divisor
+  test(""returns NaN when the divisor is zero"", () => {
+    expect(mod(10, 0)).toBeNaN();
+    expect(mod(-10, 0)).toBeNaN();
+    expect(mod(0, 0)).toBeNaN();
+  });
+
+  // Test with large numbers
+  test(""returns the correct modulus for large numbers"", () => {
+    expect(mod(987654321, 123456789)).toBe(9);
+    expect(mod(123456789, 987654321)).toBe(123456789);
+  });
+});
+
+jest.useFakeTimers();
+
+describe(""wait"", () => {
+  let setTimeoutMock;
+
+  beforeEach(() => {
+    setTimeoutMock = jest.spyOn(global, ""setTimeout"");
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    setTimeoutMock.mockRestore();
+  });
+
+  test(""resolves after the specified delay"", () => {
+    const delay = 1000;
+    const promise = wait(delay);
+    expect(setTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(setTimeoutMock).toHaveBeenCalledWith(expect.any(Function), delay);
+    jest.advanceTimersByTime(delay);
+    return expect(promise).resolves.toBeUndefined();
+  });
+
+  test(""does not resolve if clearTimeout is called"", () => {
+    const delay = 1000;
+    const promise = wait(delay);
+    expect(setTimeoutMock).toHaveBeenCalledTimes(1);
+    expect(setTimeoutMock).toHaveBeenCalledWith(expect.any(Function), delay);
+    clearTimeout(timeoutId);
+    jest.advanceTimersByTime(delay);
+    const passSymbol = Symbol();
+    return expect(
+      Promise.race([promise, Promise.resolve(passSymbol)])
+    ).resolves.toBe(passSymbol);
+  });
+});"
+
+LINK NUMBER 84
+
+File path: methods/cypressTestsGenerator.js
+"const tectalicOpenai = require('@tectalic/openai').default;
+const config = require('dotenv').config();
+
+async function cypressTestsGenerator(input) {
+  try {
+    const res = await tectalicOpenai(process.env.OPENAI_API_KEY)
+    .completions.create({
+      model: 'text-davinci-003',
+      prompt: 'Write Cypress tests for the following JavaScript code: ' + input,
+    })
+
+    const cypress_test_recommendations = res.data.choices[0].text.trim();
+
+    console.log(`\n${cypress_test_recommendations}`);
+
+    return `Cypress tests suggestion for this pull request:\n\`\`\`diff\n${cypress_test_recommendations}\n\`\`\``;
+
+  } catch (err) {
+    if (err?.response) {
+      const { status = null, statusText = '' } = err.response;
+      console.error(`${status} - ${statusText}`);
+      return err?.response;
+    } else {
+      console.error(err);
+      return err;
+    }
+  }
+}
+
+module.exports = {
+  cypressTestsGenerator
+};"
+
+LINK NUMBER 85
+Error fetching diff
+
+LINK NUMBER 86
+Error fetching diff
+
+LINK NUMBER 87
+Error fetching diff
+
+LINK NUMBER 88
+
+File path: frontend/src/business/functions/getColorIndex.test.ts
+"import { getColorIndex } from ""./getColorIndex"";
+
+describe(""getColorIndex function"", () => {
+  it(""should return 0 when index is 0"", () => {
+    const result = getColorIndex(0);
+    expect(result).toBe(0);
+  });
+
+  it(""should return 0 when index is 1"", () => {
+    const result = getColorIndex(1);
+    expect(result).toBe(0);
+  });
+
+  it(""should return index - 1 when index is even"", () => {
+    const result = getColorIndex(4);
+    expect(result).toBe(3);
+  });
+
+  it(""should return index - 2 when index is odd"", () => {
+    const result = getColorIndex(5);
+    expect(result).toBe(3);
+  });
+});"
+
+LINK NUMBER 89
+
+File path: frontend/src/business/functions/genericSearch.test.ts
+"import { genericSearch } from ""./genericSearch"";
+
+describe(""genericSearch function"", () => {
+  const obj1 = { name: ""Alice"", age: 30, address: ""123 Main St"" };
+  const obj2 = { name: ""Bob"", age: 40, address: ""456 Second Ave"" };
+  const obj3 = { name: ""Charlie"", age: 50, address: ""789 Third St"" };
+  const objs = [obj1, obj2, obj3];
+
+  it(""should return true when query is empty string"", () => {
+    const result = genericSearch(obj1, [""name""], """");
+    expect(result).toBe(true);
+  });
+
+  it(""should return true when query matches property value"", () => {
+    const result = genericSearch(obj1, [""name""], ""Alice"");
+    expect(result).toBe(true);
+  });
+
+  it(""should return false when query does not match any property value"", () => {
+    const result = genericSearch(obj1, [""name""], ""Bob"");
+    expect(result).toBe(false);
+  });
+
+  it(""should return true when query matches any property value"", () => {
+    const result = genericSearch(obj1, [""name"", ""age"", ""address""], ""123"");
+    expect(result).toBe(true);
+  });
+
+  it(""should handle case-sensitive searches when specified"", () => {
+    const result = genericSearch(obj1, [""name""], ""alice"", true);
+    expect(result).toBe(false);
+  });
+
+  it(""should handle case-insensitive searches when specified"", () => {
+    const result = genericSearch(obj1, [""name""], ""alice"", false);
+    expect(result).toBe(true);
+  });
+
+  it(""should return true when query matches any property value in an array of objects"", () => {
+    const result = objs.some((obj) =>
+      genericSearch(obj, [""name"", ""age"", ""address""], ""third"")
+    );
+    expect(result).toBe(true);
+  });
+});"
+
+LINK NUMBER 90
+
+File path: frontend/src/business/functions/compare.test.ts
+"import { compare } from ""./compare"";
+
+describe(""compare function"", () => {
+  it(""should return -1 if a[key] < b[key]"", () => {
+    const obj1 = { name: ""Alice"", age: 30 };
+    const obj2 = { name: ""Bob"", age: 40 };
+    const result = compare(""age"")(obj1, obj2);
+    expect(result).toBe(-1);
+  });
+
+  it(""should return 1 if a[key] > b[key]"", () => {
+    const obj1 = { name: ""Alice"", age: 40 };
+    const obj2 = { name: ""Bob"", age: 30 };
+    const result = compare(""age"")(obj1, obj2);
+    expect(result).toBe(1);
+  });
+
+  it(""should return 0 if a[key] === b[key]"", () => {
+    const obj1 = { name: ""Alice"", age: 30 };
+    const obj2 = { name: ""Bob"", age: 30 };
+    const result = compare(""age"")(obj1, obj2);
+    expect(result).toBe(0);
+  });
+});"
+
+LINK NUMBER 91
+Not enough lines
+
+LINK NUMBER 92
+Error fetching diff
+
+LINK NUMBER 93
+Error fetching diff
+
+LINK NUMBER 94
+Error fetching diff
+
+LINK NUMBER 95
+Not enough lines
+
+LINK NUMBER 96
+
+File path: GPTspec.py
+"import pyaudio
+import numpy as np
+import matplotlib.pyplot as plt
+
+p = pyaudio.PyAudio()
+
+# Parameters for the spectrogram
+NFFT = 1024  # Number of points for the FFT
+Fs = 44100   # Sampling frequency
+
+# Initialize the plot
+fig, ax = plt.subplots()
+img = ax.imshow(np.zeros((NFFT // 2 + 1, 100)), extent=[0, 1, 0, Fs/2], cmap='inferno', aspect='auto')
+
+# Function to update the spectrogram
+def update_specgram(in_data, frame_count, time_info, status):
+    # Compute the spectrogram
+    spec = np.abs(np.fft.rfft(np.frombuffer(in_data, dtype=np.int16), n=NFFT))
+    spec = 20 * np.log10(spec)
+    
+    # Update the plot data
+    img.set_data(np.hstack([img.get_array()[:, 1:], np.atleast_2d(spec).T]))
+
+    #img.setImage(img_array, autoLevels=True)
+    # Redraw the plot
+    fig.canvas.draw()
+
+# Start the microphone input stream and update the spectrogram
+
+stream = p.open(format=pyaudio.paInt16, channels=1, rate=Fs, input=True, frames_per_buffer=NFFT, stream_callback=update_specgram)
+
+stream.start_stream()
+
+# Continuous update loop
+plt.show(block=False)
+while stream.is_active():
+    plt.pause(0.01)
+
+# Stop the stream and close the audio device
+stream.stop_stream()
+stream.close()
+p.terminate()
+
+"
+
+LINK NUMBER 97
+Error fetching diff
+
+LINK NUMBER 98
+Not enough lines
+
+LINK NUMBER 99
+Error fetching diff
+
+LINK NUMBER 100
+Error fetching diff
+
+LINK NUMBER 101
+Error fetching diff
+
+LINK NUMBER 102
+
+File path: reader/reader_test.go
+"package reader
+
+import (
+	""bytes""
+	""strings""
+	""testing""
+)
+
+func TestR1(t *testing.T) {
+	tests := map[string]struct {
+		input          string
+		expectedOutput string
+	}{
+		""single station"": {
+			input:          ""StationA;20.5\nStationA;22.5\n"",
+			expectedOutput: ""{StationA=20.5/21.5/22.5}\n"",
+		},
+		""multiple stations"": {
+			input:          ""StationA;20.5\nStationB;25.5\nStationA;22.5\nStationB;27.5\n"",
+			expectedOutput: ""{StationA=20.5/21.5/22.5, StationB=25.5/26.5/27.5}\n"",
+		},
+		""invalid lines ignored"": {
+			input:          ""StationA;20.5\nInvalidLine\nStationA;22.5\n"",
+			expectedOutput: ""{StationA=20.5/21.5/22.5}\n"",
+		},
+		""alphabetical order"": {
+			input:          ""StationC;5.0\nStationA;3.5\nStationB;4.2\nStationA;2.5\nStationC;5.2\n"",
+			expectedOutput: ""{StationA=2.5/3.0/3.5, StationB=4.2/4.2/4.2, StationC=5.0/5.1/5.2}\n"",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			input := strings.NewReader(tc.input)
+			var output bytes.Buffer
+
+			err := R1(input, &output)
+			if err != nil {
+				t.Fatalf(""unexpected error: %v"", err)
+			}
+
+			if gotOutput := output.String(); gotOutput != tc.expectedOutput {
+				t.Errorf(""expected output %q, got %q"", tc.expectedOutput, gotOutput)
+			}
+		})
+	}
+}
+
+func BenchmarkR1(b *testing.B) {
+	// Example input for the benchmarking
+	inputData := ""StationA;1.1\nStationB;2.2\nStationC;3.3\nStationA;4.4\nStationB;5.5\n""
+	for i := 0; i < 1000; i++ {
+		inputData += ""StationA;1.1\nStationB;2.2\nStationC;3.3\nStationA;4.4\nStationB;5.5\n""
+	}
+	input := strings.NewReader(inputData)
+
+	for i := 0; i < b.N; i++ {
+		// Reset the input reader to the beginning before each run
+		input.Seek(0, 0)
+		var output bytes.Buffer
+
+		// Run the function being benchmarked
+		err := R1(input, &output)
+		if err != nil {
+			b.Fatalf(""Benchmark failed: %v"", err)
+		}
+	}
+}"
+
+LINK NUMBER 103
+
+File path: hangman.py
+"import random
+
+# List of possible words for the game
+words = ['apple', 'banana', 'cherry', 'dragonfruit', 'elderberry', 'fig', 'grapefruit', 'honeydew']
+
+def select_word():
+    """"""Selects a random word from the list of possible words.""""""
+    return random.choice(words)
+
+def display_word(word, guessed_letters):
+    """"""Displays the current state of the word with guessed letters filled in.""""""
+    display = ''
+    for letter in word:
+        if letter in guessed_letters:
+            display += letter
+        else:
+            display += '_'
+    print(display)
+
+def make_guess(guessed_letters):
+    """"""Asks the player to guess a letter and adds it to the list of guessed letters.""""""
+    while True:
+        guess = input('Guess a letter: ').lower()
+        if len(guess) == 1 and guess.isalpha() and guess not in guessed_letters:
+            guessed_letters.append(guess)
+            return guess
+        else:
+            print('Please enter a single letter that has not been guessed yet.')
+
+def check_guess(word, guess, guessed_letters):
+    """"""Checks whether the guessed letter is in the word and updates the list of guessed letters.""""""
+    if guess in word:
+        print('Correct!')
+    else:
+        print('Incorrect.')
+    display_word(word, guessed_letters)
+
+def play_game():
+    """"""Plays a game of Hangman.""""""
+    word = select_word()
+    guessed_letters = []
+    guesses_left = 6
+
+    print('Welcome to Hangman!')
+    display_word(word, guessed_letters)
+
+    while True:
+        guess = make_guess(guessed_letters)
+        check_guess(word, guess, guessed_letters)
+
+        if guess not in word:
+            guesses_left -= 1
+            print(f'You have {guesses_left} guesses left.')
+            if guesses_left == 0:
+                print(f'Sorry, you lost. The word was ""{word}"".')
+                break
+
+        if set(word).issubset(set(guessed_letters)):
+            print(f'Congratulations, you won! The word was ""{word}"".')
+            break
+
+if __name__ == '__main__':
+    play_game()"
+
+LINK NUMBER 104
+Not enough lines
+
+LINK NUMBER 105
+Not enough lines
+
+LINK NUMBER 106
+Error fetching diff
+
+LINK NUMBER 107
+Error fetching diff
+
+LINK NUMBER 108
+Error fetching diff
+
+LINK NUMBER 109
+
+File path: src/example_simplesong.py
+"# Speelt Mary had a Little Lamb via I2C op een ESP8266 met SN76489
+# ChatGPT --> Please write a program in micropython which plays mary Had a Little Lamb using a ESP8266 and SN76489 via I2C. Also, generate a 4Mhz clock signal on pin A0.
+# https://chat.openai.com/chat/ede913fa-4fcb-44ae-81d8-b8f546e91327
+
+import machine
+import time
+
+# Define clock frequency
+clock_freq = 4000000
+
+# Set up I2C interface
+i2c = machine.I2C(scl=machine.Pin(5), sda=machine.Pin(4), freq=clock_freq)
+
+# Set up clock signal
+clock_pin = machine.Pin(0, machine.Pin.OUT)
+clock_timer = machine.Timer(0)
+
+# Configure SN76489 for 4-bit volume, 8-bit tone registers
+i2c.writeto(0x40, b'\x9F')
+
+# Define note frequencies
+C = 0x60
+D = 0x68
+E = 0x70
+F = 0x78
+G = 0x80
+A = 0x88
+B = 0x90
+
+# Play ""Mary Had a Little Lamb""
+notes = [E, D, C, D, E, E, E, D, D, D, E, G, G, E, D, C, D, E, E, E, E, D, D, E, D, C]
+durations = [4, 4, 4, 4, 4, 4, 2, 4, 4, 2, 4, 4, 2, 4, 4, 4, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4]
+
+# Define function to generate clock signal
+def generate_clock(timer):
+    clock_pin.value(not clock_pin.value())
+
+# Set up timer to generate clock signal
+clock_timer.init(period=int"
+
+LINK NUMBER 110
+Not enough lines
+
+LINK NUMBER 111
+Not enough lines
+
+LINK NUMBER 112
+
+File path: src/index.js
+"function App() {
+  return (
+    <div>
+      <h1>Welcome to Larry's personal website!</h1>
+      <p>This is the landing page for Larry's personal website. Here, you can learn more about Larry and see some of his work.</p>
+    </div>
+  );
+}
+
+// Create a new About component
+function About() {
+  return (
+    <div>
+      <h1>About Larry</h1>
+      <p>Larry is a software engineer who enjoys building web and mobile applications. He has experience with a variety of programming languages and frameworks, including React, Angular, and Node.js.</p>
+      <p>In his free time, Larry enjoys hiking, reading, and playing video games.</p>
+    </div>
+  );
+}
+
+// Create a new Projects component
+function Projects() {
+  return (
+    <div>
+      <h1>Larry's Projects</h1>
+      <p>Here are some of the projects that Larry has worked on:</p>
+      <ul>
+        <li><a href=""https://github.com/larry/react-todo-app"">React Todo App</a></li>
+        <li><a href=""https://github.com/larry/node-chat-app"">Node.js Chat App</a></li>
+        <li><a href=""https://github.com/larry/angular-blog"">Angular Blog</a></li>
+      </ul>
+    </div>
+  );
+}
+
+// Create a new Contact component
+function Contact() {
+  return (
+    <div>
+      <h1>Contact Larry</h1>
+      <p>You can contact Larry using the following methods:</p>
+      <ul>
+        <li>Email: larry@example.com</li>
+        <li>Twitter: @larry</li>
+        <li>GitHub: larry</li>
+      </ul>
+    </div>
+  );
+}
+
+// Render the About, Projects, and Contact components
+ReactDOM.render(
+  <>"
+
+LINK NUMBER 113
+Error fetching diff
+
+LINK NUMBER 114
+Error fetching diff
+
+LINK NUMBER 115
+Error fetching diff
+
+LINK NUMBER 116
+
+File path: code.py
+"from i2c_display_ME import I2C_Display
+from tlc5947_ME import TLC5947
+
+from machine import Pin, time_pulse_us
+import time
+
+class DebouncedPin(Pin):
+    def __init__(self, pin_id, debounce_time=20, *args, **kwargs):
+        self.pin_id = pin_id
+        super().__init__(pin_id, *args, **kwargs)
+        self.debounce_time = debounce_time
+        self.last_bounce_time = 0
+        self.last_value = self.value()
+        self.irq_handler_rise = None
+        self.irq_handler_fall = None
+
+        self.irq(self.on_rise, self.IRQ_RISING)
+        self.irq(self.on_fall, self.IRQ_FALLING)
+        
+
+    def value(self, *args, **kwargs):
+        current_time = time_pulse_us(Pin(self.pin_id), 1)
+        if current_time - self.last_bounce_time > self.debounce_time:
+            new_value = super().value(*args, **kwargs)
+            if new_value != self.last_value:
+                self.last_value = new_value
+                if new_value == 1 and self.irq_handler_rise is not None:
+                    self.irq_handler_rise()
+                elif new_value == 0 and self.irq_handler_fall is not None:
+                    self.irq_handler_fall()
+                self.last_bounce_time = current_time
+        return self.last_value
+
+    def irq(self, handler=None, trigger=Pin.IRQ_FALLING):
+        if trigger == Pin.IRQ_RISING:
+            self.irq_handler_rise = handler
+        elif trigger == Pin.IRQ_FALLING:
+            self.irq_handler_fall = handler
+    
+    def on_rise(self):
+        pass
+    
+    def on_fall(self):
+        pass
+
+
+
+class QuizBox:
+    boxState = 1
+    
+    class Quizzer:
+        color = 0xF66733
+        def __init__(self, seat: int = -1, switch: int = -1, num: int = -1) -> None:
+            self.seatpin = Pin(seat, pull=Pin.PULL_UP)
+            self.switchpin = Pin(switch, pull=Pin.PULL_UP)
+            self.num = num
+
+            self.seatval = self.seatpin.value()
+            self.switchval = self.switchpin.value()
+        
+        @property
+        def seatread(self):
+            self.seatval = not self.seatpin.value()
+            return self.seatval
+
+        @property
+        def switchread(self):
+            self.switchval = not self.switchpin.value()
+            return self.switchval
+
+        @property
+        def bothread(self):
+            return (self.switchread, self.seatread)
+    class Buzzer(Pin):
+        def __init__(self, id = 16):
+            super().__init__(id, Pin.PULL_UP)
+
+        def buzz(self, time: int):
+            
+
+    class Reset(DebouncedPin):
+        def __init__(self, id = 17):
+            super().__init__(id, Pin.PULL_UP)
+
+        def on_rise(self, pin):
+            pass
+
+        def on_fall(self, pin):
+            QuizBox.boxState = QuizBox.boxState + 1 if QuizBox.boxState < 3 else 0
+
+
+    def __init__(self) -> None:
+        self.display = I2C_Display()
+        self.tlc = TLC5947(24, sclk_pin=2, sdin_pin=3, blank_pin=4, xlat_pin=5)
+
+        self.reset = self.Reset()
+        self.buzzer = self.Buzzer()
+
+        self.quizzers = [
+            self.Quizzer(10, 18, 1),
+            self.Quizzer(11, 19, 2),
+            self.Quizzer(12, 20, 3),
+            self.Quizzer(13, 21, 4),
+            self.Quizzer(14, 22, 5),
+        ]
+
+    def update(self):
+        if self.boxState == 1:
+            for quizzer in self.quizzers:
+                if quizzer.bothread == (True,True):
+                    self.tlc.set_led(quizzer.num - 1, 1)
+                else:
+                    self.tlc.set_led(quizzer.num - 1, 0)
+            self.tlc.update()
+
+        elif self.boxState == 2:
+            for quizzer in self.quizzers:
+                if quizzer.bothread == (True,True):
+                    self.tlc.set_led(quizzer.num - 1, 1)
+                    self.tlc.update()
+                    self.boxState = 3
+                    break
+
+        elif self.boxState == 3:
+            ...
+        else:
+            self.boxState = 1
+            raise ValueError(""BoxState should be in [1,2,3]. Setting to 1"")
+
+if __name__ == '__main__':
+    box = QuizBox()
+    # tlc = TLC5947(24, sclk_pin=2, sdin_pin=3, blank_pin=4, xlat_pin=5)
+
+    while True:
+        box.update()
+        # time.sleep(1)"
+
+LINK NUMBER 117
+Not enough lines
+
+LINK NUMBER 118
+
+File path: script.js
+"    continueButton3.addEventListener(""click"", function() {
+      if(checkNumbers() && stage === 3) {
+        userData = [];
+        step3Container.querySelectorAll("".skill"").forEach(skill => {
+          currentInput = skill.querySelector("".skillsInput"")
+          if (!currentInput.disabled) {
+            userData.push(currentInput.value);
+          }
+        });
+        stage = 4; // Change to results stage
+        staggerButtonsReverse(skillGrid, 200);
+        staggerButtonsReverse(document.querySelectorAll("".skillLabel""), 250);
+        continueButton3.style.cssText = ""opacity: 0; transform: translateY(-20);"";
+        setTimeout(function() {
+          continueButton3.style.cssText = ""opacity: 0; display: none;"";
+          document.getElementById(""parent-container"").style.display = ""none"";
+        }, 2000);
+
+
+
+        const sum = userData.reduce((accumulator, currentValue) => accumulator + parseInt(currentValue, 10), 0);
+        const totalPoints = (positionSkills[userPosition].length) * 10 // Take the number of skills * 10(max points)
+        const percentage = Math.round((sum/totalPoints)*100) // Round to nearest whole number for ranking
+        //console.log(percentage + "" therefore rank: ""+ getRank(percentage));
+        var config = {
+          type: 'radar',
+          data: {
+            labels: positionSkills[userPosition],
+            datasets: [{
+              label: ""Skill Results"",
+              backgroundColor: ""rgba(69, 162, 158, 0.6)"",
+              borderColor: ""white"",
+              pointBackgroundColor: ""white"",
+              pointRadius: 5.3,
+              data: userData,
+            }]
+          },
+          options: {
+            legend: {
+              position: 'top',
+              labels: {
+                fontColor: 'white'
+              }
+            },
+            scale: {
+              ticks: {
+                beginAtZero: true,
+                fontColor: 'white', // labels such as 10, 20, etc
+                showLabelBackdrop: false, // hide square behind text
+                suggestedMax: 10,
+                callback: function(value) {
+                  // Show only '10' 5 and 1, hide other values
+                  return value === 10 || value === 5 || value === 1? value : '';
+              }
+              },
+              pointLabels: {
+                fontColor: '#c5c6c7',
+                fontSize: 18,
+              },
+              gridLines: {
+                color: 'grey'
+              },
+              angleLines: {
+                color: 'white' // lines radiating from the center
+              }
+            },
+          }
+        };
+        const drawChart = new Chart(skillChart, config);
+        step4Container.style.display = ""block"";
+        setTimeout(function() {
+          document.getElementById(""chartContainer"").style.left = ""85%""
+          document.getElementById(""continueButton4"").style.cssText = ""transform: translateY(0); opacity: 1;"";
+        }, 2000);
+      } 
+})
+"
+
+LINK NUMBER 119
+
+File path: pseudorandom.go
+"func findMostCommon(nums []int) []int {
+	countMap := make(map[int]int)
+	maxCount := 0
+	for _, num := range nums {
+		countMap[num]++
+		if countMap[num] > maxCount {
+			maxCount = countMap[num]
+		}
+	}
+	mostCommon := []int{}
+	for num, count := range countMap {
+		if count == maxCount {
+			mostCommon = append(mostCommon, num)
+		}
+	}
+	return mostCommon
+}
+"
+
+LINK NUMBER 120
+Error fetching diff
+
+LINK NUMBER 121
+Error fetching diff
+
+LINK NUMBER 122
+Error fetching diff
+
+LINK NUMBER 123
+
+File path: index.php
+"<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=""UTF-8"">
+    <title>My Personal Page</title>
+    <link rel=""stylesheet"" type=""text/css"" href=""style.css"">
+  </head>
+  <body>
+    <header>
+      <h1>Hello, I'm Your Name</h1>
+      <nav>
+        <ul>
+          <li><a href=""#about"">About Me</a></li>
+          <li><a href=""#projects"">Projects</a></li>
+          <li><a href=""#contact"">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <section id=""about"">
+        <h2>About Me</h2>
+        <p>Write a short bio here.</p>
+      </section>
+
+      <section id=""projects"">
+        <h2>Projects</h2>
+        <ul>
+          <li>Project 1</li>
+          <li>Project 2</li>
+          <li>Project 3</li>
+        </ul>
+      </section>
+
+      <section id=""contact"">
+        <h2>Contact Me</h2>
+        <form action=""#"" method=""post"">
+          <label for=""email"">Email:</label>
+          <input type=""email"" id=""email"" name=""email"" required>
+          <br><br>
+          <label for=""message"">Message:</label>
+          <textarea id=""message"" name=""message"" required></textarea>
+          <br><br>
+          <input type=""submit"" value=""Submit"">
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <p>Copyright &copy; 2023 Your Name</p>
+    </footer>
+  </body>
+</html>"
+
+LINK NUMBER 124
+
+File path: webscraping utils/thread_status.py
+"import tkinter as tk
+import json
+
+def load_data():
+    # Load data from the JSON file
+    try:
+        with open(""data.json"", ""r"") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        data = {""column1"": [], ""column2"": []}
+
+    return data
+
+def save_data(data):
+    # Save data to the JSON file
+    with open(""data.json"", ""w"") as file:
+        json.dump(data, file)
+
+def add_text():
+    text = text_entry.get()
+
+    if selected_column.get() == ""Column 1"":
+        data[""column1""].append(text)
+    elif selected_column.get() == ""Column 2"":
+        data[""column2""].append(text)
+
+    save_data(data)
+    refresh_lists()
+
+def refresh_lists():
+    # Clear the existing lists
+    listbox1.delete(0, tk.END)
+    listbox2.delete(0, tk.END)
+
+    # Add items from the data to the lists
+    for item in data[""column1""]:
+        listbox1.insert(tk.END, item)
+
+    for item in data[""column2""]:
+        listbox2.insert(tk.END, item)
+
+# Load initial data from the JSON file
+data = load_data()
+
+# Create the main window
+root = tk.Tk()
+
+# Create a label and pack it
+label = tk.Label(root, text=""Enter Text:"")
+label.pack()
+
+# Create a text entry widget
+text_entry = tk.Entry(root)
+text_entry.pack()
+
+# Create a radio button to select the column
+selected_column = tk.StringVar(value=""Column 1"")
+column1_radio = tk.Radiobutton(root, text=""Column 1"", variable=selected_column, value=""Column 1"")
+column1_radio.pack(anchor=tk.W)
+column2_radio = tk.Radiobutton(root, text=""Column 2"", variable=selected_column, value=""Column 2"")
+column2_radio.pack(anchor=tk.W)
+
+# Create a button to add text to the selected column
+button = tk.Button(root, text=""Add Text"", command=add_text)
+button.pack()
+
+# Create a frame to hold the listboxes
+frame = tk.Frame(root)
+frame.pack(side=tk.LEFT)
+
+# Create a listbox for Column 1
+listbox1 = tk.Listbox(frame)
+listbox1.pack(side=tk.LEFT)
+
+# Create a listbox for Column 2
+listbox2 = tk.Listbox(frame)
+listbox2.pack(side=tk.LEFT)
+
+# Refresh the lists initially
+refresh_lists()
+
+# Run the main event loop
+root.mainloop()"
+
+LINK NUMBER 125
+Not enough lines
+
+LINK NUMBER 126
+Not enough lines
+
+LINK NUMBER 127
+Error fetching diff
+
+LINK NUMBER 128
+Error fetching diff
+
+LINK NUMBER 129
+Error fetching diff
+
+LINK NUMBER 130
+
+File path: methods/cypressTestsGenerator.js
+"const tectalicOpenai = require('@tectalic/openai').default;
+const config = require('dotenv').config();
+
+async function cypressTestsGenerator(input) {
+  try {
+    const res = await tectalicOpenai(process.env.OPENAI_API_KEY)
+    .chatCompletions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: 'Write Cypress tests for the following JavaScript code: ' + input }]
+    });
+
+
+    const cypress_test_recommendations = res.data.choices[0].message.content.trim();
+    
+    console.log(`\n${cypress_test_recommendations}`);
+
+    return `Cypress tests suggestion for this pull request:\n\`\`\`diff\n${cypress_test_recommendations}\n\`\`\``;
+
+  } catch (err) {
+    if (err?.response) {
+      const { status = null, statusText = '' } = err.response;
+      console.error(`${status} - ${statusText}`);
+      return err?.response;
+    } else {
+      console.error(err);
+      return err;
+    }
+  }
+}
+
+module.exports = {
+  cypressTestsGenerator
+};"
+
+LINK NUMBER 131
+Not enough lines
+
+LINK NUMBER 132
+Not enough lines
+
+LINK NUMBER 133
+Not enough lines
+
+LINK NUMBER 134
+Error fetching diff
+
+LINK NUMBER 135
+Error fetching diff
+
+LINK NUMBER 136
+Error fetching diff
+
+LINK NUMBER 137
+
+File path: test.py
+"
+    """"""
+the following is written by gptchat. it needs some work to integrate it with this library, 
+I just wanted to copy it here to work on later
+
+it's 3 classes to create identities that can have conversations with each other and remember them. 
+it's a bit of a mess. I'll clean it up later. if you run stuff on it now it just generates an ever lengthening prompt,
+that repeats itself over and over until you reach the token limit. maybe use the GPTtext.get_summary() function to get a 
+summary of the conversation that stays under the token limit?
+
+
+class Memory:
+    def __init__(self):
+        self.data = {}  # Initialize the data attribute as an empty dictionary
+
+    def add_interaction(self, text: str, response: str):
+        # Store the current interaction in the data attribute
+        self.data[time.time()] = {
+            ""input"": text,
+            ""output"": response
+        }
+
+    def generate_summary(self) -> str:
+        # Generate a summary of past interactions by concatenating the input and output of each interaction
+        summary = """"
+        for index, interaction in self.data.items():
+            summary += f""{interaction['input']}\n{interaction['output']}\n""
+        return summary
+
+
+class GPT3Identity:
+    def __init__(self, name: str):
+        self.name = name
+        self.memory = Memory()  # Initialize the memory attribute as an instance of the Memory class
+
+    def generate_response(self, text: str, ai) -> str:
+        # Generate a summary of past interactions
+        summary = self.memory.generate_summary()
+
+        # Use the name attribute and summary of past interactions to specify the prompt for the GPT-3 model
+        prompt = f""{summary}\nWho are you?\n{self.name}\n{text}""
+        response = ai.generate_text(prompt=prompt, max_tokens=1024)
+
+        # Store the current interaction in the memory attribute
+        self.memory.add_interaction(text, response)
+        return response
+
+
+class Conversation:
+    def __init__(self, *identities: GPT3Identity, master_prompt: str, ai):
+        self.identities = identities
+        self.master_prompt = master_prompt
+        self.ai = ai
+
+    def run_conversation(self, num_iterations: int):
+        # Create a loop to generate responses between the identities for the specified number of iterations
+        for i in range(num_iterations):
+            for identity in self.identities:
+                # Generate a response from the current identity to the most recent response from all other identities
+                prompt = self.generate_prompt(identity)
+                response = identity.generate_response(prompt, self.ai)
+                print(response)
+
+    def generate_prompt(self, identity: GPT3Identity) -> str:
+        # Generate a summary of past interactions for all identities except the current one
+        summary = """"
+        for other_identity in self.identities:
+            if other_identity != identity:
+                summary += other_identity.memory.generate_summary()
+
+        # Use the master prompt and summary of past interactions to specify the prompt for the GPT-3 model
+        prompt = f""{summary}\n{self.master_prompt}\n""
+        return prompt
+        
+        """""""
+
+LINK NUMBER 138
+
+File path: Decoder.py.py
+"import os
+import sys
+import chardet
+
+# Define a function to read and decode binary data
+def read_binary_file(filename):
+    # Open the file in binary mode
+    with open(filename, 'rb') as f:
+        # Read the binary data from the file
+        binary_data = f.read()
+        # Determine the file encoding
+        encoding = chardet.detect(binary_data)['encoding']
+        # Decode the binary data to text
+        text_data = binary_data.decode(encoding)
+    return text_data
+
+# Define the main function to parse command line arguments
+def main():
+    # Get the filename from the command line arguments
+    filename = sys.argv[1]
+    # Check if the file exists
+    if not os.path.isfile(filename):
+        print(""File not found"")
+        return
+    # Check if the file is a binary file
+    if os.path.isfile(filename) and os.access(filename, os.X_OK):
+        print(""This is an executable file"")
+        return
+    else:
+        # Read and decode the file data
+        text_data = read_binary_file(filename)
+        # Print the decoded data to the console
+        print(text_data)
+
+if __name__ == '__main__':
+    main()
+"
+
+LINK NUMBER 139
+Not enough lines
+
+LINK NUMBER 140
+
+File path: knowledge/static/src/components/wysiwyg_article_helper/wysiwyg_article_helper.js
+"import { Component, useSubEnv, xml } from ""@odoo/owl"";
+
+/**
+ * Loads the given props to the environment of the nested components.
+ *
+ * Usage:
+ * <WithSubEnv prop1=""value1"" prop2=""value2"">
+ *    <MyComponent/>
+ * </WithSubEnv>
+ *
+ * MyComponent will then be able to access `prop1` and `prop2` from its environment.
+ * (i.e: with `this.env.prop1` and `this.env.prop2`)
+ */
+export class WithSubEnv extends Component {
+    static template = xml`<t t-slot=""default""/>`;
+    static props = [""*""];
+    setup() {
+        useSubEnv(this.props);
+    }
+}"
+
+LINK NUMBER 141
+Error fetching diff
+
+LINK NUMBER 142
+Error fetching diff
+
+LINK NUMBER 143
+Error fetching diff
+
+LINK NUMBER 144
+
+File path: dcurves/prevalence.py
+"
+
+# import pandas as pd
+# import matplotlib as mpl
+# mpl.use('tkagg')
+# import matplotlib.pyplot as plt
+# import random
+# from typing import Optional
+#
+# def get_colors(n, color_names):
+#     if color_names is None:
+#         return [""#%06x"" % random.randint(0, 0xFFFFFF) for _ in range(n)]
+#     elif len(color_names) < n:
+#         raise ValueError(
+#             'More predictors than color_names, please enter more color names in color_names list and try again')
+#     return color_names
+#
+# def plot_scores(
+#         plot_df: pd.DataFrame,
+#         score_col: str,
+#         y_limits: list = [-0.05, 0.2],
+#         color_names: Optional[list] = None
+#         ) -> None:
+#
+#     modelnames = plot_df['model'].value_counts().index
+#     colors = get_colors(len(modelnames), color_names)
+#     for modelname, color in zip(modelnames, colors):
+#         single_model_df = plot_df[plot_df['model'] == modelname]
+#         plt.plot(single_model_df['threshold'], single_model_df[score_col], color=color)
+#
+#         plt.ylim(y_limits)
+#         plt.legend(modelnames)
+#         plt.grid(b=True, which='both', axis='both')
+#         plt.xlabel('Threshold Values')
+#         plt.ylabel(f'Calculated {score_col.capitalize().replace(""_"", "" "")}')
+#     plt.show()
+#
+# def plot_graphs(plot_df: pd.DataFrame,
+#                 graph_type: str = 'net_benefit',
+#                 y_limits: list = [-0.05, 1],
+#                 color_names: Optional[list] = None
+#                 ) -> None:
+#     """"""
+#     Plot either net benefit or interventions avoided per threshold.
+#
+#     Parameters
+#     ----------
+#     plot_df : pd.DataFrame
+#         Data containing threshold values, model columns of net benefit/intervention scores to be plotted
+#     graph_type : str
+#         Type of plot (either 'net_benefit' or 'net_intervention_avoided')
+#     y_limits : list[float]
+#         2 floats, lower and upper bounds for y-axis
+#     color_names
+#         Colors to render each model (if n models supplied, then need n+2 colors, since 'all' and 'none' models will be
+#         included by default
+#
+#     Returns
+#     -------
+#     None
+#     """"""
+#     plot_scores(plot_df, graph_type, y_limits, color_names)"
+
+LINK NUMBER 145
+
+File path: dataStructuresTests.py
+"    def test_push_pop(self):
+        stack = Stack()
+        stack.push(10)
+        stack.push(20)
+        stack.push(30)
+        self.assertFalse(stack.isEmpty())
+        self.assertEqual(stack.pop(), 30)
+        self.assertEqual(stack.pop(), 20)
+        self.assertEqual(stack.pop(), 10)
+        self.assertTrue(stack.isEmpty())
+
+    def test_stack_with_initial_elements(self):
+        elements = [40, 50, 60]
+        stack = Stack(elements)
+        self.assertFalse(stack.isEmpty())
+        for i, element in enumerate(elements):
+            self.assertEqual(stack[i], element)
+        self.assertEqual(len(stack.elements), len(elements))
+
+    def test_setitem_getitem(self):
+        stack = Stack([70, 80, 90])
+        stack[1] = 85
+        self.assertEqual(stack[1], 85)
+
+    def test_equality(self):
+        stack1 = Stack([100, 200, 300])
+        stack2 = Stack([100, 200, 300])
+        stack3 = Stack([400, 500, 600])
+        self.assertEqual(stack1, stack2)
+        self.assertNotEqual(stack1, stack3)
+
+    def test_pop_empty_stack(self):
+        stack = Stack()
+        with self.assertRaises(StackUnderFlow):
+            stack.pop()
+"
+
+LINK NUMBER 146
+
+File path: ui/src/store/containersSlice.ts
+"import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from './store';
+import { ConnectionDetails } from '../types/connection';
+
+interface ConnectionsState {
+  senderConnection: ConnectionDetails | undefined;
+  receiverConnection: ConnectionDetails | undefined;
+}
+
+const initialState: ConnectionsState = {
+  senderConnection: undefined,
+  receiverConnection: undefined
+};
+export const connectionsSliceName = 'connections';
+const connectionsSlice = createSlice({
+  name: connectionsSliceName,
+  initialState,
+  reducers: {
+    setSenderConnection: (state, action: PayloadAction<ConnectionDetails>) => {
+      state.senderConnection = action.payload;
+    },
+    setReceiverConnection: (state, action: PayloadAction<ConnectionDetails>) => {
+      state.receiverConnection = action.payload;
+    },
+  },
+});
+
+export const { setSenderConnection, setReceiverConnection } = connectionsSlice.actions;
+
+export const selectSenderConnection = (state: RootState) => state[connectionsSliceName].senderConnection;
+export const selectReceiverConnection = (state: RootState) => state[connectionsSliceName].receiverConnection;
+
+export default connectionsSlice.reducer;"
+
+LINK NUMBER 147
+Not enough lines
