@@ -2,7 +2,7 @@ from mining_restapi import *
 from github_operations import *
 from manual_mining_restapi import *
 
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = '.'
 GITHUB_API_URL = "https://api.github.com"
 
 HEADER = {
