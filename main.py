@@ -1,8 +1,8 @@
 from mining_restapi import *
 from github_operations import *
+from manual_mining_restapi import *
 
-
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = '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'
 GITHUB_API_URL = "https://api.github.com"
 
 HEADER = {
@@ -27,6 +27,10 @@ VALID_EXTENSIONS = {
 MIN_LINES = 5
 MAX_LINES = 500
 
-#run_commit_mining_pipeline(headers, paths)
-print("💾 🔍NOW STARTING STATS EXTRACTION")
-process_all_links_files(PATHS, META_DATA, MIN_LINES,MAX_LINES, VALID_EXTENSIONS)
+#run_commit_mining_pipeline(META_DATA, META_DATA)
+#print("💾 🔍NOW STARTING STATS EXTRACTION")
+#process_all_links_files(PATHS, META_DATA, MIN_LINES,MAX_LINES, VALID_EXTENSIONS)
+
+print("💾 🔍NOW STARTING RANDOM COMMIT COLLECTION")
+OUTPUT_JSONL = os.path.join("data/" "random_commits.jsonl")
+collect_random_commits(META_DATA, OUTPUT_JSONL, MIN_LINES, MAX_LINES, VALID_EXTENSIONS, max_commits=20)
