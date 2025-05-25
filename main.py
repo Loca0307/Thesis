@@ -1,8 +1,9 @@
 from mining_restapi import *
 from github_operations import *
 from manual_mining_restapi import *
+from semgrep_analysis import run_semgrep_analysis_pipeline  # assuming you saved the semgrep code in semgrep_analysis.py
 
-GITHUB_TOKEN = '.'
+GITHUB_TOKEN = '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'
 GITHUB_API_URL = "https://api.github.com"
 
 HEADER = {
@@ -12,11 +13,11 @@ HEADER = {
 
 META_DATA = [GITHUB_TOKEN, GITHUB_API_URL, HEADER] 
 
-
 LINKS_FOLDER = "data/links"
 RESULTS_FOLDER = "data/results"
 COMMITS_FOLDER = "data/commits"
 N_GRAMS_FILE = "n_grams.csv"
+OUTPUT_JSONL = "data/random_commits.jsonl"
 
 PATHS = [LINKS_FOLDER, RESULTS_FOLDER, COMMITS_FOLDER, N_GRAMS_FILE] 
 
@@ -31,6 +32,14 @@ MAX_LINES = 500
 #print("💾 🔍NOW STARTING STATS EXTRACTION")
 #process_all_links_files(PATHS, META_DATA, MIN_LINES,MAX_LINES, VALID_EXTENSIONS)
 
-print("💾 🔍NOW STARTING RANDOM COMMIT COLLECTION")
-OUTPUT_JSONL = os.path.join("data/" "random_commits.jsonl")
-collect_random_commits(META_DATA, OUTPUT_JSONL, MIN_LINES, MAX_LINES, VALID_EXTENSIONS, max_commits=20)
+#print("💾 🔍NOW STARTING RANDOM COMMIT COLLECTION")
+#collect_random_commits(META_DATA, OUTPUT_JSONL, CSV_OUTPUT_PATH, MIN_LINES, MAX_LINES, VALID_EXTENSIONS, max_commits=20)
+
+print("🔎 NOW STARTING SEMGREP ANALYSIS")
+run_semgrep_analysis_pipeline(
+    RESULTS_FOLDER,
+    "data/random_commmits_results.csv",
+    "data/semgrep_results",  
+    code_column="code",
+    file_extension=".c"
+)
