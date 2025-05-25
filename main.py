@@ -3,7 +3,7 @@ from github_operations import *
 from manual_mining_restapi import *
 from semgrep_analysis import run_semgrep_analysis_pipeline  # assuming you saved the semgrep code in semgrep_analysis.py
 
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = '.'
 GITHUB_API_URL = "https://api.github.com"
 
 HEADER = {
