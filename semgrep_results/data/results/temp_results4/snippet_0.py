@@ -1,0 +1,2621 @@
+LINK NUMBER 1
+
+File path: register/main.py
+"prompt = """"""
+    I need an array with 100 arrays that contain 3 numbers each.
+    Do not return a text with the code to generate the array.
+
+    Generate the array for me and return it as JSON like the following
+
+    {
+        ""data"": [[n1, n2, n3], ...]
+    }
+""""""
+
+"
+
+LINK NUMBER 2
+Not enough lines
+
+LINK NUMBER 3
+Not enough lines
+
+LINK NUMBER 4
+Error fetching diff
+
+LINK NUMBER 5
+Error fetching diff
+
+LINK NUMBER 6
+Error fetching diff
+
+LINK NUMBER 7
+
+File path: src/utils/productUtils.ts
+"  try {
+    // Prepare the list of products as a comma-separated string
+    const productsList = products.join(', ');
+    
+    // Create the prompt for ChatGPT
+    const prompt = `Du bist ein Koch-Experte und sollst Menüvorschläge basierend auf den folgenden Zutaten erstellen:
+    
+    ${productsList}
+    
+    Bitte erstelle 6 kreative Menüvorschläge (oder weniger, wenn nicht genug Zutaten vorhanden sind). 
+    Jeder Vorschlag sollte kurz sein (maximal 3-4 Wörter) und auf Deutsch.
+    Gib nur die Menüvorschläge zurück, einer pro Zeile, ohne Nummerierung oder andere Texte.`;
+    
+    // Call the OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('openai_api_key') || ''}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'Du bist ein hilfreicher Assistent, der kreative Menüvorschläge basierend auf vorhandenen Zutaten erstellt.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 250
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API Error:', errorData);
+      throw new Error(`OpenAI API Fehler: ${errorData.error?.message || 'Unbekannter Fehler'}`);
+    }
+    
+    const data = await response.json();
+    
+    // Extract the suggestions from the API response
+    const aiResponse = data.choices[0].message.content.trim();
+    
+    // Split the response by new lines to get individual suggestions
+    const suggestions = aiResponse.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('-')) // Remove empty lines and bullet points
+      .map(line => {
+        // Remove numbers at the beginning if present (e.g. ""1. Spaghetti Carbonara"" -> ""Spaghetti Carbonara"")
+        return line.replace(/^\d+\.\s*/, '');
+      });
+    
+    // Return up to 6 suggestions
+    return suggestions.slice(0, 6);
+  } catch (error) {
+    console.error('Fehler bei der Generierung von Menüvorschlägen:', error);
+    
+    // Fall back to the original implementation if the API call fails
+    return fallbackMenuSuggestions(products);
+  }
+};
+
+// Fallback function that uses the original implementation
+const fallbackMenuSuggestions = (products: string[]): string[] => {"
+
+LINK NUMBER 8
+
+File path: wizard.py
+"
+def generate_chatgpt_image(japanese_text, english_text):
+    """"""Generate an image using ChatGPT based on the Japanese and English text.""""""
+    api_key = config.get(""openai_api_key"")
+    print(""API Key: "" + api_key)
+    if not api_key:
+        return None
+    
+    prompt_template = config.get(""chatgpt_image_prompt_template"", 
+                               ""Create a simple, clear illustration to represent'{japanese}' meaning '{english}'. The image should be minimalist and educational."")
+    
+    prompt = prompt_template.format(japanese=japanese_text, english=english_text)
+    print(""ChatGPT Prompt: "" + prompt)
+    response = requests.post(
+        ""https://api.openai.com/v1/images/generations"",
+        headers={
+            ""Content-Type"": ""application/json"",
+            ""Authorization"": f""Bearer {api_key}""
+        },
+        json={
+            ""model"": ""dall-e-3"",
+            ""prompt"": prompt,
+            ""n"": 1,
+            ""size"": ""1024x1024""
+        },
+        timeout=30
+    )
+
+    print(""ChatGPT Response: "" + str(response.json()))
+    
+    if response.status_code != 200:
+        raise Exception(""Failed to generate image with ChatGPT: "" + str(response.json()))
+    
+    data = response.json()
+    if ""data"" not in data or len(data[""data""]) < 1:
+        return None
+    
+    return {
+        ""url"": data[""data""][0][""url""],
+        ""thumbnail"": load_image_from_url(data[""data""][0][""url""]),
+        ""source"": ""ChatGPT"",
+        ""title"": ""AI Generated Image""
+    }"
+
+LINK NUMBER 9
+
+File path: backend/backend/solver.py
+"import openai
+
+# Replace with your actual OpenAI API key when testing locally
+openai.api_key = 'your-openai-key'
+
+def solve_question(question):
+    response = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {""role"": ""system"", ""content"": ""You're an expert tutor for JEE/NSET.""},
+            {""role"": ""user"", ""content"": question}
+        ]
+    )
+    return response['choices'][0]['message']['content']"
+
+LINK NUMBER 10
+
+File path: applications/machine-learning/llm/app/main.py
+"dataset = []
+for chunk in censored_chunks:
+    prompt = f""Assuming both users are gamers talking on Discord, what would one of them have said to get this response?  {chunk}  Give a likely quote in a simple, two-sentence max format that would cause this response, with no other feedback.""
+    response = client.chat.completions.create(
+        model=""gpt-4o"",
+        messages=[
+        {
+            ""role"": ""user"",
+            ""content"": prompt
+        }
+    ]
+    )
+    user_content = response.choices[0].message.content
+    print(""USER:"", user_content, ""AI:"", chunk)
+    dataset.append({
+        ""messages"": [
+            {""role"": ""user"", ""content"": user_content},
+            {""role"": ""assistant"", ""content"": chunk}
+        ]
+    })"
+
+LINK NUMBER 11
+Error fetching diff
+
+LINK NUMBER 12
+Error fetching diff
+
+LINK NUMBER 13
+Error fetching diff
+
+LINK NUMBER 14
+
+File path: pkcs8-mytry.js
+"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>RSA Key Pair Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #output {
+            margin-top: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #zipLink {
+            display: none;
+        }
+    </style>
+    <script src=""https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js""></script>
+</head>
+<body>
+    <h1>RSA Key Pair Generator</h1>
+    <p>Click the button below to generate a 2048-bit RSA key pair and download them, along with the key components in decimal format as a ZIP file.</p>
+    <button id=""generateBtn"">Generate RSA Key Pair</button>
+    <div id=""output"">
+        <h3>Download Link:</h3>
+        <a id=""zipLink"" href=""#"" download=""rsa_key_pair.zip"">Download RSA Key Pair and Components (ZIP)</a>
+        <h3>Key Components (in Decimal):</h3>
+        <pre id=""keyComponents""></pre>
+    </div>
+
+    <script>
+        async function generateRSAKeyPair() {
+            try {
+                // Generate RSA key pair with 2048-bit modulus
+                const keyPair = await window.crypto.subtle.generateKey(
+                    {
+                        name: ""RSA-OAEP"",
+                        modulusLength: 2048, // 2048-bit modulus
+                        publicExponent: new Uint8Array([1, 0, 1]), // 65537 in hexadecimal
+                        hash: { name: ""SHA-256"" },
+                    },
+                    true,
+                    [""encrypt"", ""decrypt""]
+                );
+
+                // Export public key in SPKI format (PEM)
+                const publicKeySpki = await window.crypto.subtle.exportKey(""spki"", keyPair.publicKey);
+                const publicKeyPem = arrayBufferToPem(publicKeySpki, ""PUBLIC KEY"");
+
+                // Export private key in PKCS8 format (PEM)
+                const privateKeyPkcs8 = await window.crypto.subtle.exportKey(""pkcs8"", keyPair.privateKey);
+                const privateKeyPem = arrayBufferToPem(privateKeyPkcs8, ""PRIVATE KEY"");
+
+                // Extract key components from private key in JWK format
+                const privateKeyJson = await window.crypto.subtle.exportKey(""jwk"", keyPair.privateKey);
+                const publicKeyJson = await window.crypto.subtle.exportKey(""jwk"", keyPair.publicKey);
+
+                // Extract modulus, public exponent, private exponent, p, q
+                const n = publicKeyJson.n;  // Modulus (n)
+                const e = publicKeyJson.e;  // Public exponent (e)
+                const d = privateKeyJson.d; // Private exponent (d)
+                const p = privateKeyJson.p; // Prime factor (p)
+                const q = privateKeyJson.q; // Prime factor (q)
+
+                // Convert from Base64URL to Decimal
+                const nDecimal = base64urlToDecimal(n);
+                const eDecimal = base64urlToDecimal(e);
+                const dDecimal = base64urlToDecimal(d);
+                const pDecimal = base64urlToDecimal(p);
+                const qDecimal = base64urlToDecimal(q);
+
+                // Display extracted key components in decimal
+                document.getElementById('keyComponents').textContent = `
+Modulus (N): ${nDecimal}
+Public Exponent (e): ${eDecimal}
+Private Exponent (d): ${dDecimal}
+Prime Factor (p): ${pDecimal}
+Prime Factor (q): ${qDecimal}
+                `;
+
+                // Create ZIP file
+                const zip = new JSZip();
+                zip.file(""public_key.pem"", publicKeyPem);
+                zip.file(""private_key.pem"", privateKeyPem);
+                zip.file(""rsa_key_components.txt"", `
+Modulus (N): ${nDecimal}
+Public Exponent (e): ${eDecimal}
+Private Exponent (d): ${dDecimal}
+Prime Factor (p): ${pDecimal}
+Prime Factor (q): ${qDecimal}
+                `);
+
+                // Generate the ZIP file and create a download link
+                const zipBlob = await zip.generateAsync({ type: ""blob"" });
+                const zipLink = document.getElementById('zipLink');
+                const zipUrl = URL.createObjectURL(zipBlob);
+                zipLink.href = zipUrl;
+                zipLink.style.display = 'block';  // Show the download link
+            } catch (error) {
+                console.error(""Error generating key pair:"", error);
+                alert(""Error generating RSA keys."");
+            }
+        }
+
+        // Convert ArrayBuffer to PEM format
+        function arrayBufferToPem(buffer, type) {
+            const base64 = arrayBufferToBase64(buffer);
+            return `-----BEGIN ${type}-----\n${base64}\n-----END ${type}-----`;
+        }
+
+        // Convert ArrayBuffer to Base64 encoded string
+        function arrayBufferToBase64(buffer) {
+            const binary = String.fromCharCode.apply(null, new Uint8Array(buffer));
+            return window.btoa(binary);
+        }
+
+        // Convert Base64URL string to Decimal string
+        function base64urlToDecimal(base64urlStr) {
+            // Replace Base64URL specific characters with standard Base64
+            const base64Str = base64urlStr.replace(/-/g, '+').replace(/_/g, '/');
+            const binaryString = window.atob(base64Str);
+            let decimalValue = BigInt(0);
+
+            for (let i = 0; i < binaryString.length; i++) {
+                const byteValue = binaryString.charCodeAt(i);
+                decimalValue = (decimalValue << 8n) + BigInt(byteValue);
+            }
+
+            return decimalValue.toString();
+        }
+
+        // Add event listener to button
+        document.getElementById('generateBtn').addEventListener('click', generateRSAKeyPair);
+    </script>
+</body>
+</html>"
+
+LINK NUMBER 15
+Not enough lines
+
+LINK NUMBER 16
+Not enough lines
+
+LINK NUMBER 17
+Not enough lines
+
+LINK NUMBER 18
+Error fetching diff
+
+LINK NUMBER 19
+Error fetching diff
+
+LINK NUMBER 20
+Error fetching diff
+
+LINK NUMBER 21
+Not enough lines
+
+LINK NUMBER 22
+
+File path: src/data_preprocessing/query_chatgpt.py
+"        response = client.chat.completions.create(model=MODEL,
+        messages=[{""role"": ""system"", ""content"": ""You are an AI assistant.""},
+                  {""role"": ""user"", ""content"": prompt}],
+        max_tokens=MAX_TOKENS)
+        return response.choices[0].message.content"
+
+LINK NUMBER 23
+
+File path: gen_ai/task2.2/franklinlarosadiaz_docstring_update.py
+"#CS 472 
+#NSHE ID: 5004634201     Franklin La Rosa Diaz
+#Refactored code from ChatGPT
+def get_valid_filename():
+    """"""Prompt the user for a valid filename and return it.""""""
+    while True:
+        fname = input(""Enter the file name: \n"")
+        try:
+            with open(fname, 'r'):
+                print(""File accepted. Loading...\n"")
+                return fname
+        except IOError:
+            print(""File not accessible. Try again.\n"")
+
+def transcribe_dna_to_rna(dna_sequence):
+    """"""Convert DNA sequence to RNA by replacing 'T' with 'U'.""""""
+    return dna_sequence.replace('T', 'U')
+
+def read_file_and_transcribe(fname):
+    """"""Read a DNA sequence file, transcribe it to RNA, and return the result.""""""
+    with open(fname, 'r') as iFile:
+        return [transcribe_dna_to_rna(line.strip()) for line in iFile]
+
+# Actual Program Execution
+filename = get_valid_filename()
+rna_sequences = read_file_and_transcribe(filename)
+
+# Output the result
+for rna_seq in rna_sequences:
+    print(rna_seq)"
+
+LINK NUMBER 24
+
+File path: gen_ai/task2.2/franklinlarosadiaz_docstring_update.py
+"#CS 472 
+#NSHE ID: 5004634201     Franklin La Rosa Diaz
+#Refactored code from ChatGPT
+def get_valid_filename():
+    """"""Prompt the user for a valid filename and return it.""""""
+    while True:
+        fname = input(""Enter the file name: \n"")
+        try:
+            with open(fname, 'r'):
+                print(""File accepted. Loading...\n"")
+                return fname
+        except IOError:
+            print(""File not accessible. Try again.\n"")
+
+def transcribe_dna_to_rna(dna_sequence):
+    """"""Convert DNA sequence to RNA by replacing 'T' with 'U'.""""""
+    return dna_sequence.replace('T', 'U')
+
+def read_file_and_transcribe(fname):
+    """"""Read a DNA sequence file, transcribe it to RNA, and return the result.""""""
+    with open(fname, 'r') as iFile:
+        return [transcribe_dna_to_rna(line.strip()) for line in iFile]
+
+# Actual Program Execution
+filename = get_valid_filename()
+rna_sequences = read_file_and_transcribe(filename)
+
+# Output the result
+for rna_seq in rna_sequences:
+    print(rna_seq)"
+
+LINK NUMBER 25
+Error fetching diff
+
+LINK NUMBER 26
+Error fetching diff
+
+LINK NUMBER 27
+Error fetching diff
+
+LINK NUMBER 28
+Not enough lines
+
+LINK NUMBER 29
+
+File path: gen_ai/task2.2/franklinlarosadiaz_docstring_update.py
+"    """"""
+    Converts a given DNA sequence to its RNA equivalent by replacing 
+    'T' (thymine) with 'U' (uracil).
+
+    Args:
+        dna_sequence (str): A string representing a DNA sequence.
+    
+    Returns:
+        str: A string representing the RNA sequence with 'T' replaced by 'U'.
+    """"""
+    return dna_sequence.replace('T', 'U')  # Replace 'T' with 'U'"
+
+LINK NUMBER 30
+
+File path: gen_ai/task2.2/franklinlarosadiaz_docstring_update.py
+"    """"""
+    Converts a given DNA sequence to its RNA equivalent by replacing 
+    'T' (thymine) with 'U' (uracil).
+
+    Args:
+        dna_sequence (str): A string representing a DNA sequence.
+    
+    Returns:
+        str: A string representing the RNA sequence with 'T' replaced by 'U'.
+    """"""
+    return dna_sequence.replace('T', 'U')  # Replace 'T' with 'U'"
+
+LINK NUMBER 31
+
+File path: backend/user-service/src/utils/aiService.js
+"const prisma = require(""../config/db"");
+const { generateJobDescriptionWithAI } = require(""../utils/aiService"");
+
+exports.generateAIJob = async (userId, { title, summary }) => {
+    if (!title || !summary) {
+        throw new Error(""Title and summary are required"");
+    }
+
+    try {
+        // Get AI-generated job description & structured skills
+        const aiResponse = await generateJobDescriptionWithAI(summary);
+        if (!aiResponse.description || !aiResponse.skills.length) {
+            throw new Error(""AI failed to generate job details."");
+        }
+
+        // Store job as draft
+        const job = await prisma.job.create({
+            data: {
+                title,
+                description: aiResponse.description,
+                status: ""DRAFT"",
+                postedById: userId,
+            },
+        });
+
+        // Store AI-generated skills in JobSkills table
+        await prisma.jobSkills.createMany({
+            data: aiResponse.skills.map((skill) => ({
+                jobId: job.id,
+                skill: skill.name,
+                isMandatory: skill.mandatory,
+                category: skill.category,
+            })),
+        });
+
+        // Log AI generation in AuditLog
+        await prisma.auditLog.create({
+            data: {
+                action: `AI-generated job: ${title}`,
+                performedById: userId,
+            },
+        });
+
+        return job;
+    } catch (error) {
+        console.error(""Error in generateAIJob:"", error);
+        throw new Error(""Failed to generate AI job."");
+    }
+};
+
+exports.getAllJobs = async () => {
+    try {
+        return await prisma.job.findMany({
+            include: { skills: true },
+        });
+    } catch (error) {
+        console.error(""Error fetching all jobs:"", error);
+        throw new Error(""Failed to fetch jobs"");
+    }
+};
+
+exports.getApprovedJobs = async () => {
+    try {
+        return await prisma.job.findMany({
+            where: { status: ""APPROVED"" },
+            include: { skills: true },
+        });
+    } catch (error) {
+        console.error(""Error fetching approved jobs:"", error);
+        throw new Error(""Failed to fetch approved jobs"");
+    }
+};
+
+exports.approveJob = async (jobId) => {
+    try {
+        return await prisma.job.update({
+            where: { id: jobId },
+            data: { status: ""APPROVED"" },
+        });
+    } catch (error) {
+        console.error(""Error approving job:"", error);
+        throw new Error(""Failed to approve job"");
+    }
+};
+
+exports.rejectJob = async (jobId) => {
+    try {
+        await prisma.jobSkills.deleteMany({ where: { jobId } });
+        await prisma.job.delete({ where: { id: jobId } });
+    } catch (error) {
+        console.error(""Error rejecting job:"", error);
+        throw new Error(""Failed to reject job"");
+    }
+};
+
+exports.deleteJob = async (jobId) => {
+    try {
+        await prisma.jobSkills.deleteMany({ where: { jobId } });
+        await prisma.job.delete({ where: { id: jobId } });
+    } catch (error) {
+        console.error(""Error deleting job:"", error);
+        throw new Error(""Failed to delete job"");
+    }
+};
+
+exports.getDraftJobs = async () => {
+    try {
+        return await prisma.job.findMany({ where: { status: ""DRAFT"" } });
+    } catch (error) {
+        console.error(""Error fetching draft jobs:"", error);
+        throw new Error(""Failed to fetch draft jobs"");
+    }
+};
+
+exports.getJobById = async (jobId) => {
+    try {
+        const job = await prisma.job.findUnique({
+            where: { id: jobId },
+            include: { skills: true },
+        });
+
+        if (!job) throw new Error(""Job not found"");
+        return job;
+    } catch (error) {
+        console.error(""Error fetching job by ID:"", error);
+        throw new Error(""Failed to fetch job"");
+    }
+};
+
+exports.updateJob = async (jobId, { title, description, skills }) => {
+    try {
+        // Update job details
+        const job = await prisma.job.update({
+            where: { id: jobId },
+            data: {
+                title,
+                description,
+            },
+        });
+
+        if (skills && skills.length > 0) {
+            // Get existing skills for the job
+            const existingSkills = await prisma.jobSkills.findMany({
+                where: { jobId },
+            });
+
+            const existingSkillIds = existingSkills.map(skill => skill.id);
+            const newSkills = [];
+            const updatedSkills = [];
+
+            skills.forEach(skill => {
+                if (skill.id && existingSkillIds.includes(skill.id)) {
+                    // If skill exists, update it
+                    updatedSkills.push(
+                        prisma.jobSkills.update({
+                            where: { id: skill.id },
+                            data: {
+                                skill: skill.skill,
+                                isMandatory: skill.isMandatory,
+                                category: skill.category,
+                            },
+                        })
+                    );
+                } else {
+                    // If skill does not exist, add it
+                    newSkills.push({
+                        jobId,
+                        skill: skill.skill,
+                        isMandatory: skill.isMandatory,
+                        category: skill.category,
+                    });
+                }
+            });
+
+            // Delete removed skills (skills that are not in the new request)
+            const skillsToDelete = existingSkills
+                .filter(skill => !skills.some(s => s.id === skill.id))
+                .map(skill => skill.id);
+
+            await prisma.$transaction([
+                ...updatedSkills, // Update existing skills
+                prisma.jobSkills.createMany({ data: newSkills }), // Insert new skills
+                prisma.jobSkills.deleteMany({ where: { id: { in: skillsToDelete } } }) // Delete missing skills
+            ]);
+        }
+
+        return job;
+    } catch (error) {
+        console.error(""Error updating job:"", error);
+        throw new Error(""Failed to update job"");
+    }
+};"
+
+LINK NUMBER 32
+Error fetching diff
+
+LINK NUMBER 33
+Error fetching diff
+
+LINK NUMBER 34
+Error fetching diff
+
+LINK NUMBER 35
+Not enough lines
+
+LINK NUMBER 36
+Not enough lines
+
+LINK NUMBER 37
+Not enough lines
+
+LINK NUMBER 38
+Not enough lines
+
+LINK NUMBER 39
+Error fetching diff
+
+LINK NUMBER 40
+Error fetching diff
+
+LINK NUMBER 41
+Error fetching diff
+
+LINK NUMBER 42
+
+File path: Project-Files/smtp_server.py
+"import aiosmtpd
+from aiosmtpd.handlers import Message
+from email.parser import Parser
+
+class EmailHandler(Message):
+    def __init__(self):
+        super().__init__()
+
+    async def handle_DATA(self, server, session, envelope):
+        # Parse the email message content
+        message = Parser().parsestr(envelope.content.decode())
+        subject = message.get(""Subject"", ""No Subject"")
+        sender = message.get(""From"", ""Unknown Sender"")
+        recipient = message.get(""To"", ""Unknown Recipient"")
+        body = envelope.content.decode()
+
+        # Create or append to a .txt file
+        with open(""emails_received.txt"", ""a"") as file:
+            file.write(f""--- New Email ---\n"")
+            file.write(f""From: {sender}\n"")
+            file.write(f""To: {recipient}\n"")
+            file.write(f""Subject: {subject}\n"")
+            file.write(f""Body:\n{body}\n"")
+            file.write(""-"" * 40 + ""\n"")
+
+        print(f""✅ Email saved to emails_received.txt"")
+        return ""250 Message accepted for delivery""
+
+# Set up the SMTP server
+async def run_server():
+    handler = EmailHandler()
+    server = aiosmtpd.controller.Controller(handler, hostname='localhost', port=1025)
+    server.start()
+    print(""🚀 Local SMTP server running on localhost:1025"")
+
+if __name__ == ""__main__"":
+    import asyncio
+    asyncio.run(run_server())"
+
+LINK NUMBER 43
+
+File path: src/utils/chatGPTUtil.js
+"import axios from ""axios"";
+
+const CHATGPT_API_URL = ""https://api.openai.com/v1/chat/completions"";
+const CHATGPT_MODEL = ""gpt-3.5-turbo"";
+
+export const postChatGptMessage = async (message, openAiKey) => {
+  const headers = {
+    Authorization: `Bearer ${openAiKey}`,
+  };
+  const userMessage = { role: ""user"", content: message };
+  const chatGptMessage = {
+    model: CHATGPT_MODEL,
+    messages: [userMessage],
+  };
+
+  try {
+    const response = await axios.post(CHATGPT_API_URL, chatGptMessage, {
+      headers,
+    });
+    return response?.data?.choices[0]?.message?.content;
+  } catch (error) {
+    console.error(""Error calling ChatGPT API:"", error);
+    return null;
+  }
+};"
+
+LINK NUMBER 44
+Not enough lines
+
+LINK NUMBER 45
+Not enough lines
+
+LINK NUMBER 46
+Error fetching diff
+
+LINK NUMBER 47
+Error fetching diff
+
+LINK NUMBER 48
+Error fetching diff
+
+LINK NUMBER 49
+
+File path: backend/scripts/search.py
+"from datetime import datetime
+from backend.scripts.matchingalgo import (
+    User,
+    parse_pg_array,
+    parse_pg_dict,
+    fetch_users_from_db,
+    get_match_score_and_tier,
+)
+
+from rapidfuzz import fuzz
+
+
+def search_user_by_name(cursor, name):
+    cursor.execute(""SELECT * FROM users WHERE display_name ILIKE %s;"", ('%' + name + '%',))
+    rows = cursor.fetchall()
+
+    users = []
+    for row in rows:
+        user = User(
+            user_id=row[0],
+            display_name=row[1],
+            major=row[3],
+            year=row[4],
+            rating=float(row[5]) if row[5] is not None else 0.0,
+            total_ratings=row[6],
+            rating_history=parse_pg_array(row[7]),
+            show_as_backup=row[8],
+            classes_can_tutor=parse_pg_array(row[9]),
+            classes_needed=parse_pg_array(row[10]),
+            recent_interactions=parse_pg_array(row[11]),
+            class_ratings=parse_pg_dict(row[12]),
+        )
+        user.recent_interactions = [
+            datetime.strptime(ts, ""%Y-%m-%d %H:%M:%S.%f"") if isinstance(ts, str) else ts
+            for ts in user.recent_interactions
+        ]
+        users.append(user)
+    return users
+
+
+def search_all_users_by_subject(cursor, conn, current_user_id, subject_query):
+    all_users = fetch_users_from_db(cursor)
+    user_map = {u.user_id: u for u in all_users}
+    current_user = user_map.get(current_user_id)
+    if not current_user:
+        return []
+
+    subject_query_lower = subject_query.lower()
+
+    cursor.execute(""""""
+        SELECT matched_user_id
+        FROM matches
+        WHERE requester_id = %s
+        ORDER BY match_score DESC
+        LIMIT 10;
+    """""", (current_user_id,))
+    top_10_matches = {row[0] for row in cursor.fetchall()}
+
+    matching_users = []
+
+    for other_user in all_users:
+        if other_user.user_id == current_user.user_id:
+            continue
+
+        matching_subjects = [
+            cls for cls in other_user.classes_can_tutor
+            if subject_query_lower in cls.lower()  # Only exact substring matching here
+        ]
+        if not matching_subjects:
+            continue
+
+        if not (set(other_user.classes_can_tutor) & set(current_user.classes_needed)):
+            continue
+
+        if (
+            not (set(current_user.classes_can_tutor) & set(other_user.classes_needed))
+            and not other_user.show_as_backup
+        ):
+            continue
+
+        raw_score, tier = get_match_score_and_tier(other_user, current_user)
+
+        if other_user.user_id in top_10_matches:
+            priority = 1
+        elif other_user.major == current_user.major:
+            priority = 2
+        else:
+            priority = 3
+
+        matching_users.append((priority, raw_score, other_user, tier, matching_subjects))
+
+    matching_users.sort(key=lambda x: (x[0], -x[1]))
+
+    result = []
+    for priority, score, user_obj, tier, matched_classes in matching_users:
+        result.append((user_obj, score, tier, matched_classes, priority))
+
+    return result
+
+
+def search_top_5_users_by_subject(cursor, conn, current_user_id, subject_query):
+    all_users = fetch_users_from_db(cursor)
+    user_map = {u.user_id: u for u in all_users}
+    current_user = user_map.get(current_user_id)
+    if not current_user:
+        return []
+
+    subject_query_lower = subject_query.lower()
+
+    cursor.execute(""""""
+        SELECT matched_user_id
+        FROM matches
+        WHERE requester_id = %s
+        ORDER BY match_score DESC
+        LIMIT 10;
+    """""", (current_user_id,))
+    top_10_matches = {row[0] for row in cursor.fetchall()}
+
+    matching_users = []
+
+    for other_user in all_users:
+        if other_user.user_id == current_user.user_id:
+            continue
+
+        matching_subjects = []
+        for cls in other_user.classes_can_tutor:
+            #Hybrid fuzzy match: max(partial, token sort)
+            similarity = max(
+                fuzz.partial_ratio(subject_query_lower, cls.lower()),
+                fuzz.token_sort_ratio(subject_query_lower, cls.lower())
+            )
+            if similarity >= 70:  # higher is stricter, lower is more matches
+                matching_subjects.append(cls)
+
+        if not matching_subjects:
+            continue
+
+        if not (set(other_user.classes_can_tutor) & set(current_user.classes_needed)):
+            continue
+
+        if (
+            not (set(current_user.classes_can_tutor) & set(other_user.classes_needed))
+            and not other_user.show_as_backup
+        ):
+            continue
+
+        raw_score, tier = get_match_score_and_tier(other_user, current_user)
+
+        if other_user.user_id in top_10_matches:
+            priority = 1
+        elif other_user.major == current_user.major:
+            priority = 2
+        else:
+            priority = 3
+
+        matching_users.append((priority, raw_score, other_user, tier, matching_subjects))
+
+    matching_users.sort(key=lambda x: (x[0], -x[1]))
+
+    matching_users = matching_users[:5]  # Limit to top 5
+
+    result = []
+    for priority, score, user_obj, tier, matched_classes in matching_users:
+        result.append((user_obj, score, tier, matched_classes, priority))
+
+    return result"
+
+LINK NUMBER 50
+
+File path: instagram/views.py
+"        {""role"": ""system"", ""content"": prompt},
+        {
+      ""role"": ""user"",
+      ""content"": [
+        {""type"": ""text"", ""text"": message},
+        {
+          ""type"": ""image_url"",
+          ""image_url"": {
+            ""url"": f""data:image/jpeg;base64,{img_data}"",
+          },
+        },
+      ],
+    }"
+
+LINK NUMBER 51
+
+File path: supabase/functions/generate-book-descriptions/index.ts
+"
+import ""https://deno.land/x/xhr@0.1.0/mod.ts"";
+import { serve } from ""https://deno.land/std@0.168.0/http/server.ts"";
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { title, author, description } = await req.json();
+
+    const bookPrompt = `Write a concise (2-3 sentences) description of the book ""${title}"" by ${author}. If relevant, mention its significance or impact. Base it on this information: ${description}`;
+    const authorPrompt = `Write a concise (2-3 sentences) professional biography of ${author}. Focus on their expertise, background, and notable works including ""${title}"".`;
+
+    const [bookResponse, authorResponse] = await Promise.all([
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are a professional book critic and biographer.' },
+            { role: 'user', content: bookPrompt }
+          ],
+        }),
+      }),
+      fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are a professional book critic and biographer.' },
+            { role: 'user', content: authorPrompt }
+          ],
+        }),
+      })
+    ]);
+
+    const [bookData, authorData] = await Promise.all([
+      bookResponse.json(),
+      authorResponse.json()
+    ]);
+
+    return new Response(JSON.stringify({
+      bookDescription: bookData.choices[0].message.content.trim(),
+      authorDescription: authorData.choices[0].message.content.trim()
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error generating descriptions:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});"
+
+LINK NUMBER 52
+
+File path: internal/database/database.go
+"github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25UVaW/CKtUDjefjrs0SPonmDGUVOYP0=
+github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
+github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
+github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
+github.com/bytedance/sonic v1.11.6 h1:oUp34TzMlL+OY1OUWxHqsdkgC/Zfc85zGqw9siXjrc0=
+github.com/bytedance/sonic v1.11.6/go.mod h1:LysEHSvpvDySVdC2f87zGWf6CIKJcAvqab1ZaiQtds4=
+github.com/bytedance/sonic/loader v0.1.1 h1:c+e5Pt1k/cy5wMveRDyk2X4B9hF4g7an8N3zCYjJFNM=
+github.com/bytedance/sonic/loader v0.1.1/go.mod h1:ncP89zfokxS5LZrJxl5z0UJcsk4M4yY2JpfqGeCtNLU=
+github.com/cloudwego/base64x v0.1.4 h1:jwCgWpFanWmN8xoIUHa2rtzmkd5J2plF/dnLS6Xd/0Y=
+github.com/cloudwego/base64x v0.1.4/go.mod h1:0zlkT4Wn5C6NdauXdJRhSKRlJvmclQ1hhJgA0rcu/8w=
+github.com/cloudwego/iasm v0.2.0 h1:1KNIy1I1H9hNNFEEH3DVnI4UujN+1zjpuk6gwHLTssg=
+github.com/cloudwego/iasm v0.2.0/go.mod h1:8rXZaNYT2n95jn+zTI1sDr+IgcD2GVs0nlbbQPiEFhY=
+github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
+github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dhui/dktest v0.4.3 h1:wquqUxAFdcUgabAVLvSCOKOlag5cIZuaOjYIBOWdsR0=
+github.com/dhui/dktest v0.4.3/go.mod h1:zNK8IwktWzQRm6I/l2Wjp7MakiyaFWv4G1hjmodmMTs=
+github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
+github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
+github.com/docker/docker v27.2.0+incompatible h1:Rk9nIVdfH3+Vz4cyI/uhbINhEZ/oLmc+CBXmH6fbNk4=
+github.com/docker/docker v27.2.0+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
+github.com/docker/go-connections v0.5.0 h1:USnMq7hx7gwdVZq1L49hLXaFtUdTADjXGp+uj1Br63c=
+github.com/docker/go-connections v0.5.0/go.mod h1:ov60Kzw0kKElRwhNs9UlUHAE/F9Fe6GLaXnqyDdmEXc=
+github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
+github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
+github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
+github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
+github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
+github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
+github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
+github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
+github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
+github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
+github.com/gabriel-vasile/mimetype v1.4.3 h1:in2uUcidCuFcDKtdcBxlR0rJ1+fsokWf+uqxgUFjbI0=
+github.com/gabriel-vasile/mimetype v1.4.3/go.mod h1:d8uq/6HKRL6CGdk+aubisF/M5GcPfT7nKyLpA0lbSSk=
+github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=
+github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
+github.com/gin-gonic/gin v1.10.0 h1:nTuyha1TYqgedzytsKYqna+DfLos46nTv2ygFy86HFU=
+github.com/gin-gonic/gin v1.10.0/go.mod h1:4PMNQiOhvDRa013RKVbsiNwoyezlm2rm0uX/T7kzp5Y=
+github.com/go-ini/ini v1.67.0 h1:z6ZrTEZqSWOTyH2FlglNbNgARyHG8oLW9gMELqKr06A=
+github.com/go-ini/ini v1.67.0/go.mod h1:ByCAeIL28uOIIG0E3PJtZPDL8WnHpFKFOtgjp+3Ies8=
+github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
+github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
+github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=
+github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre4VKE=
+github.com/go-playground/assert/v2 v2.2.0 h1:JvknZsQTYeFEAhQwI4qEt9cyV5ONwRHC+lYKSsYSR8s=
+github.com/go-playground/assert/v2 v2.2.0/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=
+github.com/go-playground/locales v0.14.1 h1:EWaQ/wswjilfKLTECiXz7Rh+3BjFhfDFKv/oXslEjJA=
+github.com/go-playground/locales v0.14.1/go.mod h1:hxrqLVvrK65+Rwrd5Fc6F2O76J/NuW9t0sjnWqG1slY=
+github.com/go-playground/universal-translator v0.18.1 h1:Bcnm0ZwsGyWbCzImXv+pAJnYK9S473LQFuzCbDbfSFY=
+github.com/go-playground/universal-translator v0.18.1/go.mod h1:xekY+UJKNuX9WP91TpwSH2VMlDf28Uj24BCp08ZFTUY=
+github.com/go-playground/validator/v10 v10.20.0 h1:K9ISHbSaI0lyB2eWMPJo+kOS/FBExVwjEviJTixqxL8=
+github.com/go-playground/validator/v10 v10.20.0/go.mod h1:dbuPbCMFw/DrkbEynArYaCwl3amGuJotoKCe95atGMM=
+github.com/goccy/go-json v0.10.3 h1:KZ5WoDbxAIgm2HNbYckL0se1fHD6rz5j4ywS6ebzDqA=
+github.com/goccy/go-json v0.10.3/go.mod h1:oq7eo15ShAhp70Anwd5lgX2pLfOS3QCiwU/PULtXL6M=
+github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
+github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
+github.com/golang-migrate/migrate/v4 v4.18.1 h1:JML/k+t4tpHCpQTCAD62Nu43NUFzHY4CV3uAuvHGC+Y=
+github.com/golang-migrate/migrate/v4 v4.18.1/go.mod h1:HAX6m3sQgcdO81tdjn5exv20+3Kb13cmGli1hrD6hks=
+github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
+github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
+github.com/hashicorp/errwrap v1.1.0 h1:OxrOeh75EUXMY8TBjag2fzXGZ40LB6IKw45YeGUDY2I=
+github.com/hashicorp/errwrap v1.1.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
+github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+lD48awMYo=
+github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
+github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
+github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
+github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
+github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
+github.com/klauspost/compress v1.17.9 h1:6KIumPrER1LHsvBVuDa0r5xaG0Es51mhhB9BQB2qeMA=
+github.com/klauspost/compress v1.17.9/go.mod h1:Di0epgTjJY877eYKx5yC51cX2A2Vl2ibi7bDH9ttBbw=
+github.com/klauspost/cpuid/v2 v2.0.1/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
+github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
+github.com/klauspost/cpuid/v2 v2.2.8 h1:+StwCXwm9PdpiEkPyzBXIy+M9KUb4ODm0Zarf1kS5BM=
+github.com/klauspost/cpuid/v2 v2.2.8/go.mod h1:Lcz8mBdAVJIBVzewtcLocK12l3Y+JytZYpaMropDUws=
+github.com/knz/go-libedit v1.10.1/go.mod h1:MZTVkCWyz0oBc7JOWP3wNAzd002ZbM/5hgShxwh4x8M=
+github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
+github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
+github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
+github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
+github.com/leodido/go-urn v1.4.0 h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=
+github.com/leodido/go-urn v1.4.0/go.mod h1:bvxc+MVxLKB4z00jd1z+Dvzr47oO32F/QSNjSBOlFxI=
+github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=
+github.com/lib/pq v1.10.9/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
+github.com/magiconair/properties v1.8.7/go.mod h1:Dhd985XPs7jluiymwWYZ0G4Z61jb3vdS329zhj2hYo0=
+github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
+github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
+github.com/minio/md5-simd v1.1.2 h1:Gdi1DZK69+ZVMoNHRXJyNcxrMA4dSxoYHZSQbirFg34=
+github.com/minio/md5-simd v1.1.2/go.mod h1:MzdKDxYpY2BT9XQFocsiZf/NKVtR7nkE4RoEpN+20RM=
+github.com/minio/minio-go/v7 v7.0.76 h1:9nxHH2XDai61cT/EFhyIw/wW4vJfpPNvl7lSFpRt+Ng=
+github.com/minio/minio-go/v7 v7.0.76/go.mod h1:AVM3IUN6WwKzmwBxVdjzhH8xq+f57JSbbvzqvUzR6eg=
+github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
+github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
+github.com/moby/docker-image-spec v1.3.1 h1:jMKff3w6PgbfSa69GfNg+zN/XLhfXJGnEx3Nl2EsFP0=
+github.com/moby/docker-image-spec v1.3.1/go.mod h1:eKmb5VW8vQEh/BAr2yvVNvuiJuY6UIocYsFu/DxxRpo=
+github.com/moby/term v0.5.0 h1:xt8Q1nalod/v7BqbG21f8mQPqH+xAaC9C3N3wfWbVP0=
+github.com/moby/term v0.5.0/go.mod h1:8FzsFHVUBGZdbDsJw/ot+X+d5HLUbvklYLJ9uGfcI3Y=
+github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
+github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
+github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
+github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
+github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
+github.com/morikuni/aec v1.0.0 h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=
+github.com/morikuni/aec v1.0.0/go.mod h1:BbKIizmSmc5MMPqRYbxO4ZU0S0+P200+tUnFx7PXmsc=
+github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
+github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
+github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
+github.com/opencontainers/image-spec v1.1.0/go.mod h1:W4s4sFTMaBeK1BQLXbG4AdM2szdn85PY75RI83NrTrM=
+github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
+github.com/pelletier/go-toml/v2 v2.2.2/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h4qDAS4n929Rs=
+github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
+github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
+github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
+github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
+github.com/rs/xid v1.6.0 h1:fV591PaemRlL6JfRxGDEPl69wICngIQ3shQtzfy2gxU=
+github.com/rs/xid v1.6.0/go.mod h1:7XoLgs4eV+QndskICGsho+ADou8ySMSjJKDIan90Nz0=
+github.com/sagikazarmark/locafero v0.4.0 h1:HApY1R9zGo4DBgr7dqsTH/JJxLTTsOt7u6keLGt6kNQ=
+github.com/sagikazarmark/locafero v0.4.0/go.mod h1:Pe1W6UlPYUk/+wc/6KFhbORCfqzgYEpgQ3O5fPuL3H4=
+github.com/sagikazarmark/slog-shim v0.1.0 h1:diDBnUNK9N/354PgrxMywXnAwEr1QZcOr6gto+ugjYE=
+github.com/sagikazarmark/slog-shim v0.1.0/go.mod h1:SrcSrq8aKtyuqEI1uvTDTK1arOWRIczQRv+GVI1AkeQ=
+github.com/sourcegraph/conc v0.3.0 h1:OQTbbt6P72L20UqAkXXuLOj79LfEanQ+YQFNpLA9ySo=
+github.com/sourcegraph/conc v0.3.0/go.mod h1:Sdozi7LEKbFPqYX2/J+iBAM6HpqSLTASQIKqDmF7Mt0=
+github.com/spf13/afero v1.11.0 h1:WJQKhtpdm3v2IzqG8VMqrr6Rf3UYpEF239Jy9wNepM8=
+github.com/spf13/afero v1.11.0/go.mod h1:GH9Y3pIexgf1MTIWtNGyogA5MwRIDXGUr+hbWNoBjkY=
+github.com/spf13/cast v1.6.0 h1:GEiTHELF+vaR5dhz3VqZfFSzZjYbgeKDpBxQVS4GYJ0=
+github.com/spf13/cast v1.6.0/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cAdo=
+github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
+github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
+github.com/spf13/viper v1.19.0 h1:RWq5SEjt8o25SROyN3z2OrDB9l7RPd3lwTWU8EcEdcI=
+github.com/spf13/viper v1.19.0/go.mod h1:GQUN9bilAbhU/jgc1bKs99f/suXKeUMct8Adx5+Ntkg=
+github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
+github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
+github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/8L+MA=
+github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
+github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
+github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
+github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
+github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8=
+github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
+github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS4MhqMhdFk5YI=
+github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
+github.com/ugorji/go/codec v1.2.12 h1:9LC83zGrHhuUA9l16C9AHXAqEV/2wBQ4nkvumAE65EE=
+github.com/ugorji/go/codec v1.2.12/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
+github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f h1:J9EGpcZtP0E/raorCMxlFGSTBrsSlaDGf3jU/qvAE2c=
+github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
+github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 h1:EzJWgHovont7NscjpAxXsDA8S8BMYve8Y5+7cuRE7R0=
+github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
+github.com/xeipuuv/gojsonschema v1.2.0 h1:LhYJRs+L4fBtjZUfuSZIKGeVu0QRy8e5Xi7D17UxZ74=
+github.com/xeipuuv/gojsonschema v1.2.0/go.mod h1:anYRn/JVcOK2ZgGU+IjEV4nwlhoK5sQluxsYJ78Id3Y=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 h1:TT4fX+nBOA/+LUkobKGW1ydGcn+G3vRw9+g5HwCphpk=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0/go.mod h1:L7UH0GbB0p47T4Rri3uHjbpCFYrVrwc1I25QhNPiGK8=
+go.opentelemetry.io/otel v1.29.0 h1:PdomN/Al4q/lN6iBJEN3AwPvUiHPMlt93c8bqTG5Llw=
+go.opentelemetry.io/otel v1.29.0/go.mod h1:N/WtXPs1CNCUEx+Agz5uouwCba+i+bJGFicT8SR4NP8=
+go.opentelemetry.io/otel/metric v1.29.0 h1:vPf/HFWTNkPu1aYeIsc98l4ktOQaL6LeSoeV2g+8YLc=
+go.opentelemetry.io/otel/metric v1.29.0/go.mod h1:auu/QWieFVWx+DmQOUMgj0F8LHWdgalxXqvp7BII/W8=
+go.opentelemetry.io/otel/trace v1.29.0 h1:J/8ZNK4XgR7a21DZUAsbF8pZ5Jcw1VhACmnYt39JTi4=
+go.opentelemetry.io/otel/trace v1.29.0/go.mod h1:eHl3w0sp3paPkYstJOmAimxhiFXPg+MMTlEh3nsQgWQ=
+go.uber.org/atomic v1.9.0 h1:ECmE8Bn/WFTYwEW/bpKD3M8VtR/zQVbavAoalC1PYyE=
+go.uber.org/atomic v1.9.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
+go.uber.org/multierr v1.9.0 h1:7fIwc/ZtS0q++VgcfqFDxSBZVv/Xo49/SYnDFupUwlI=
+go.uber.org/multierr v1.9.0/go.mod h1:X2jQV1h+kxSjClGpnseKVIxpmcjrj7MNnI0bnlfKTVQ=
+golang.org/x/arch v0.0.0-20210923205945-b76863e36670/go.mod h1:5om86z9Hs0C8fWVUuoMHwpExlXzs5Tkyp9hOrfG7pp8=
+golang.org/x/arch v0.8.0 h1:3wRIsP3pM4yUptoR96otTUOXI367OS0+c9eeRi9doIc=
+golang.org/x/arch v0.8.0/go.mod h1:FEVrYAQjsQXMVJ1nsMoVVXPZg6p2JE2mx8psSWTDQys=
+golang.org/x/crypto v0.27.0 h1:GXm2NjJrPaiv/h1tb2UH8QfgC/hOf/+z0p6PT8o1w7A=
+golang.org/x/crypto v0.27.0/go.mod h1:1Xngt8kV6Dvbssa53Ziq6Eqn0HqbZi5Z6R0ZpwQzt70=
+golang.org/x/exp v0.0.0-20230905200255-921286631fa9 h1:GoHiUyI/Tp2nVkLI2mCxVkOjsbSXD66ic0XW0js0R9g=
+golang.org/x/exp v0.0.0-20230905200255-921286631fa9/go.mod h1:S2oDrQGGwySpoQPVqRShND87VCbxmc6bL1Yd2oYrm6k=
+golang.org/x/net v0.29.0 h1:5ORfpBpCs4HzDYoodCDBbwHzdR5UrLBZ3sOnUJmFoHo=
+golang.org/x/net v0.29.0/go.mod h1:gLkgy8jTGERgjzMic6DS9+SP0ajcu6Xu3Orq/SpETg0=
+golang.org/x/sys v0.5.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.25.0 h1:r+8e+loiHxRqhXVl6ML1nO3l1+oFoWbnlu2Ehimmi34=
+golang.org/x/sys v0.25.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
+golang.org/x/text v0.18.0 h1:XvMDiNzPAl0jr17s6W9lcaIhGUfUORdGCNsuLmPG224=
+golang.org/x/text v0.18.0/go.mod h1:BuEKDfySbSR4drPmRPG/7iBdf8hvFMuRexcpahXilzY=
+google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
+google.golang.org/protobuf v1.34.2/go.mod h1:qYOHts0dSfpeUzUFpOMr/WGzszTmLH+DiWniOlNbLDw=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=
+gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/ini.v1 v1.67.0 h1:Dgnx+6+nfE+IfzjUEISNeydPJh9AXNNsWbGP9KzCsOA=
+gopkg.in/ini.v1 v1.67.0/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
+gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+nullprogram.com/x/optparse v1.0.0/go.mod h1:KdyPE+Igbe0jQUrVfMqDMeJQIJZEuyV7pjYmp6pbG50=
+rsc.io/pdf v0.1.1/go.mod h1:n8OzWcQ6Sp37PL01nO98y4iUCRdTGarVfzxY20ICaU4="
+
+LINK NUMBER 53
+Error fetching diff
+
+LINK NUMBER 54
+Error fetching diff
+
+LINK NUMBER 55
+Error fetching diff
+
+LINK NUMBER 56
+
+File path: marketing/script.js
+"// Close menu when clicking a link
+navLinks.querySelectorAll('a').forEach(link => {
+  link.addEventListener('click', () => {
+    menuToggle.classList.remove('active');
+    navLinks.classList.remove('show');
+    mobileFooter.classList.remove('show');
+    body.classList.remove('menu-open');
+  });
+});
+
+// Reset mobile menu state on window resize
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    menuToggle.classList.remove('active');
+    navLinks.classList.remove('show');
+    mobileFooter.classList.remove('show');
+    body.classList.remove('menu-open');
+  }
+});
+"
+
+LINK NUMBER 57
+Not enough lines
+
+LINK NUMBER 58
+Not enough lines
+
+LINK NUMBER 59
+Not enough lines
+
+LINK NUMBER 60
+Error fetching diff
+
+LINK NUMBER 61
+Error fetching diff
+
+LINK NUMBER 62
+Error fetching diff
+
+LINK NUMBER 63
+Not enough lines
+
+LINK NUMBER 64
+Not enough lines
+
+LINK NUMBER 65
+Not enough lines
+
+LINK NUMBER 66
+Not enough lines
+
+LINK NUMBER 67
+Error fetching diff
+
+LINK NUMBER 68
+Error fetching diff
+
+LINK NUMBER 69
+Error fetching diff
+
+LINK NUMBER 70
+Not enough lines
+
+LINK NUMBER 71
+Not enough lines
+
+LINK NUMBER 72
+Not enough lines
+
+LINK NUMBER 73
+Not enough lines
+
+LINK NUMBER 74
+Error fetching diff
+
+LINK NUMBER 75
+Error fetching diff
+
+LINK NUMBER 76
+Error fetching diff
+
+LINK NUMBER 77
+Not enough lines
+
+LINK NUMBER 78
+Not enough lines
+
+LINK NUMBER 79
+Not enough lines
+
+LINK NUMBER 80
+Not enough lines
+
+LINK NUMBER 81
+Error fetching diff
+
+LINK NUMBER 82
+Error fetching diff
+
+LINK NUMBER 83
+Error fetching diff
+
+LINK NUMBER 84
+Not enough lines
+
+LINK NUMBER 85
+Not enough lines
+
+LINK NUMBER 86
+Not enough lines
+
+LINK NUMBER 87
+Not enough lines
+
+LINK NUMBER 88
+Error fetching diff
+
+LINK NUMBER 89
+Error fetching diff
+
+LINK NUMBER 90
+Error fetching diff
+
+LINK NUMBER 91
+Not enough lines
+
+LINK NUMBER 92
+Not enough lines
+
+LINK NUMBER 93
+Not enough lines
+
+LINK NUMBER 94
+Not enough lines
+
+LINK NUMBER 95
+Error fetching diff
+
+LINK NUMBER 96
+Error fetching diff
+
+LINK NUMBER 97
+Error fetching diff
+
+LINK NUMBER 98
+Not enough lines
+
+LINK NUMBER 99
+Not enough lines
+
+LINK NUMBER 100
+
+File path: Generate Summary.py
+"import os, requests
+
+def main(event):
+  token = os.getenv(""ChatGPT"")
+  notes = event.get('inputFields').get('notes')
+  meetings = event.get('inputFields').get('meeting_notes')
+  preText = ""I have extracted following ticket information i.e. ticket notes and meetings notes. I want you to summarise why this is churn?""
+  postText = "" Just write the summary and do not enter anything like here's the summary. go straight into summary.""
+  finalText = preText + ""Ticket Notes ->"" + notes + ""Meeting Notes ->"" + meetings + postText
+  openai_endpoint = 'https://api.openai.com/v1/chat/completions'
+  headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+  }
+  data = {
+    'model': 'gpt-4',
+    'messages': [
+      {
+        'role': 'user',
+        'content': finalText
+      }
+    ],
+    'max_tokens': 500
+  }
+  response = requests.post(openai_endpoint, headers=headers, json=data)
+  print(response.status_code)
+  conclusion = response.json().get('choices', [{}])[0].get('message', {}).get('content', '')
+  return {
+    ""outputFields"": {
+      ""conclusion"": conclusion
+    }
+  }"
+
+LINK NUMBER 101
+Not enough lines
+
+LINK NUMBER 102
+Error fetching diff
+
+LINK NUMBER 103
+Error fetching diff
+
+LINK NUMBER 104
+Error fetching diff
+
+LINK NUMBER 105
+Not enough lines
+
+LINK NUMBER 106
+
+File path: intracranial_ephys_utils/load_data.py
+"                interp_data_t = np.linspace(data_t[missing_samples_start_ind], data_t[missing_samples_start_ind+1],
+                                            missing_samples)
+
+                # full_data_t = np.linspace(data_t[missing_samples_start_ind], data_t[missing_samples_end_ind],
+                #                           missing_samples)
+                data_x_interp = cs(interp_data_t)"
+
+LINK NUMBER 107
+
+File path: ourhexenv.py
+"
+
+class UnionFind:
+    """"""
+    A Union-Find (Disjoint-Set) data structure that supports efficient operations
+    to find the root of a set and unite two sets. This implementation includes
+    path compression and rank optimization to keep the tree structures shallow.
+
+    Attributes:
+        parent (List[int]): Parent list where parent[i] is the parent of element i.
+                            If parent[i] == i, then i is the root of its set.
+        rank (List[int]): Rank list to track the depth of the tree rooted at each element.
+    """"""
+
+    def __init__(self, n):
+        """"""
+        Initializes the Union-Find data structure with `n` elements.
+
+        Each element is initially its own parent, representing `n` individual sets.
+        The rank of all elements is initialized to 0.
+
+        Args:
+            n (int): The number of elements in the set, indexed from 0 to n-1.
+        """"""
+        self.parent = list(range(n))
+        self.rank = [0] * n
+
+    def find(self, x):
+        """"""
+        Finds the root of the set containing the element `x` with path compression.
+
+        Path compression ensures that all elements on the path from `x` to the root
+        point directly to the root, optimizing future operations.
+
+        Args:
+            x (int): The element whose set root is to be found.
+
+        Returns:
+            int: The root of the set containing `x`.
+        """"""
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])  # Path compression
+        return self.parent[x]
+
+    def union(self, x, y):
+        """"""
+        Unites the sets containing elements `x` and `y` using rank optimization.
+
+        The root of one set becomes the parent of the root of the other set based
+        on the rank of the roots. This helps keep the tree structures shallow.
+
+        Args:
+            x (int): An element in the first set.
+            y (int): An element in the second set.
+
+        Returns:
+            None
+        """"""
+        rootX = self.find(x)
+        rootY = self.find(y)
+
+        if rootX != rootY:
+            # Union by rank
+            if self.rank[rootX] > self.rank[rootY]:
+                self.parent[rootY] = rootX
+            elif self.rank[rootX] < self.rank[rootY]:
+                self.parent[rootX] = rootY
+            else:
+                self.parent[rootY] = rootX
+                self.rank[rootX] += 1"
+
+LINK NUMBER 108
+Not enough lines
+
+LINK NUMBER 109
+Error fetching diff
+
+LINK NUMBER 110
+Error fetching diff
+
+LINK NUMBER 111
+Error fetching diff
+
+LINK NUMBER 112
+
+File path: src/features/chatgpt/core/generateSentinelChatRequirementsToken.ts
+"    '',
+    '',
+    navigator.language,
+    navigator.languages.join(','),
+    0,"
+
+LINK NUMBER 113
+
+File path: src/computer_numbering_systems.java
+"
+    public static void main(String[] args) {
+        int numberOfProblems = 5; // Number of problems to generate
+        for (int i = 0; i < numberOfProblems; i++) {
+            generateProblem();
+        }
+    }
+
+    private static void generateProblem() {
+        int problemType = random.nextInt(3); // 0: Conversion, 1: Operation, 2: Mixed
+
+        switch (problemType) {
+            case 0:
+                generateConversionProblem();
+                break;
+            case 1:
+                generateOperationProblem();
+                break;
+            case 2:
+                generateMixedProblem();
+                break;
+        }
+    }
+
+    private static void generateConversionProblem() {
+        // Generate a random number in decimal
+        int decimalNumber = random.nextInt(100); // Range from 0 to 99
+        String targetBase = getBaseString(random.nextInt(3)); // 0: Binary, 1: Octal, 2: Hexadecimal
+
+        System.out.printf(""Convert the decimal number %d to %s:\n"", decimalNumber, targetBase);
+        System.out.print(""Your answer: "");
+        String answer = scanner.nextLine();
+        String correctAnswer = convertDecimal(decimalNumber, targetBase);
+
+        if (answer.equalsIgnoreCase(correctAnswer)) {
+            System.out.println(""Correct!\n"");
+        } else {
+            System.out.printf(""Incorrect. The correct answer is %s.\n\n"", correctAnswer);
+        }
+    }
+
+    private static void generateOperationProblem() {
+        // Generate two random numbers in different bases
+        int base1 = getRandomBase();
+        int base2 = getRandomBase();
+
+        int number1 = random.nextInt(50); // Generate random number for the first base
+        int number2 = random.nextInt(50); // Generate random number for the second base
+
+        String base1Str = convertToBase(number1, base1);
+        String base2Str = convertToBase(number2, base2);
+
+        System.out.printf(""What is %s (%s) + %s (%s)?\n"", base1Str, getBaseString(base1), base2Str, getBaseString(base2));
+        System.out.print(""Your answer (in decimal): "");
+        String answer = scanner.nextLine();
+
+        int correctAnswer = convertToDecimal(base1Str, base1) + convertToDecimal(base2Str, base2);
+
+        if (Integer.parseInt(answer) == correctAnswer) {
+            System.out.println(""Correct!\n"");
+        } else {
+            System.out.printf(""Incorrect. The correct answer is %d.\n\n"", correctAnswer);
+        }
+    }
+
+    private static void generateMixedProblem() {
+        // Generate a conversion problem followed by an operation
+        int decimalNumber = random.nextInt(100);
+        String targetBase = getBaseString(random.nextInt(3));
+        System.out.printf(""Convert the decimal number %d to %s:\n"", decimalNumber, targetBase);
+        System.out.print(""Your answer: "");
+        String answer = scanner.nextLine();
+        String correctAnswer = convertDecimal(decimalNumber, targetBase);
+
+        if (answer.equalsIgnoreCase(correctAnswer)) {
+            System.out.println(""Correct!\n"");
+        } else {
+            System.out.printf(""Incorrect. The correct answer is %s.\n\n"", correctAnswer);
+        }
+
+        // Now generate an operation problem
+        generateOperationProblem();
+    }
+
+    private static String convertDecimal(int number, String targetBase) {
+        switch (targetBase) {
+            case ""Binary"":
+                return Integer.toBinaryString(number);
+            case ""Octal"":
+                return Integer.toOctalString(number);
+            case ""Hexadecimal"":
+                return Integer.toHexString(number).toUpperCase();
+            default:
+                return String.valueOf(number);
+        }
+    }
+
+    private static int convertToDecimal(String number, int base) {
+        return Integer.parseInt(number, base);
+    }
+
+    private static String convertToBase(int number, int base) {
+        switch (base) {
+            case 2:
+                return Integer.toBinaryString(number);
+            case 8:
+                return Integer.toOctalString(number);
+            case 16:
+                return Integer.toHexString(number).toUpperCase();
+            default:
+                return String.valueOf(number);
+        }
+    }
+
+    private static String getBaseString(int baseIndex) {
+        switch (baseIndex) {
+            case 0:
+                return ""Binary"";
+            case 1:
+                return ""Octal"";
+            case 2:
+                return ""Hexadecimal"";
+            default:
+                return ""Decimal"";
+        }
+    }
+
+    private static int getRandomBase() {
+        return random.nextInt(3) + 2; // Return bases 2 (Binary), 8 (Octal), 16 (Hexadecimal)
+    }"
+
+LINK NUMBER 114
+Not enough lines
+
+LINK NUMBER 115
+
+File path: supabase/functions/analyze-article/index.ts
+"    console.log(""Using OpenAI for analysis"");
+    
+    // [Analysis] Prepare prompt for article analysis with meaningful structure
+    const prompt = `
+      Analyze this AI news article and provide insights for AI agency professionals:
+      
+      Title: ${title}
+      
+      Content: ${content || """"}
+      
+      Source: ${source || ""Unknown""}
+      
+      Category: ${category || ""AI Technology""}
+      
+      Please respond with JSON containing the following keys:
+      - market_impact: A detailed paragraph analyzing market implications for AI agencies
+      - technical_predictions: Array of 3-5 bullet points with technical predictions
+      - related_technologies: Array of relevant technologies mentioned or implied in the article
+      - business_implications: A paragraph explaining strategic business implications for AI agencies
+    `;
+    
+    // [Analysis] Call OpenAI API for enhanced analysis
+    const openAIResponse = await fetch(""https://api.openai.com/v1/chat/completions"", {
+      method: ""POST"",
+      headers: {
+        ""Content-Type"": ""application/json"",
+        ""Authorization"": `Bearer ${openAIKey}`,
+      },
+      body: JSON.stringify({
+        model: ""gpt-4o-mini"", // [Analysis] Using an available model from OpenAI
+        messages: [
+          {
+            role: ""system"",
+            content: ""You are an AI technology analyst specialized in extracting business insights from news articles for AI agencies. Provide detailed, actionable analysis in JSON format.""
+          },
+          {
+            role: ""user"",
+            content: prompt
+          }
+        ],
+        temperature: 0.3, // [Analysis] Lower temperature for more consistent, analytical responses
+      }),
+    });
+    
+    if (!openAIResponse.ok) {
+      const errorData = await openAIResponse.text();
+      console.error(""OpenAI API error:"", errorData);
+      throw new Error(`OpenAI API error: ${errorData}`);
+    }
+    
+    // [Analysis] Process and parse the OpenAI response
+    const openAIData = await openAIResponse.json();
+    console.log(""Received response from OpenAI"");
+    
+    let analysis;
+    try {
+      // [Analysis] Extract JSON from OpenAI response
+      const responseContent = openAIData.choices[0].message.content;
+      
+      // [Framework] Parse JSON, handling potential formatting issues
+      if (responseContent.includes(""{"") && responseContent.includes(""}"")) {
+        const jsonStart = responseContent.indexOf(""{"");
+        const jsonEnd = responseContent.lastIndexOf(""}"") + 1;
+        const jsonStr = responseContent.substring(jsonStart, jsonEnd);
+        analysis = JSON.parse(jsonStr);
+      } else {
+        // [Analysis] Fallback to text parsing if JSON structure is missing
+        analysis = {
+          market_impact: ""Analysis of market impact unavailable at this time."",
+          technical_predictions: [""Prediction data could not be extracted""],
+          related_technologies: [""AI""],
+          business_implications: ""Business implications analysis unavailable at this time.""
+        };
+      }
+    } catch (parseError) {
+      console.error(""Error parsing OpenAI response:"", parseError);
+      
+      // [Analysis] Provide fallback analysis when parsing fails
+      analysis = {
+        market_impact: ""Unable to parse analysis results."",
+        technical_predictions: [""Analysis results unavailable""],
+        related_technologies: [""AI""],
+        business_implications: ""Unable to extract business implications at this time.""
+      };
+    }"
+
+LINK NUMBER 116
+Error fetching diff
+
+LINK NUMBER 117
+Error fetching diff
+
+LINK NUMBER 118
+Error fetching diff
+
+LINK NUMBER 119
+
+File path: supabase/functions/analyze-article/index.ts
+"    console.log(""Using OpenAI for analysis"");
+    
+    // [Analysis] Prepare prompt for article analysis with meaningful structure
+    const prompt = `
+      Analyze this AI news article and provide insights for AI agency professionals:
+      
+      Title: ${title}
+      
+      Content: ${content || """"}
+      
+      Source: ${source || ""Unknown""}
+      
+      Category: ${category || ""AI Technology""}
+      
+      Please respond with JSON containing the following keys:
+      - market_impact: A detailed paragraph analyzing market implications for AI agencies
+      - technical_predictions: Array of 3-5 bullet points with technical predictions
+      - related_technologies: Array of relevant technologies mentioned or implied in the article
+      - business_implications: A paragraph explaining strategic business implications for AI agencies
+    `;
+    
+    // [Analysis] Call OpenAI API for enhanced analysis
+    const openAIResponse = await fetch(""https://api.openai.com/v1/chat/completions"", {
+      method: ""POST"",
+      headers: {
+        ""Content-Type"": ""application/json"",
+        ""Authorization"": `Bearer ${openAIKey}`,
+      },
+      body: JSON.stringify({
+        model: ""gpt-4o-mini"", // [Analysis] Using an available model from OpenAI
+        messages: [
+          {
+            role: ""system"",
+            content: ""You are an AI technology analyst specialized in extracting business insights from news articles for AI agencies. Provide detailed, actionable analysis in JSON format.""
+          },
+          {
+            role: ""user"",
+            content: prompt
+          }
+        ],
+        temperature: 0.3, // [Analysis] Lower temperature for more consistent, analytical responses
+      }),
+    });
+    
+    if (!openAIResponse.ok) {
+      const errorData = await openAIResponse.text();
+      console.error(""OpenAI API error:"", errorData);
+      throw new Error(`OpenAI API error: ${errorData}`);
+    }
+    
+    // [Analysis] Process and parse the OpenAI response
+    const openAIData = await openAIResponse.json();
+    console.log(""Received response from OpenAI"");
+    
+    let analysis;
+    try {
+      // [Analysis] Extract JSON from OpenAI response
+      const responseContent = openAIData.choices[0].message.content;
+      
+      // [Framework] Parse JSON, handling potential formatting issues
+      if (responseContent.includes(""{"") && responseContent.includes(""}"")) {
+        const jsonStart = responseContent.indexOf(""{"");
+        const jsonEnd = responseContent.lastIndexOf(""}"") + 1;
+        const jsonStr = responseContent.substring(jsonStart, jsonEnd);
+        analysis = JSON.parse(jsonStr);
+      } else {
+        // [Analysis] Fallback to text parsing if JSON structure is missing
+        analysis = {
+          market_impact: ""Analysis of market impact unavailable at this time."",
+          technical_predictions: [""Prediction data could not be extracted""],
+          related_technologies: [""AI""],
+          business_implications: ""Business implications analysis unavailable at this time.""
+        };
+      }
+    } catch (parseError) {
+      console.error(""Error parsing OpenAI response:"", parseError);
+      
+      // [Analysis] Provide fallback analysis when parsing fails
+      analysis = {
+        market_impact: ""Unable to parse analysis results."",
+        technical_predictions: [""Analysis results unavailable""],
+        related_technologies: [""AI""],
+        business_implications: ""Unable to extract business implications at this time.""
+      };
+    }"
+
+LINK NUMBER 120
+Not enough lines
+
+LINK NUMBER 121
+
+File path: tripsite/urls.py
+"
+
+def trip_analysis(request, country_name):
+    top_city_counter = get_top_city(country_name, 5)
+    labels = [i[0] for i in top_city_counter]
+    data = [i[1] for i in top_city_counter]
+
+    info = CountryInfo.objects.get(country_name=country_name)
+
+    return render(request, 'analysis.html', {
+        'country_name': country_name,
+        'country_name_ch': info.country_name_ch,
+        'analysis': info.analysis,
+        ""labels"": labels,
+        ""data"": data,
+    })"
+
+LINK NUMBER 122
+Not enough lines
+
+LINK NUMBER 123
+Error fetching diff
+
+LINK NUMBER 124
+Error fetching diff
+
+LINK NUMBER 125
+Error fetching diff
+
+LINK NUMBER 126
+Not enough lines
+
+LINK NUMBER 127
+
+File path: app/src/main/java/com/CMPUT301W24T32/brazmascheckin/controllers/GetSuccessListener.java
+"package com.CMPUT301W24T32.brazmascheckin.controllers;
+
+public interface GetFailureListener {
+    /**
+     * Listener interface for handling the failure of retrieving objects from the database.
+     */
+    public interface FailureListener {
+
+        /**
+         * Called when an error occurs during object retrieval.
+         *
+         * @param e the exception representing the error.
+         */
+        void onFailure(Exception e);
+    }
+}"
+
+LINK NUMBER 128
+
+File path: supabase/functions/analyze-article/index.ts
+"    console.log(""Using OpenAI for analysis"");
+    
+    // [Analysis] Prepare prompt for article analysis with meaningful structure
+    const prompt = `
+      Analyze this AI news article and provide insights for AI agency professionals:
+      
+      Title: ${title}
+      
+      Content: ${content || """"}
+      
+      Source: ${source || ""Unknown""}
+      
+      Category: ${category || ""AI Technology""}
+      
+      Please respond with JSON containing the following keys:
+      - market_impact: A detailed paragraph analyzing market implications for AI agencies
+      - technical_predictions: Array of 3-5 bullet points with technical predictions
+      - related_technologies: Array of relevant technologies mentioned or implied in the article
+      - business_implications: A paragraph explaining strategic business implications for AI agencies
+    `;
+    
+    // [Analysis] Call OpenAI API for enhanced analysis
+    const openAIResponse = await fetch(""https://api.openai.com/v1/chat/completions"", {
+      method: ""POST"",
+      headers: {
+        ""Content-Type"": ""application/json"",
+        ""Authorization"": `Bearer ${openAIKey}`,
+      },
+      body: JSON.stringify({
+        model: ""gpt-4o-mini"", // [Analysis] Using an available model from OpenAI
+        messages: [
+          {
+            role: ""system"",
+            content: ""You are an AI technology analyst specialized in extracting business insights from news articles for AI agencies. Provide detailed, actionable analysis in JSON format.""
+          },
+          {
+            role: ""user"",
+            content: prompt
+          }
+        ],
+        temperature: 0.3, // [Analysis] Lower temperature for more consistent, analytical responses
+      }),
+    });
+    
+    if (!openAIResponse.ok) {
+      const errorData = await openAIResponse.text();
+      console.error(""OpenAI API error:"", errorData);
+      throw new Error(`OpenAI API error: ${errorData}`);
+    }
+    
+    // [Analysis] Process and parse the OpenAI response
+    const openAIData = await openAIResponse.json();
+    console.log(""Received response from OpenAI"");
+    
+    let analysis;
+    try {
+      // [Analysis] Extract JSON from OpenAI response
+      const responseContent = openAIData.choices[0].message.content;
+      
+      // [Framework] Parse JSON, handling potential formatting issues
+      if (responseContent.includes(""{"") && responseContent.includes(""}"")) {
+        const jsonStart = responseContent.indexOf(""{"");
+        const jsonEnd = responseContent.lastIndexOf(""}"") + 1;
+        const jsonStr = responseContent.substring(jsonStart, jsonEnd);
+        analysis = JSON.parse(jsonStr);
+      } else {
+        // [Analysis] Fallback to text parsing if JSON structure is missing
+        analysis = {
+          market_impact: ""Analysis of market impact unavailable at this time."",
+          technical_predictions: [""Prediction data could not be extracted""],
+          related_technologies: [""AI""],
+          business_implications: ""Business implications analysis unavailable at this time.""
+        };
+      }
+    } catch (parseError) {
+      console.error(""Error parsing OpenAI response:"", parseError);
+      
+      // [Analysis] Provide fallback analysis when parsing fails
+      analysis = {
+        market_impact: ""Unable to parse analysis results."",
+        technical_predictions: [""Analysis results unavailable""],
+        related_technologies: [""AI""],
+        business_implications: ""Unable to extract business implications at this time.""
+      };
+    }"
+
+LINK NUMBER 129
+
+File path: src/DataFixtures/ListingFixtures.php
+"<?php
+
+namespace App\DataFixtures;
+
+use App\Entity\Listing;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Persistence\ObjectManager;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
+use DateTime;
+use DateTimeImmutable;
+
+class ListingFixtures extends Fixture implements DependentFixtureInterface
+{
+    public function load(ObjectManager $manager) : void
+    {
+        //Code written by ChatGPT to generate an array of listings
+        $listings = [];
+        $titles = [
+            'Luxurious Apartment in Paris',
+            'Charming Studio in the Heart of Paris',
+            'Spacious Flat with Eiffel Tower View',
+            'Modern Loft Near Champs-Élysées',
+            'Cozy 1-Bedroom Apartment in Montmartre',
+            'Elegant 2-Bedroom Apartment in Le Marais',
+            'Sunny Apartment with Balcony in Paris',
+            'Stylish Duplex in the Latin Quarter',
+            'Renovated Apartment in Historical Building',
+            'Contemporary Apartment near Seine River',
+            'Beautiful Apartment with Garden View',
+            'Luxury Penthouse in Central Paris',
+            'Bright and Airy Apartment in Paris',
+            'Quaint Studio Near Sacré-Cœur',
+            'Exclusive Apartment in Saint-Germain',
+            'Classic Parisian Apartment with High Ceilings',
+            'Designer Loft in the Marais District',
+            'Chic Apartment with Modern Amenities',
+            'Top Floor Apartment with City Views',
+            'Charming Flat in Parisian Style',
+            'Cozy Studio in Paris 7th Arrondissement',
+            'Spacious Apartment with Terrace',
+            'Elegant Flat in the Golden Triangle',
+            'Bright Apartment in Paris 6th Arrondissement',
+            'Charming 2-Bedroom Flat in Paris 5th',
+            'Luxury Studio in Paris 1st Arrondissement',
+            'Modern Apartment in Paris 8th Arrondissement',
+            'Beautiful Apartment in Paris 15th Arrondissement',
+            'Gorgeous Flat in Paris 16th Arrondissement',
+            'Prestigious Apartment in Paris 2nd Arrondissement',
+        ];
+        
+        $descriptions = [
+            'A luxurious apartment with stunning views of Paris.',
+            'A charming studio located in the heart of Paris.',
+            'A spacious flat offering a breathtaking view of the Eiffel Tower.',
+            'A modern loft located near the famous Champs-Élysées.',
+            'A cozy 1-bedroom apartment situated in Montmartre.',
+            'An elegant 2-bedroom apartment located in Le Marais.',
+            'A sunny apartment with a balcony, perfect for enjoying Paris.',
+            'A stylish duplex in the vibrant Latin Quarter.',
+            'A renovated apartment in a historical building.',
+            'A contemporary apartment located near the Seine River.',
+            'A beautiful apartment with a garden view.',
+            'A luxury penthouse located in the center of Paris.',
+            'A bright and airy apartment perfect for Parisian living.',
+            'A quaint studio near the famous Sacré-Cœur.',
+            'An exclusive apartment located in Saint-Germain.',
+            'A classic Parisian apartment with high ceilings.',
+            'A designer loft in the trendy Marais District.',
+            'A chic apartment with modern amenities.',
+            'A top-floor apartment offering stunning city views.',
+            'A charming flat in true Parisian style.',
+            'A cozy studio in the 7th Arrondissement of Paris.',
+            'A spacious apartment with a terrace.',
+            'An elegant flat located in the Golden Triangle.',
+            'A bright apartment in the 6th Arrondissement of Paris.',
+            'A charming 2-bedroom flat in the 5th Arrondissement.',
+            'A luxury studio in the 1st Arrondissement of Paris.',
+            'A modern apartment in the 8th Arrondissement.',
+            'A beautiful apartment in the 15th Arrondissement of Paris.',
+            'A gorgeous flat in the 16th Arrondissement of Paris.',
+            'A prestigious apartment in the 2nd Arrondissement of Paris.',
+        ];
+        
+        $statuses = ['active', 'inactive', 'expired', 'suspended'];
+        $propertyIds = range(1, 31);
+        unset($propertyIds[array_search(29, $propertyIds)]);
+        $propertyIds = array_values($propertyIds);
+        shuffle($propertyIds);
+        
+        for ($i = 0; $i < 30; $i++) {
+            $startDate = new DateTimeImmutable();
+            $endDate = (clone $startDate)->modify('+'.mt_rand(1, 8).' weeks');
+        
+            $listings[] = [
+                'property_id' => $propertyIds[$i],
+                'listing_title' => $titles[array_rand($titles)],
+                'listing_description' => $descriptions[array_rand($descriptions)],
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => $statuses[array_rand($statuses)]
+            ];
+        }
+        //end of the code generated by ChatGPT
+        
+        foreach ($listings as $listingData) {
+            $listing = new Listing;
+
+            $listing->setProperty($this->getReference('property_' . $listingData['property_id']));
+            $listing->setListingTitle($listingData['listing_title']);
+            $listing->setListingDescription($listingData['listing_description']);
+            $listing->setStartDate($listingData['start_date']);
+            $listing->setEndDate($listingData['end_date']);
+            $listing->setStatus($listingData['status']);
+            
+            $manager->persist($listing);
+        }
+        $manager->flush();
+    }
+
+    public function getDependencies()
+    {
+        return [
+            PropertyFixtures::class,
+        ];
+    }
+}"
+
+LINK NUMBER 130
+Error fetching diff
+
+LINK NUMBER 131
+Error fetching diff
+
+LINK NUMBER 132
+Error fetching diff
+
+LINK NUMBER 133
+
+File path: main.ts
+"		this.addChatGPTPromptForGeneratingSummaryToClipboard();
+		this.addCommand({
+			id: ""chatgpt-prompt-for-generating-summary-to-clipboard"",
+			name: ""ChatGPT prompt for generating summary to clipboard"",
+			icon: `chatgpt-prompt-for-generating-summary-to-clipboard`,
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				const prompt = ""請將以下的文章節錄縮短成約150字的中文摘要，確保摘要內容精煉且突出重點。你需要注意以下幾點：\n"" +
+							   ""\n"" +
+							   ""1. 將長篇大論縮短，只保留最重要的訊息和主題。\n"" +
+							   ""2. 去除非必要的詳細訊息，並避免使用過於繁複或不必要的語言。\n"" +
+							   ""3. 保留文章中最重要的主題和訊息，並確保這些訊息在摘要中清楚地表達出來。\n"" +
+							   ""4. 使用精煉且直接的語言，以吸引人的方式表達作者將在文章中深入分享這些主題的意圖。\n"" +
+							   ""5. 使用「我」來指稱「作者」，「你」來指稱讀者。\n"" +
+							   ""\n"" +
+							   ""具體來說，你需要確保以下重點訊息被包含其中：\n"" +
+							   ""1. 文章的主要主題或重點討論。\n"" +
+							   ""2. 作者提出的建議、策略或重要觀點。\n"" +
+							   ""3. 這些建議或策略的具體效益或結果。\n"" +
+							   ""\n"" +
+							   ""最後，以吸引並鼓勵讀者進行下一步行動的方式編寫摘要，並表達出文章中更多深入的內容等待讀者去探索。\n"" +
+							   ""請寫出3個版本。\n\n"" + editor.getValue();
+
+				navigator.clipboard.writeText(prompt).then(function () {
+					new Notice(`Copied prompt for generate summary to clipboard!`);
+				}, function (error) {
+					new Notice(`error when copy to clipboard!`);
+				});
+			}
+		});
+"
+
+LINK NUMBER 134
+
+File path: server/routes.ts
+"  // New endpoint for game design assistance
+  app.post(""/api/design/chat"", async (req, res) => {
+    try {
+      const { message, sessionId } = req.body;
+
+      // Get or create conversation history
+      if (!designConversations.has(sessionId)) {
+        designConversations.set(sessionId, []);
+      }
+      const history = designConversations.get(sessionId)!;
+
+      // Add user message to history
+      history.push({ role: 'user', content: message });
+
+      logApi(""Design chat request received"", { message, sessionId });
+
+      const response = await openai.chat.completions.create({
+        model: ""gpt-4o"",
+        messages: [
+          {
+            role: ""system"",
+            content: DESIGN_ASSISTANT_PROMPT
+          },
+          ...history
+        ],
+        temperature: 0.7
+      });
+
+      const assistantMessage = response.choices[0].message.content || """";
+
+      // Add assistant response to history
+      history.push({ role: 'assistant', content: assistantMessage });
+
+      logApi(""Design chat response"", { message }, { response: assistantMessage });
+
+      res.json({ 
+        message: assistantMessage,
+        history: history 
+      });
+    } catch (error: any) {
+      logApi(""Error in design chat"", req.body, { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Generate game code based on design conversation
+  app.post(""/api/design/generate"", async (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      const history = designConversations.get(sessionId);
+
+      if (!history) {
+        throw new Error(""No design conversation found"");
+      }
+
+      logApi(""Game generation request"", { sessionId });
+
+      // Compile the conversation into a detailed game specification
+      const response = await openai.chat.completions.create({
+        model: ""gpt-4o"",
+        messages: [
+          {
+            role: ""system"",
+            content: SYSTEM_PROMPT
+          },
+          {
+            role: ""user"",
+            content: `Based on the following conversation, create a complete game implementation:\n\n${
+              history.map(msg => `${msg.role}: ${msg.content}`).join('\n')
+            }`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 16000
+      });
+
+      const content = response.choices[0].message.content || """";
+      const code = extractGameCode(content);
+
+      const result = {
+        code,
+        response: content
+      };
+
+      logApi(""Game code generated"", { sessionId }, result);
+      res.json(result);
+    } catch (error: any) {
+      logApi(""Error generating game"", req.body, { error: error.message });
+      res.status(500).json({ error: error.message });
+    }
+  });
+"
+
+LINK NUMBER 135
+
+File path: util/lastfm/getTopTracks.js
+"
+        ""monthly"": ""1month"",
+        ""month"": ""1month"",
+        ""m"": ""1month"",
+
+        ""quarterly"": ""3month"","
+
+LINK NUMBER 136
+Not enough lines
+
+LINK NUMBER 137
+Error fetching diff
+
+LINK NUMBER 138
+Error fetching diff
+
+LINK NUMBER 139
+Error fetching diff
+
+LINK NUMBER 140
+Not enough lines
+
+LINK NUMBER 141
+
+File path: go/src/tripPlanning/service/plan_ai.go
+"package service
+
+import (
+	""bytes""
+	""encoding/json""
+	""fmt""
+	""net/http""
+	""io/ioutil""
+	""tripPlanning/constants""
+)
+
+// TravelPlannerService handles travel planning logic
+type TravelPlannerService struct {
+	openAIKey string
+}
+
+type OpenAIResponse struct {
+    Choices []struct {
+        Message struct {
+            Content string `json:""content""`
+        } `json:""message""`
+    } `json:""choices""`
+}
+
+// NewTravelPlannerService creates a new instance of TravelPlannerService
+func NewTravelPlannerService(openAIKey string) *TravelPlannerService {
+	return &TravelPlannerService{
+		openAIKey: constants.Openai_key,
+	}
+}
+
+// AiGeneratedPlan generates a plan using ChatGPT API
+func (s *TravelPlannerService) AiGeneratedPlan(city, startDay, endDay string) (string, error) {
+    // Set up OpenAI API client
+    apiEndpoint := constants.OpenaiEndpoint
+    
+    fmt.Println(""successful connect to gpt"")
+    
+    // Construct the input prompt for ChatGPT
+    promptMessage := fmt.Sprintf(""Give me a trip plan to travel to %s from %s to %s with the most famous places of interest. Just list the places of interest for each day"", city, startDay, endDay)
+
+    // Construct the request payload
+    requestPayload := map[string]interface{}{
+        ""model"":     ""gpt-3.5-turbo"",
+        ""messages"":  []map[string]string{
+            {
+                ""role"":    ""system"",
+                ""content"": ""You are a helpful assistant capable of generating travel plans."",
+            },
+            {
+                ""role"":    ""user"",
+                ""content"": promptMessage,
+            },
+        },
+        ""max_tokens"": 200,
+    }
+
+    // Convert payload to JSON
+    payloadBytes, err := json.Marshal(requestPayload)
+    if err != nil {
+        return """", fmt.Errorf(""error encoding JSON: %v"", err)
+    }
+
+
+	// Create HTTP request
+	req, err := http.NewRequest(""POST"", apiEndpoint, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return """", fmt.Errorf(""error creating request: %v"", err)
+	}
+
+	// Set API key header
+	req.Header.Set(""Authorization"", ""Bearer ""+constants.Openai_key)
+	req.Header.Set(""Content-Type"", ""application/json"")
+
+	// Make the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return """", fmt.Errorf(""error making request: %v"", err)
+	}
+	defer resp.Body.Close()
+
+	// Read and parse the response
+    responseBody, err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        return """", fmt.Errorf(""error reading response body: %v"", err)
+    }
+
+    // Unmarshal JSON response into OpenAIResponse struct
+    var response OpenAIResponse
+    err = json.Unmarshal(responseBody, &response)
+    if err != nil {
+        return """", fmt.Errorf(""error unmarshaling JSON: %v"", err)
+    }
+
+    // Check if response contains content
+    if len(response.Choices) > 0 && len(response.Choices[0].Message.Content) > 0 {
+        // Return the content of the first choice
+        return response.Choices[0].Message.Content, nil
+    } else {
+        return """", fmt.Errorf(""no content found in response"")
+    }
+}
+
+"
+
+LINK NUMBER 142
+
+File path: src/app/pages/film-create/film-create.component.ts
+"
+  async generateSummary() {
+    this.inProgress = true;
+    try {
+      const openai = new OpenAI({
+        apiKey: environment.apiKey,
+        dangerouslyAllowBrowser: true
+      });
+  
+      let completion = await openai.chat.completions.create({
+        messages: [{ role: 'user', content: 'Generálj nekem egy maximum 600 karakteres összegzést a: ' + (this.filmForm.get('title')?.value as string) + ' című filmhez'}],
+        model: 'gpt-3.5-turbo',
+        temperature: 0.95,
+        max_tokens: 300,
+        top_p: 1.0,
+        frequency_penalty: 0.0,
+        presence_penalty: 0.0,
+      }).then(response => {
+        this.summary = response.choices[0].message.content as string;
+        this.filmForm.get('summary')?.setValue(this.summary);
+        this.canGenerate = false;
+        this.isGenerated = true;
+        this.inProgress = false;
+      }).catch(error => {
+        this.isGenerated = false;
+        this.inProgress = false;
+      });
+      
+    } catch (error) {
+      console.error(error);
+      this.isGenerated = false;
+      this.inProgress = false;
+    }
+  }
+}"
+
+LINK NUMBER 143
+
+File path: src/test/java/com/stateofflux/chess/model/FenStringTest.java
+"
+    // Testing edge cases for location to square conversion
+    @Test
+    public void locationToSquareEdgeCases() {
+        assertThatThrownBy(() -> FenString.locationToSquare(64)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> FenString.locationToSquare(-2)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // Testing edge cases for square to location conversion with additional characters
+    @Test
+    public void squareToLocationCheckAndCheckmate() {
+        assertThat(FenString.squareToLocation(""e2+"")).isEqualTo(12);
+        assertThat(FenString.squareToLocation(""e2#"")).isEqualTo(12);
+        assertThatThrownBy(() -> FenString.squareToLocation(""k9+"")).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // Testing invalid piece placements
+    @Test
+    public void invalidPiecePlacements() {
+        assertThatThrownBy(() -> new FenString(""8/8/8/8/8/8/8/9 w KQkq -"")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FenString(""rnbqkbnr/pppppppp/7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"")).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // Testing invalid castling rights scenarios
+    @Test
+    public void invalidCastlingRights() {
+        assertThatThrownBy(() -> new FenString(FenString.INITIAL_BOARD.replace(""KQkq"", ""KQRkq""))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FenString(FenString.INITIAL_BOARD.replace(""KQkq"", ""QQkk""))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // Testing en passant target with invalid ranks
+    @Test
+    public void enPassantTargetInvalidRanks() {
+        assertThatThrownBy(() -> new FenString(""rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq b2"")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FenString(""rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq g7"")).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // Testing move counters with invalid values
+    @Test
+    public void moveCountersInvalidValues() {
+        assertThatThrownBy(() -> new FenString(""rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - -1 1"")).isInstanceOf(NumberFormatException.class);
+        assertThatThrownBy(() -> new FenString(""rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 -1"")).isInstanceOf(NumberFormatException.class);
+    }
+
+    // Testing valid scenarios with minimum and maximum values for move counters
+    @Test
+    public void moveCountersValidExtremes() {
+        FenString fsMin = new FenString(""rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"");
+        assertThat(fsMin.getHalfmoveClock()).isEqualTo(0);
+        assertThat(fsMin.getFullmoveCounter()).isEqualTo(1);
+
+        // Assuming 999 is a valid maximum for the sake of this example
+        FenString fsMax = new FenString(""rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 100 999"");
+        assertThat(fsMax.getHalfmoveClock()).isEqualTo(100);
+        assertThat(fsMax.getFullmoveCounter()).isEqualTo(999);
+    }"
+
+LINK NUMBER 144
+Error fetching diff
+
+LINK NUMBER 145
+Error fetching diff
+
+LINK NUMBER 146
+Error fetching diff
+
+LINK NUMBER 147
+
+File path: js/items.js
+"    primaryImage:
+      ""./img/items/DALL·E 2023-12-17 17.21.27 - A whimsical cat wearing a tiny wizard hat and cape, standing on its hind legs, with a background of twinkling stars and a crescent moon.png"",
+    title: ""The Wizard Cat"",
+    subtitle: ""A Magical Evening"",
+    detail:
+      ""A whimsical cat donning a wizard's attire, standing on hind legs amidst a starry night sky and a crescent moon, casting a spell of charm."",
+    secondaryImage:
+      ""./img/items/DALL·E 2023-12-17 17.21.27 - A whimsical cat wearing a tiny wizard hat and cape, standing on its hind legs, with a background of twinkling stars and a crescent moon.png"","
+
+LINK NUMBER 148
+Not enough lines
+
+LINK NUMBER 149
+
+File path: src/cron.ts
+"		const chatUsers = await findUsersInChat.run({ chatId }, client)
+		const userNames = chatUsers.map((user) => user.name).join(', ')
+
+		const userMessage: ChatCompletionMessageParam = {
+			role: 'user',
+			content: `Good morning, ${userNames}! Today is a new opportunity to continue building positive habits. Whether it's ${habitStr} or any other personal goals, remember that each small step is a part of your journey towards success and well-being. Stay focused, stay motivated, and embrace the day with enthusiasm! You've got this!`,
+		}
+
+		let chatMessage: string
+		try {
+			chatMessage = await generateChatMessage([userMessage])
+		} catch (error) {
+			chatMessage = `Good morning, accountability champions! 🌞 Today is a brand new opportunity to find your inner peace and clarity through meditation. Take a deep breath, commit to your practice, and let's make today another successful day on our journey to mindfulness and well-being. 🧘‍♀️🧘‍♂️ #MeditationMasters`
+			console.error('Failed to generate chat message', error)
+		}
+
+		await bot.telegram.sendMessage(chatId, chatMessage)"
+
+LINK NUMBER 150
+Not enough lines

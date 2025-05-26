@@ -1,0 +1,19986 @@
+LINK NUMBER 1
+Not enough lines
+
+LINK NUMBER 2
+Error fetching diff
+
+LINK NUMBER 3
+Error fetching diff
+
+LINK NUMBER 4
+Error fetching diff
+
+LINK NUMBER 5
+
+File path: src/structures/IMcpLlmApplication.ts
+" * function for correcting AI agent's mistakes, and this is the reason why
+ * `@samchon/openapi` recommends not to use the
+ * [`mcp_servers`](https://openai.github.io/openai-agents-python/mcp/#using-mcp-servers)
+ * property of LLM API directly, but to use the function calling feature
+ * instead."
+
+LINK NUMBER 6
+Not enough lines
+
+LINK NUMBER 7
+
+File path: pkg/name/notificationserver.go
+"package name
+
+import (
+	""context""
+	""errors""
+	""fmt""
+	""github.com/cirglo.com/dfs/pkg/proto""
+	""github.com/sirupsen/logrus""
+	""math/rand""
+	""slices""
+	""sync""
+	""time""
+)
+
+type HealingOpts struct {
+	Logger            *logrus.Logger
+	NumReplicas       uint
+	FileService       FileService
+	NodeExpiration    time.Duration
+	ConnectionFactory proto.ConnectionFactory
+}
+
+func (o *HealingOpts) Validate() error {
+	if o.Logger == nil {
+		return fmt.Errorf(""logger is required"")
+	}
+
+	if o.NumReplicas >= 255 {
+		return fmt.Errorf(""number of replicas must be less than 256"")
+	}
+
+	if o.NumReplicas == 0 {
+		return fmt.Errorf(""num replicas is required"")
+	}
+
+	if o.FileService == nil {
+		return fmt.Errorf(""fileService is required"")
+	}
+
+	if o.ConnectionFactory == nil {
+		return fmt.Errorf(""connection factory is required"")
+	}
+
+	return nil
+}
+
+type HealingService interface {
+	NotifyNodeAlive(host string, at time.Time)
+	Heal(since time.Time) error
+}
+
+type healingService struct {
+	Opts  HealingOpts
+	Nodes map[string]time.Time
+	Lock  sync.RWMutex
+}
+
+var _ HealingService = &healingService{}
+
+func NewHealingService(opts HealingOpts) (HealingService, error) {
+	err := opts.Validate()
+	if err != nil {
+		return nil, fmt.Errorf(""invalid options: %w"", err)
+	}
+
+	return &healingService{
+		Opts:  opts,
+		Nodes: map[string]time.Time{},
+		Lock:  sync.RWMutex{},
+	}, nil
+}
+
+func (s *healingService) NotifyNodeAlive(host string, at time.Time) {
+	s.Lock.Lock()
+	defer s.Lock.Unlock()
+
+	s.Nodes[host] = at
+}
+
+func (s *healingService) Heal(since time.Time) error {
+	removedHosts := s.removeExpiredNodes(since)
+	var allErrors []error
+	for _, host := range removedHosts {
+		s.Opts.Logger.WithField(""host"", host).Info(""Removing expired node"")
+		err := s.Opts.FileService.NodeRemoved(host)
+		allErrors = append(allErrors, err)
+	}
+
+	blockInfos, err := s.Opts.FileService.GetAllBlockInfos()
+	if err != nil {
+		return fmt.Errorf(""could not get block infos: %w"", err)
+	}
+
+	currentLocations := map[string][]string{}
+
+	for _, blockInfo := range blockInfos {
+		id := blockInfo.ID
+		currentLocations[id] = []string{}
+
+		for _, location := range blockInfo.Locations {
+			host := location.Host
+			currentLocations[id] = append(currentLocations[id], host)
+		}
+	}
+
+	for id := range currentLocations {
+		slices.Sort(currentLocations[id])
+	}
+	for _, blockInfo := range blockInfos {
+		s.checkBlock(blockInfo, currentLocations[blockInfo.ID])
+	}
+
+	return errors.Join(allErrors...)
+}
+
+func (s *healingService) removeExpiredNodes(since time.Time) []string {
+	s.Lock.Lock()
+	defer s.Lock.Unlock()
+
+	var toRemove []string
+
+	for host, at := range s.Nodes {
+		expiration := at.Add(s.Opts.NodeExpiration)
+		if expiration.Before(since) {
+			toRemove = append(toRemove, host)
+		}
+	}
+
+	for _, host := range toRemove {
+		s.Opts.Logger.WithField(""host"", host).Info(""node is dead"")
+		delete(s.Nodes, host)
+	}
+
+	return toRemove
+}
+
+func (s *healingService) checkBlock(blockInfo BlockInfo, currentLocations []string) {
+	s.Lock.RLock()
+	defer s.Lock.RUnlock()
+
+	neededCount := int(s.Opts.NumReplicas) - len(blockInfo.Locations)
+
+	if neededCount > 0 {
+		s.Opts.Logger.WithFields(logrus.Fields{
+			""block-id"":                  blockInfo.ID,
+			""mandatory-replicas-count"":  s.Opts.NumReplicas,
+			""replicas-count"":            len(blockInfo.Locations),
+			""needed-new-replicas-count"": neededCount,
+		}).Info(""Block needs more replicas"")
+		destinations, found := s.findDestinations(currentLocations, neededCount)
+		if found {
+			for _, destination := range destinations {
+				if len(currentLocations) == 0 {
+					s.Opts.Logger.WithField(""block-id"", blockInfo.ID).Warn(""No current locations available to select a source for block replication"")
+					continue
+				}
+				source := currentLocations[rand.Intn(len(currentLocations))]
+				go s.copyBlock(blockInfo.ID, source, destination)
+			}
+		}
+	}
+}
+
+func (s *healingService) findDestinations(currentLocations []string, count int) ([]string, bool) {
+	var candidates []string
+
+	for location := range s.Nodes {
+		_, found := slices.BinarySearch(currentLocations, location)
+		if !found {
+			candidates = append(candidates, location)
+		}
+	}
+
+	if len(candidates) < count {
+		return nil, false
+	}
+
+	shuffle(candidates)
+
+	return candidates[:count], true
+}
+
+func (s *healingService) copyBlock(blockId string, source string, dest string) {
+	connection, err := s.Opts.ConnectionFactory(source)
+	if err != nil {
+		s.Opts.Logger.WithError(err).WithField(""host"", dest).Error(""could not create connection"")
+		return
+	}
+	defer connection.Close()
+
+	client := proto.NewNodeClient(connection)
+
+	s.Opts.Logger.WithFields(logrus.Fields{
+		""source"":      source,
+		""destination"": dest,
+		""block-id"":    blockId,
+	}).Info(""Copying block"")
+	_, err = client.CopyBlock(context.Background(), &proto.CopyBlockRequest{
+		Id:          blockId,
+		Destination: dest,
+	})
+	if err != nil {
+		s.Opts.Logger.
+			WithError(err).
+			WithFields(logrus.Fields{
+				""block-id"":    blockId,
+				""source"":      source,
+				""destination"": dest,
+			}).
+			Error(""unable to copy block"")
+	} else {
+		s.Opts.Logger.WithFields(logrus.Fields{
+			""source"":      source,
+			""destination"": dest,
+			""block-id"":    blockId,
+		}).Info(""block copied"")
+	}
+}
+
+func shuffle(slice []string) {
+	for i := range slice {
+		j := rand.Intn(len(slice))
+		slice[i], slice[j] = slice[j], slice[i]
+	}
+}"
+
+LINK NUMBER 8
+Not enough lines
+
+LINK NUMBER 9
+Error fetching diff
+
+LINK NUMBER 10
+Error fetching diff
+
+LINK NUMBER 11
+Error fetching diff
+
+LINK NUMBER 12
+Not enough lines
+
+LINK NUMBER 13
+
+File path: pkg/logging/logging.go
+"package middleware
+
+import (
+	""log/slog""
+	""net/http""
+)
+
+type middleware struct {
+	logger *slog.Logger
+}
+
+func New(logger *slog.Logger) *middleware {
+	return &middleware{
+		logger: logger,
+	}
+}
+
+func (m *middleware) HTTPMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				m.logger.ErrorContext(r.Context(), ""Recovered from panic"", ""error"", err)
+				http.Error(w, ""Internal Server Error"", http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}"
+
+LINK NUMBER 14
+Not enough lines
+
+LINK NUMBER 15
+Not enough lines
+
+LINK NUMBER 16
+Error fetching diff
+
+LINK NUMBER 17
+Error fetching diff
+
+LINK NUMBER 18
+Error fetching diff
+
+LINK NUMBER 19
+
+File path: project/settings.py
+"
+# These variables are used to provide visualization on the admin interface
+# and are not used in the code
+ENVIRON_CONFIG = {
+    ""DEBUG"": DEBUG,
+    ""ALLOWED_HOSTS"": ALLOWED_HOSTS,
+    ""DATABASE_DEFAULT_NAME"": DATABASES[""default""][""NAME""],
+    ""DATABASE_DEFAULT_HOST"": DATABASES[""default""][""HOST""],
+    ""LANGUAGE_CODE"": LANGUAGE_CODE,
+    ""CELERY_BROKER_URL"": CELERY_BROKER_URL,
+    ""CELERY_RESULT_BACKEND"": CELERY_RESULT_BACKEND,
+    ""EMAIL_HOST"": EMAIL_HOST,
+    ""EMAIL_PORT"": EMAIL_PORT,
+    ""CONSTANCE_REDIS_CONNECTION"": CONSTANCE_REDIS_CONNECTION,
+    ""CONSTANCE_REDIS_CACHE_TIMEOUT"": CONSTANCE_REDIS_CACHE_TIMEOUT,
+    ""DEBUG_INTERNAL_IPS"": DEBUG_INTERNAL_IPS,
+    ""CORS_ALLOWED_ORIGINS"": frontend_urls,
+    ""CORS_ALLOW_ALL_ORIGINS"": CORS_ALLOW_ALL_ORIGINS,
+    ""CSRF_TRUSTED_ORIGINS"": CSRF_TRUSTED_ORIGINS,
+    ""CORS_ALLOW_CREDENTIALS"": CORS_ALLOW_CREDENTIALS,
+    ""ELASTIC_ENABLED"": ELASTIC_ENABLED,
+    ""ELASTIC_HOST_PORT"": (
+        ELASTICSEARCH_DSL[""default""][""hosts""] if ELASTIC_ENABLED else """"
+    ),
+    ""JWT_ACCESS_TOKEN_LIFETIME"": SIMPLE_JWT[""ACCESS_TOKEN_LIFETIME""],
+    ""JWT_REFRESH_TOKEN_LIFETIME"": SIMPLE_JWT[""REFRESH_TOKEN_LIFETIME""],
+}"
+
+LINK NUMBER 20
+
+File path: internal/db/bun/client.go
+"func deriveBunDBMyOptions(cfg ClientConfig) (string, error) {
+	// these are all optional, the bun adapter figures out defaults
+	port := cfg.Port
+	address := cfg.Address
+	username := cfg.User
+	password := cfg.Password
+
+	// validate database
+	database := cfg.Database
+	if database == """" {
+		return """", errors.New(""no database set"")
+	}
+
+	tlsConfig, err := makeTLSConfig(cfg)
+	if err != nil {
+		zap.L().Error(""Error creating TLS config"", zap.Error(err))
+		return """", fmt.Errorf(""could not create tls config: %w"", err)
+	}
+
+	mysqlOptions := """"
+	if username != """" {
+		mysqlOptions += username
+		if password != """" {
+			mysqlOptions += "":"" + password
+		}
+		mysqlOptions += ""@""
+	}
+	if address != """" {
+		mysqlOptions += ""tcp("" + address
+		if port > 0 {
+			mysqlOptions += "":"" + strconv.Itoa(int(port))
+		}
+		mysqlOptions += "")""
+	}
+	mysqlOptions += ""/"" + database
+
+	// options
+	if tlsConfig != nil {
+		if err := mysql.RegisterTLSConfig(""bun"", tlsConfig); err != nil {
+			return """", fmt.Errorf(""could not register tls config: %w"", err)
+		}
+
+		mysqlOptions += ""?tls=bun""
+	}
+
+	return mysqlOptions, nil
+}
+
+func deriveBunDBPGOptions(cfg ClientConfig) (*pgx.ConnConfig, error) {"
+
+LINK NUMBER 21
+
+File path: code/pmaxtp_gui.py
+"import tkinter as tk
+from tkinter import messagebox
+from tkinter import ttk  # Importowanie ttk dla Combobox
+from imgw_api import PMAXTPAPI
+
+
+def fetch_data():
+    # Pobieranie wartości z Combobox i mapowanie na odpowiednie skróty
+    method = method_combobox.get()
+    lon = lon_entry.get()
+    lat = lat_entry.get()
+    output_location = output_location_entry.get()
+
+    if not method or not lon or not lat:
+        messagebox.showerror(""Błąd"", ""Wszystkie pola muszą być wypełnione!"")
+        return
+
+    try:
+        api = PMAXTPAPI(
+            method=method,
+            # data_type=data_type,
+            lon=lon,
+            lat=lat,
+        )
+        api.get_data()
+        api.save_json_to_file(output_location=output_location)
+        messagebox.showinfo(""Sukces"", ""Dane zostały pobrane i zapisane do pliku JSON."")
+        root.destroy()  # Zamyka aplikację
+    except Exception as e:
+        messagebox.showerror(""Błąd"", f""Wystąpił błąd podczas pobierania danych: {e}"")
+
+
+# Tworzenie głównego okna aplikacji
+root = tk.Tk()
+root.title(""PMAXTP API - Pobieranie danych"")
+
+# Etykiety i pola tekstowe dla parametrów
+tk.Label(root, text=""Metoda:"").grid(row=0, column=0, padx=10, pady=5)
+method_combobox = ttk.Combobox(root, values=[""POT"", ""AMP""])  # Lista rozwijana
+method_combobox.grid(row=0, column=1, padx=10, pady=5)
+method_combobox.set(""POT"")  # Ustawienie domyślnej wartości
+
+tk.Label(root, text=""Długość geograficzna:"").grid(row=1, column=0, padx=10, pady=5)
+lon_entry = tk.Entry(root)
+lon_entry.grid(row=1, column=1, padx=10, pady=5)
+
+tk.Label(root, text=""Szerokość geograficzna:"").grid(row=2, column=0, padx=10, pady=5)
+lat_entry = tk.Entry(root)
+lat_entry.grid(row=2, column=1, padx=10, pady=5)
+
+tk.Label(root, text=""Folder docelowy:"").grid(row=3, column=0, padx=10, pady=5)
+output_location_entry = tk.Entry(root)
+output_location_entry.grid(row=3, column=1, padx=10, pady=5)
+
+# Przycisk do pobierania danych
+fetch_button = tk.Button(root, text=""Pobierz dane"", command=fetch_data)
+fetch_button.grid(row=4, column=0, columnspan=2, pady=10)
+
+# Uruchomienie pętli głównej aplikacji
+root.mainloop()"
+
+LINK NUMBER 22
+Not enough lines
+
+LINK NUMBER 23
+Error fetching diff
+
+LINK NUMBER 24
+Error fetching diff
+
+LINK NUMBER 25
+Error fetching diff
+
+LINK NUMBER 26
+
+File path: services/category.service.js
+"const BorrowRecord = require(""../models/borrow-record"");
+const BorrowRequest = require(""../models/borrow-request"");
+const userService = require(""../services/user.service"");
+const Book = require(""../models/book"");
+
+const transporter = require(""../../utils/mailer"")
+async function getAll() {
+  return await BorrowRequest.find()
+    .populate(""user_id"", ""full_name email _id"")
+    .populate(""book_id"", ""title author"");
+}
+
+async function getByUserId(userId) {
+  const userExist = await userService.getUserById(userId);
+  if (!userExist) return null;
+
+  return await BorrowRequest.find({ user_id: userId }).populate(
+    ""book_id"",
+    ""title author""
+  );
+}
+
+async function create(data) {
+  const userExist = await userService.getUserById(data.user_id);
+  if (!userExist) {
+    return {
+      error: true,
+      message: ""User not found"",
+      statusCode: 404,
+    };
+  }
+
+  const bookExist = await Book.findById(data.book_id);
+  if (!bookExist) {
+    return {
+      error: true,
+      message: ""Book not found"",
+      statusCode: 404,
+    };
+  }
+
+  const isBorrowing = await BorrowRecord.findOne({
+    user_id: data.user_id,
+    book_id: data.book_id,
+    is_returned: false,
+  });
+
+  if (isBorrowing) {
+    return {
+      error: true,
+      message: ""This book is currently borrowed and not returned yet."",
+      statusCode: 400,
+    };
+  }
+
+  const pendingRequest = await BorrowRequest.findOne({
+    user_id: data.user_id,
+    book_id: data.book_id,
+    status: ""pending"",
+  });
+
+  if (pendingRequest) {
+    return {
+      error: true,
+      message: ""Borrow request is already pending. Please wait..."",
+      statusCode: 400,
+    };
+  }
+
+  return (await BorrowRequest.create(data)).toObject();
+}
+
+async function updateStatus(id, status) {
+  const updateData = { status };
+  const data = await BorrowRequest.findById(id)
+    .populate(""user_id"", ""full_name email"")
+    .populate(""book_id"", ""title"");
+
+  if (!data) return null;
+
+  if (data.status === ""approved"") {
+    return {
+      error: true,
+      message: ""Borrow request is already approved"",
+      statusCode: 400,
+    };
+  }
+
+  if (status === ""approved"") {
+    const book = await Book.findById(data.book_id);
+    if (!book) {
+      return {
+        error: true,
+        message: ""Book not found"",
+        statusCode: 404,
+      };
+    }
+
+    if (book.quantity_available <= 0) {
+      return {
+        error: true,
+        message: ""Book is currently not available for borrowing"",
+        statusCode: 400,
+      };
+    }
+
+    book.quantity_available -= 1;
+    if (book.quantity_available === 0) {
+      book.status = ""out_of_stock"";
+    }
+
+    await book.save();
+    updateData.approved_date = new Date();
+  }
+
+  if (status === ""rejected"") {
+    updateData.rejected_date = new Date();
+
+    // Gửi email từ chối
+    await sendRejectionEmail(
+      data.user_id.email,
+      data.user_id.full_name,
+      data.book_id.title
+    );
+  }
+
+  return await BorrowRequest.findByIdAndUpdate(id, updateData, { new: true })
+    .populate(""user_id"", ""full_name email _id"")
+    .populate(""book_id"", ""title author"");
+}
+
+async function sendRejectionEmail(email, fullName, bookTitle) {
+  console.log(""sendRejectionEmail"", email, fullName, bookTitle)
+
+
+  const mailOptions = {
+    from: '""Library System"" <your.email@gmail.com>',
+    to: email,
+    subject: ""Yêu cầu mượn sách đã bị từ chối"",
+    html: `<p>Chào ${fullName},</p>
+           <p>Rất tiếc, yêu cầu mượn sách <strong>${bookTitle}</strong> của bạn đã bị từ chối.</p>
+           <p>Vui lòng liên hệ với thư viện để biết thêm chi tiết.</p>
+           <p>Trân trọng,<br/>Hệ thống thư viện</p>`,
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(""Rejection email sent successfully"");
+  } catch (error) {
+    console.error(""Error sending rejection email:"", error);
+  }
+}
+
+module.exports = {
+  getAll,
+  getByUserId,
+  create,
+  updateStatus,
+};"
+
+LINK NUMBER 27
+
+File path: lib/pause.js
+"      try {
+        output.print(output.styles.debug(JSON.stringify(val, null, 2)))
+      } catch (err) {
+        output.print(output.styles.error(' ERROR '), 'Failed to stringify result:', err.message)
+        output.print(output.styles.error(' RAW VALUE '), String(val))
+      }"
+
+LINK NUMBER 28
+Not enough lines
+
+LINK NUMBER 29
+Not enough lines
+
+LINK NUMBER 30
+Error fetching diff
+
+LINK NUMBER 31
+Error fetching diff
+
+LINK NUMBER 32
+Error fetching diff
+
+LINK NUMBER 33
+
+File path: src/hooks/useCurrentUser.ts
+"import { renderHook } from ""@testing-library/react"";
+import { useCurrentUser } from ""../useCurrentUser"";
+import {
+  describe,
+  expect,
+  it,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from ""vitest"";
+import { useConvexAuth, useQuery } from ""convex/react"";
+
+// Mock the convex/react module
+vi.mock(""convex/react"", async () => {
+  const actual = await vi.importActual(""convex/react"");
+  return {
+    ...actual,
+    useConvexAuth: vi.fn(),
+    useQuery: vi.fn(),
+  };
+});
+
+const mockUseConvexAuth = useConvexAuth as Mock;
+const mockUseQuery = useQuery as Mock;
+
+describe(""useCurrentUser hook"", () => {
+  beforeEach(() => {
+    // By default, user is not loading nor authenticated, and query returns null
+    mockUseConvexAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: false,
+    });
+    mockUseQuery.mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it(""returns loading true while auth is loading"", () => {
+    mockUseConvexAuth.mockReturnValue({
+      isLoading: true,
+      isAuthenticated: false,
+    });
+    const { result } = renderHook(() => useCurrentUser());
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.userInConvex).toBeNull();
+  });
+
+  it(""returns not loading and not authenticated when auth done but no user"", () => {
+    // auth done, not authenticated (or no user)
+    mockUseConvexAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: false,
+    });
+    mockUseQuery.mockReturnValue(null);
+    const { result } = renderHook(() => useCurrentUser());
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.userInConvex).toBeNull();
+  });
+
+  it(""returns loading true when authenticated but user query still null"", () => {
+    mockUseConvexAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+    });
+    mockUseQuery.mockReturnValue(null);
+    const { result } = renderHook(() => useCurrentUser());
+    // isUserQueryLoading = true => overall isLoading true
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.userInConvex).toBeNull();
+  });
+
+  it(""returns loaded and authenticated when user is returned"", () => {
+    const fakeUser = { id: ""1"", name: ""Alice"" };
+    mockUseConvexAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+    });
+    mockUseQuery.mockReturnValue(fakeUser);
+    const { result } = renderHook(() => useCurrentUser());
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.userInConvex).toBe(fakeUser);
+  });
+});"
+
+LINK NUMBER 34
+Not enough lines
+
+LINK NUMBER 35
+Not enough lines
+
+LINK NUMBER 36
+Not enough lines
+
+LINK NUMBER 37
+Error fetching diff
+
+LINK NUMBER 38
+Error fetching diff
+
+LINK NUMBER 39
+Error fetching diff
+
+LINK NUMBER 40
+Not enough lines
+
+LINK NUMBER 41
+Not enough lines
+
+LINK NUMBER 42
+Not enough lines
+
+LINK NUMBER 43
+
+File path: src/Schema/Events/Settings.ts
+"import { ActionType } from "".""
+
+/**
+ * When the dark mode option is updated
+ *
+ * This schema describes events sent to Segment when a user updates the dark mode option in their account settings.
+ *
+ *  @example
+ *  ```
+ *  {
+ *    action: ""darkModeOptionUpdated"",
+ *    context_module: ""accountSettings"",
+ *    context_screen_owner_type: ""accountDarkMode"",
+ *    dark_mode_option: ""system""
+ *  }
+ * ```
+ */
+export interface DarkModeOptionUpdated {
+  action: ActionType.darkModeOptionUpdated
+  context_module: string
+  context_screen_owner_type: string
+  dark_mode_option: string
+}"
+
+LINK NUMBER 44
+Error fetching diff
+
+LINK NUMBER 45
+Error fetching diff
+
+LINK NUMBER 46
+Error fetching diff
+
+LINK NUMBER 47
+
+File path: widgets-shopify/src/index.ts
+"
+  if (document.readyState === 'loading') {
+    return new Promise((resolve) => {
+      document.addEventListener('DOMContentLoaded', () => {
+        setup().then(resolve)
+      }, { once: true })
+    })
+  }
+
+  try {
+    await loadScript(widgetUrl)
+    window.dispatchEvent(new Event('greenspark-setup'))
+  } catch (error) {
+    console.error('Greenspark Widget - Failed to load script:', error)
+    setTimeout(() => setup(), 1000)
+  }"
+
+LINK NUMBER 48
+
+File path: kornia/enhance/jpeg.py
+"        device = image_rgb.device
+        dtype = image_rgb.dtype
+        # Move quantization tables to the same device and dtype as input
+        # and store it in the local variables created in init
+        quantization_table_y = self.quantization_table_y.to(device, dtype)
+        quantization_table_c = self.quantization_table_c.to(device, dtype)"
+
+LINK NUMBER 49
+
+File path: src/diffusion.cpp
+"#include <cudaviz/Diffusion>
+#include <cudaviz/kernels.hpp>
+
+#include ""check_error.hpp""
+
+#include <vector>
+#include <iostream>
+#include <string>
+#include <stdexcept>
+#include <math.h>
+
+#include <cuda_runtime.h>
+
+namespace cudaviz
+{
+  void set_initial_conditions(std::vector<float> &h_old, int nx, int ny, float central_temperature, float spread) {
+    for(int y = 0; y < ny; ++y) {
+      for(int x = 0; x < nx; ++x) {
+        float X = x - nx / 2;
+        float Y = y - ny / 2;
+        h_old[y*nx + x] = central_temperature * exp(-(X * X + Y * Y) / spread);
+      }
+    }
+  }
+
+  std::vector<std::vector<std::vector<float>>> naive_diffusion(int nx, int ny, int nt, float D, float central_temperature, float spread)
+  {
+    std::size_t sz = nx * ny * sizeof(float);
+    std::vector<float> h_old = std::vector<float>(nx * ny, 0.0f);
+
+    set_initial_conditions(h_old, nx, ny, central_temperature, spread);
+
+    float *d_old;
+    float *d_new;
+
+    CUDA_CHECK(cudaMalloc(&d_old, sz));
+    CUDA_CHECK(cudaMalloc(&d_new, sz));
+
+    CUDA_CHECK(cudaMemcpy(d_old, h_old.data(), sz, cudaMemcpyHostToDevice));
+
+    std::vector<std::vector<std::vector<float>>> grid3D(nt, std::vector<std::vector<float>>(nx, std::vector<float>(ny, 0)));
+    for(int y = 0; y < ny; ++y) {
+      for(int x = 0; x < nx; ++x) {
+        grid3D[0][y][x] = h_old[y*nx + x];
+      }
+    }
+
+    // h = dx = dy 
+    float h = 1.0f;
+    float dt = 0.1f;
+    float alpha = dt * D / (h * h);
+    for (int t = 1; t < nt; ++t)
+    {
+      int num_substeps = static_cast<int>(1.0f / dt);
+      for(int substep = 0; substep < num_substeps; ++substep) {
+        float current_time = substep * dt;
+        naiive_diffusion_iteration(d_old, d_new, nx, ny, alpha);
+        std::swap(d_old, d_new);
+      }
+
+      CUDA_CHECK(cudaMemcpy(h_old.data(), d_old, sz, cudaMemcpyDeviceToHost));
+      for(int y = 0; y < ny; ++y) {
+        for(int x = 0; x < nx; ++x) {
+          grid3D[t][y][x] = h_old[y*nx + x];
+        }
+      }
+    }
+
+    CUDA_CHECK(cudaFree(d_old));
+    CUDA_CHECK(cudaFree(d_new));
+
+    return grid3D;
+  }
+}"
+
+LINK NUMBER 50
+Not enough lines
+
+LINK NUMBER 51
+Error fetching diff
+
+LINK NUMBER 52
+Error fetching diff
+
+LINK NUMBER 53
+Error fetching diff
+
+LINK NUMBER 54
+Not enough lines
+
+LINK NUMBER 55
+Not enough lines
+
+LINK NUMBER 56
+
+File path: kafka/kafka_test.go
+"package kafka
+
+import (
+	""crypto/tls""
+	""fmt""
+
+	""strconv""
+
+	""github.com/segmentio/kafka-go""
+	""github.com/segmentio/kafka-go/sasl/scram""
+	""github.com/spf13/viper""
+)
+
+// KafkaConfig represents the configuration for Kafka.
+type KafkaConfig struct {
+	Address   string `mapstructure:""address""`
+	Topic     string `mapstructure:""topic""`
+	Username  string `mapstructure:""username""`
+	Password  string `mapstructure:""password""`
+	GroupID   string `mapstructure:""groupid""`
+	Partition string `mapstructure:""partition""`
+}
+
+// LoadConfig loads the configuration from environment variables using Viper.
+func LoadConfig() (*KafkaConfig, error) {
+	// Bind environment variables
+	viper.BindEnv(""address"", ""KAFKA_ADDRESS"")
+	viper.BindEnv(""topic"", ""KAFKA_TOPIC"")
+	viper.BindEnv(""username"", ""KAFKA_USERNAME"")
+	viper.BindEnv(""password"", ""KAFKA_PASSWORD"")
+	viper.BindEnv(""groupid"", ""KAFKA_GROUPID"")
+	viper.BindEnv(""partition"", ""KAFKA_PARTITION"")
+
+	// Read environment variables
+	viper.AutomaticEnv()
+
+	var kafkaConfig KafkaConfig
+
+	// Unmarshal environment variables into the Config struct
+	if err := viper.Unmarshal(&kafkaConfig); err != nil {
+		return nil, fmt.Errorf(""unable to decode into struct, %v"", err)
+	}
+
+	// Validate the configuration
+	if err := validateConfig(&kafkaConfig); err != nil {
+		return nil, err
+	}
+
+	return &kafkaConfig, nil
+}
+
+// validateConfig validates the loaded configuration.
+func validateConfig(kafkaConfig *KafkaConfig) error {
+	if kafkaConfig.Address == """" {
+		return fmt.Errorf(""kafka address is required"")
+	}
+	if kafkaConfig.Topic == """" {
+		return fmt.Errorf(""kafka topic is required"")
+	}
+	if kafkaConfig.Username == """" {
+		return fmt.Errorf(""kafka username is required"")
+	}
+	if kafkaConfig.Password == """" {
+		return fmt.Errorf(""kafka password is required"")
+	}
+	if kafkaConfig.GroupID == """" {
+		kafkaConfig.GroupID = ""default-group""
+	}
+	if kafkaConfig.Partition == """" {
+		kafkaConfig.Partition = ""0""
+	} else {
+		if _, err := strconv.Atoi(kafkaConfig.Partition); err != nil {
+			return fmt.Errorf(""kafka partition must be a valid numeric value"")
+		}
+	}
+	return nil
+}
+
+func InitializeKafkaReader(kafkacfg *KafkaConfig) (*kafka.Reader, error) {
+	mechanism, mech_err := scram.Mechanism(scram.SHA512, kafkacfg.Username, kafkacfg.Password)
+	if mech_err != nil {
+		return nil, fmt.Errorf(""error creating sasl mechanism: %v"", mech_err)
+	}
+
+	dialer := &kafka.Dialer{
+		SASLMechanism: mechanism,
+		TLS: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	// Create a new Kafka reader
+	readerConfig := kafka.ReaderConfig{
+		Brokers:     []string{kafkacfg.Address},
+		GroupID:     kafkacfg.GroupID,
+		MinBytes:    1,    // 1 Byte
+		MaxBytes:    10e6, // 10MB
+		StartOffset: kafka.FirstOffset,
+		Dialer:      dialer,
+		MaxAttempts: 5,
+	}
+
+	// Set Partition based on GroupID presence
+	if kafkacfg.GroupID == """" {
+		partition, err := strconv.Atoi(kafkacfg.Partition)
+		if err != nil {
+			return nil, fmt.Errorf(""invalid partition value: %v"", err)
+		}
+		readerConfig.Partition = partition
+	}
+
+	reader := kafka.NewReader(readerConfig)
+	return reader, nil
+}
+
+// InitializeKafkaWriter initializes a Kafka writer with the provided configuration.
+func InitializeKafkaWriter(kafkacfg *KafkaConfig) (*kafka.Writer, error) {
+	// Initialize Kafka writer
+	mechanism, err := scram.Mechanism(scram.SHA512, kafkacfg.Username, kafkacfg.Password)
+	if err != nil {
+		return nil, fmt.Errorf(""error creating SASL mechanism: %v"", err)
+	}
+
+	dialer := &kafka.Dialer{
+		SASLMechanism: mechanism,
+		TLS: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	writer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers:     []string{kafkacfg.Address},
+		Topic:       kafkacfg.Topic,
+		Dialer:      dialer,
+		Balancer:    &kafka.LeastBytes{},
+		Async:       true,
+		MaxAttempts: 5,
+	})
+
+	return writer, nil
+}"
+
+LINK NUMBER 57
+Not enough lines
+
+LINK NUMBER 58
+Error fetching diff
+
+LINK NUMBER 59
+Error fetching diff
+
+LINK NUMBER 60
+Error fetching diff
+
+LINK NUMBER 61
+
+File path: server/iframe.go
+"	author, err := a.p.API.GetUser(post.UserId)
+	if err != nil {
+		a.p.API.LogError(""Failed to get author"", ""user_id"", post.UserId, ""error"", err.Error())
+		http.Error(w, ""failed to get author"", http.StatusInternalServerError)
+		return
+	}
+
+	channel, err := a.p.API.GetChannel(post.ChannelId)
+	if err != nil {
+		logrus.Errorf(""failed to get channel for channel ID %s: %v"", post.ChannelId, err)
+		http.Error(w, fmt.Sprintf(""failed to get channel: %v"", err), http.StatusInternalServerError)
+	}
+"
+
+LINK NUMBER 62
+Not enough lines
+
+LINK NUMBER 63
+Not enough lines
+
+LINK NUMBER 64
+Not enough lines
+
+LINK NUMBER 65
+Error fetching diff
+
+LINK NUMBER 66
+Error fetching diff
+
+LINK NUMBER 67
+Error fetching diff
+
+LINK NUMBER 68
+
+File path: utils.py
+"'''Utility functions for downloading files and checking their existence.'''
+import os
+import pickle
+import requests
+import pandas as pd
+
+
+def download_files(file_paths, urls):
+    '''
+    Downloads files from the given list of URLs if not already present locally.
+
+    Args:
+        file_paths (list of str): Local paths where files should be stored.
+        urls (list of str): URLs to fetch the files from if not present locally.
+
+    Returns:
+        None
+    '''
+    if len(file_paths) != len(urls):
+        raise ValueError('file_paths and urls must have the same length')
+
+    for file_path, url in zip(file_paths, urls):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        if not os.path.exists(file_path):
+            print(f'{file_path} not found. Fetching from {url}...')
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                with open(file_path, 'wb') as f:
+                    f.write(response.content)
+                print(f'File downloaded and saved to {file_path}.')
+            else:
+                print(f'Failed to fetch the file from {url}. HTTP Status Code: {response.status_code}')
+        else:
+            print(f'File found locally at {file_path}.')
+
+
+def read_dataframe(filename):
+    '''
+    Reads a CSV or Parquet file into a pandas DataFrame, processes the data,
+    and returns the DataFrame.
+
+    Args:
+        filename (str): Path to the CSV or Parquet file.
+
+    Returns:
+        pd.DataFrame: Processed DataFrame with duration in minutes and categorical columns as strings.
+    '''
+    if filename.endswith('.csv'):
+        df = pd.read_csv(filename)
+
+        df.lpep_dropoff_datetime = pd.to_datetime(df.lpep_dropoff_datetime)
+        df.lpep_pickup_datetime = pd.to_datetime(df.lpep_pickup_datetime)
+    elif filename.endswith('.parquet'):
+        df = pd.read_parquet(filename)
+
+    df['duration'] = df.lpep_dropoff_datetime - df.lpep_pickup_datetime
+    df.duration = df.duration.apply(lambda td: td.total_seconds() / 60)
+
+    df = df[(df.duration >= 1) & (df.duration <= 60)]
+
+    categorical = ['PULocationID', 'DOLocationID']
+    df[categorical] = df[categorical].astype(str)
+
+    return df
+
+
+def save_model(obj, path):
+    '''
+    Saves the given object to a file using pickle, ensuring the directory exists.
+
+    Args:
+        obj (Any): Object to serialize (e.g., a tuple like (dv, lr)).
+        path (str): Path to the .bin file to save the object.
+    '''
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    # Save the object
+    with open(path, 'wb') as f_out:
+        pickle.dump(obj, f_out)
+    print(f'Model saved to {path}')"
+
+LINK NUMBER 69
+
+File path: convex/schema.ts
+"# Help for the Convex functions directory
+
+## Functions for userProducts
+
+### Creating a Many-to-Many Relationship Between Users and Products
+
+Here's how you can define this association table:
+
+```typescript
+import { defineSchema, defineTable } from ""convex/server"";
+import { v } from ""convex/values"";
+
+export default defineSchema({
+  // Your existing users and products tables would be here
+
+  // Junction table for the many-to-many relationship
+  userProducts: defineTable({
+    ownerUserId: v.id(""users""), // Foreign key to users table
+    productId: v.id(""products""), // Foreign key to products table
+    // You can add additional fields related to this relationship if needed
+  })
+    .index(""by_owner"", [""ownerUserId""]) // Index to find all products for a user
+    .index(""by_product"", [""productId""]) // Index to find all users for a product
+    .index(""by_owner_and_product"", [""ownerUserId"", ""productId""]), // Index for checking if a specific relationship exists
+});
+```
+
+This schema follows the best practices for modeling many-to-many relationships in Convex as described in [Relationship Structures: Let's Talk About Schemas](https://stack.convex.dev/relationship-structures-let-s-talk-about-schemas#many-to-many).
+
+### Using the Many-to-Many Relationship
+
+With this structure, you can:
+
+1. Find all products owned by a user:
+
+```typescript
+const userProducts = await ctx.db
+  .query(""userProducts"")
+  .withIndex(""by_owner"", (q) => q.eq(""ownerUserId"", userId))
+  .collect();
+const productIds = userProducts.map((up) => up.productId);
+const products = await Promise.all(productIds.map((id) => ctx.db.get(id)));
+```
+
+2. Find all users who own a specific product:
+
+```typescript
+const userProducts = await ctx.db
+  .query(""userProducts"")
+  .withIndex(""by_product"", (q) => q.eq(""productId"", productId))
+  .collect();
+const userIds = userProducts.map((up) => up.ownerUserId);
+const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+```
+
+3. Check if a user owns a specific product:
+
+```typescript
+const relationship = await ctx.db
+  .query(""userProducts"")
+  .withIndex(""by_owner_and_product"", (q) =>
+    q.eq(""ownerUserId"", userId).eq(""productId"", productId),
+  )
+  .first();
+const userOwnsProduct = relationship !== null;
+```
+
+You can also use the relationship helpers from the Convex helpers library to simplify these operations, as described in [Database Relationship Helpers](https://stack.convex.dev/functional-relationships-helpers#many-to-many).
+
+---
+
+## Functions for Transactions, Products, Buyers, and Sellers
+
+Here are the functions for creating, retrieving, and managing these relationships:
+
+```typescript
+import { mutation, query } from ""./_generated/server"";
+import { v } from ""convex/values"";
+import { Id } from ""./_generated/dataModel"";
+import {
+  getAll,
+  getManyFrom,
+  getManyVia,
+} from ""convex-helpers/server/relationships"";
+
+// --- Transaction-Product Relationships ---
+
+// Create a relationship between a transaction and a product
+export const linkTransactionToProduct = mutation({
+  args: {
+    transactionId: v.id(""transactions""),
+    productId: v.id(""products""),
+  },
+  handler: async (ctx, args) => {
+    // Verify that both the transaction and product exist
+    const transaction = await ctx.db.get(args.transactionId);
+    const product = await ctx.db.get(args.productId);
+
+    if (!transaction || !product) {
+      throw new Error(""Transaction or product not found"");
+    }
+
+    // Create the relationship
+    return await ctx.db.insert(""transactionProducts"", {
+      transactionId: args.transactionId,
+      productId: args.productId,
+    });
+  },
+});
+
+// Get all products for a transaction
+export const getProductsForTransaction = query({
+  args: {
+    transactionId: v.id(""transactions""),
+  },
+  handler: async (ctx, args) => {
+    // Use the getManyVia helper to get products via the junction table
+    return await getManyVia(
+      ctx.db,
+      ""transactionProducts"",
+      ""productId"",
+      ""transactionId"",
+      args.transactionId,
+    );
+  },
+});
+
+// Get all transactions for a product
+export const getTransactionsForProduct = query({
+  args: {
+    productId: v.id(""products""),
+  },
+  handler: async (ctx, args) => {
+    // Use the getManyVia helper to get transactions via the junction table
+    return await getManyVia(
+      ctx.db,
+      ""transactionProducts"",
+      ""transactionId"",
+      ""productId"",
+      args.productId,
+    );
+  },
+});
+
+// --- Buyer-Transaction Relationships ---
+
+// Link a buyer to a transaction
+export const linkBuyerToTransaction = mutation({
+  args: {
+    transactionId: v.id(""transactions""),
+    buyerUserId: v.id(""users""),
+  },
+  handler: async (ctx, args) => {
+    // Verify that both the transaction and user exist
+    const transaction = await ctx.db.get(args.transactionId);
+    const buyer = await ctx.db.get(args.buyerUserId);
+
+    if (!transaction || !buyer) {
+      throw new Error(""Transaction or buyer not found"");
+    }
+
+    // Create the relationship
+    return await ctx.db.insert(""userBuyerTransactions"", {
+      transactionId: args.transactionId,
+      buyerUserId: args.buyerUserId,
+    });
+  },
+});
+
+// Get all transactions for a buyer
+export const getTransactionsForBuyer = query({
+  args: {
+    buyerUserId: v.id(""users""),
+  },
+  handler: async (ctx, args) => {
+    // Use the getManyVia helper to get transactions via the junction table
+    return await getManyVia(
+      ctx.db,
+      ""userBuyerTransactions"",
+      ""transactionId"",
+      ""buyerUserId"",
+      args.buyerUserId,
+    );
+  },
+});
+
+// Get the buyer for a transaction
+export const getBuyerForTransaction = query({
+  args: {
+    transactionId: v.id(""transactions""),
+  },
+  handler: async (ctx, args) => {
+    const buyerRelation = await ctx.db
+      .query(""userBuyerTransactions"")
+      .withIndex(""by_transaction"", (q) =>
+        q.eq(""transactionId"", args.transactionId),
+      )
+      .first();
+
+    if (!buyerRelation) {
+      return null;
+    }
+
+    return await ctx.db.get(buyerRelation.buyerUserId);
+  },
+});
+
+// --- Seller-Transaction Relationships ---
+
+// Link a seller to a transaction
+export const linkSellerToTransaction = mutation({
+  args: {
+    transactionId: v.id(""transactions""),
+    sellerUserId: v.id(""users""),
+  },
+  handler: async (ctx, args) => {
+    // Verify that both the transaction and user exist
+    const transaction = await ctx.db.get(args.transactionId);
+    const seller = await ctx.db.get(args.sellerUserId);
+
+    if (!transaction || !seller) {
+      throw new Error(""Transaction or seller not found"");
+    }
+
+    // Create the relationship
+    return await ctx.db.insert(""userSellerTransactions"", {
+      transactionId: args.transactionId,
+      sellerUserId: args.sellerUserId,
+    });
+  },
+});
+
+// Get all transactions for a seller
+export const getTransactionsForSeller = query({
+  args: {
+    sellerUserId: v.id(""users""),
+  },
+  handler: async (ctx, args) => {
+    // Use the getManyVia helper to get transactions via the junction table
+    return await getManyVia(
+      ctx.db,
+      ""userSellerTransactions"",
+      ""transactionId"",
+      ""sellerUserId"",
+      args.sellerUserId,
+    );
+  },
+});
+
+// Get the seller for a transaction
+export const getSellerForTransaction = query({
+  args: {
+    transactionId: v.id(""transactions""),
+  },
+  handler: async (ctx, args) => {
+    const sellerRelation = await ctx.db
+      .query(""userSellerTransactions"")
+      .withIndex(""by_transaction"", (q) =>
+        q.eq(""transactionId"", args.transactionId),
+      )
+      .first();
+
+    if (!sellerRelation) {
+      return null;
+    }
+
+    return await ctx.db.get(sellerRelation.sellerUserId);
+  },
+});
+
+// --- Complete Transaction Creation ---
+
+// Create a complete transaction with products, buyer, and seller
+export const createCompleteTransaction = mutation({
+  args: {
+    transactionName: v.string(),
+    quantity: v.number(),
+    soldPrice: v.number(),
+    soldDate: v.number(),
+    soldLocation: v.string(),
+    productId: v.id(""products""),
+    buyerUserId: v.id(""users""),
+    sellerUserId: v.id(""users""),
+  },
+  handler: async (ctx, args) => {
+    // Verify that the product, buyer, and seller exist
+    const product = await ctx.db.get(args.productId);
+    const buyer = await ctx.db.get(args.buyerUserId);
+    const seller = await ctx.db.get(args.sellerUserId);
+
+    if (!product || !buyer || !seller) {
+      throw new Error(""Product, buyer, or seller not found"");
+    }
+
+    // Create the transaction
+    const transactionId = await ctx.db.insert(""transactions"", {
+      transactionName: args.transactionName,
+      quantity: args.quantity,
+      soldPrice: args.soldPrice,
+      soldDate: args.soldDate,
+      soldLocation: args.soldLocation,
+    });
+
+    // Create the relationships
+    await ctx.db.insert(""transactionProducts"", {
+      transactionId,
+      productId: args.productId,
+    });
+
+    await ctx.db.insert(""userBuyerTransactions"", {
+      transactionId,
+      buyerUserId: args.buyerUserId,
+    });
+
+    await ctx.db.insert(""userSellerTransactions"", {
+      transactionId,
+      sellerUserId: args.sellerUserId,
+    });
+
+    return transactionId;
+  },
+});
+
+// Get complete transaction details
+export const getCompleteTransaction = query({
+  args: {
+    transactionId: v.id(""transactions""),
+  },
+  handler: async (ctx, args) => {
+    const transaction = await ctx.db.get(args.transactionId);
+
+    if (!transaction) {
+      return null;
+    }
+
+    // Get related products
+    const products = await getManyVia(
+      ctx.db,
+      ""transactionProducts"",
+      ""productId"",
+      ""transactionId"",
+      args.transactionId,
+    );
+
+    // Get buyer
+    const buyerRelation = await ctx.db
+      .query(""userBuyerTransactions"")
+      .withIndex(""by_transaction"", (q) =>
+        q.eq(""transactionId"", args.transactionId),
+      )
+      .first();
+
+    const buyer = buyerRelation
+      ? await ctx.db.get(buyerRelation.buyerUserId)
+      : null;
+
+    // Get seller
+    const sellerRelation = await ctx.db
+      .query(""userSellerTransactions"")
+      .withIndex(""by_transaction"", (q) =>
+        q.eq(""transactionId"", args.transactionId),
+      )
+      .first();
+
+    const seller = sellerRelation
+      ? await ctx.db.get(sellerRelation.sellerUserId)
+      : null;
+
+    return {
+      ...transaction,
+      products,
+      buyer,
+      seller,
+    };
+  },
+});
+```
+
+These functions follow the patterns described in [Database Relationship Helpers](https://stack.convex.dev/functional-relationships-helpers) and [Relationship Structures: Let's Talk About Schemas](https://stack.convex.dev/relationship-structures-let-s-talk-about-schemas#many-to-many).
+
+This approach leverages Convex's transaction system to ensure data integrity while providing a clean API for working with your relationships.
+
+---
+
+## Using Indexes in Convex Queries for Transactions, Products, Buyers, and Sellers
+
+### Can I use `withIndex` in my get functions?
+
+Yes, you can definitely use `withIndex` in your get functions to improve query performance. In fact, it's a best practice to use indexes when querying your Convex database, especially as your tables grow larger.
+
+Let's modify some of the get functions from the previous examples to use indexes more explicitly:
+
+```typescript
+// Get all products for a transaction
+export const getProductsForTransaction = query({
+  args: {
+    transactionId: v.id(""transactions""),
+  },
+  handler: async (ctx, args) => {
+    // Using withIndex explicitly
+    const relationships = await ctx.db
+      .query(""transactionProducts"")
+      .withIndex(""by_transaction"", (q) =>
+        q.eq(""transactionId"", args.transactionId),
+      )
+      .collect();
+
+    // Get all the products
+    return await Promise.all(
+      relationships.map((rel) => ctx.db.get(rel.productId)),
+    );
+  },
+});
+
+// Get the buyer for a transaction
+export const getBuyerForTransaction = query({
+  args: {
+    transactionId: v.id(""transactions""),
+  },
+  handler: async (ctx, args) => {
+    const buyerRelation = await ctx.db
+      .query(""userBuyerTransactions"")
+      .withIndex(""by_transaction"", (q) =>
+        q.eq(""transactionId"", args.transactionId),
+      )
+      .unique();
+
+    if (!buyerRelation) {
+      return null;
+    }
+
+    return await ctx.db.get(buyerRelation.buyerUserId);
+  },
+});
+```
+
+Using `withIndex` is more efficient than using `.filter()` because it allows Convex to use the index data structure to quickly find the relevant documents rather than scanning the entire table [Queries that scale](https://stack.convex.dev/queries-that-scale#1-fetching-exactly-what-you-need-with-indexes).
+
+The performance of a query using an index is based on how many documents are in the index range, not the total size of the table. This makes indexed queries much more scalable as your database grows [Introduction to Indexes and Query Performance](https://docs.convex.dev/database/reading-data/indexes/indexes-and-query-perf#conclusions).
+
+Remember that when using compound indexes (indexes on multiple fields), you must reference the fields in the same order they appear in the index definition, starting with the first field [Introduction to Indexes and Query Performance](https://docs.convex.dev/database/reading-data/indexes/indexes-and-query-perf#indexing-multiple-fields)."
+
+LINK NUMBER 70
+Not enough lines
+
+LINK NUMBER 71
+
+File path: src/content.config.ts
+"const projectsCollection = defineCollection({
+  loader: glob({ pattern: ""**/*.md"", base: ""./content/projects"" }),
+  schema: z.object({
+    title: z.string(),
+    link: z.string(),
+    slug: z.string(),
+  }),
+});
+"
+
+LINK NUMBER 72
+Error fetching diff
+
+LINK NUMBER 73
+Error fetching diff
+
+LINK NUMBER 74
+Error fetching diff
+
+LINK NUMBER 75
+
+File path: src/services/twitter.ts
+"class DanbooruService {
+  static getPost = async () => {
+    try {
+      const apiUrl = process.env.DANBOORU_API_URL;
+      if (!apiUrl) {
+        throw new Error('DANBOORU_API_URL is not set or is empty');
+      }
+      const response = await fetch(apiUrl);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch data from Danbooru');
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+      return null;
+    }
+  };
+}
+
+export default DanbooruService;"
+
+LINK NUMBER 76
+Not enough lines
+
+LINK NUMBER 77
+Not enough lines
+
+LINK NUMBER 78
+Not enough lines
+
+LINK NUMBER 79
+Error fetching diff
+
+LINK NUMBER 80
+Error fetching diff
+
+LINK NUMBER 81
+Error fetching diff
+
+LINK NUMBER 82
+
+File path: src/browser/browser.ts
+"      const headers = req.headers();
+      const url = req.url();
+      const method = req.method();
+      const referer = headers['referer'] ?? '';
+
+      try {
+        const urlHostname = new URL(url).hostname;
+        const refererHostname = referer ? new URL(referer).hostname : '';
+        const shouldAddHeaders = req.isNavigationRequest() || urlHostname === refererHostname;
+        this.log.debug('Comparing referer and URL hostnames', 'method', method, 'shouldAddHeaders', shouldAddHeaders, 'url', url, 'referer', referer);
+
+        if (shouldAddHeaders) {
+          headers['traceparent'] = optionsHeaders['traceparent'] ?? '';
+          headers['tracestate'] = optionsHeaders['tracestate'] ?? '';
+        }
+      } catch (error) {
+        this.log.debug('Failed to add tracing headers', 'url', url, 'referer', referer, 'error', error.message);"
+
+LINK NUMBER 83
+Not enough lines
+
+LINK NUMBER 84
+
+File path: backend/main.go
+"name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.21
+
+    - name: Build
+      run: |
+        cd frontend
+        go build
+
+    - name: Run tests
+      run: |
+        cd frontend
+        go test ./..."
+
+LINK NUMBER 85
+Error fetching diff
+
+LINK NUMBER 86
+
+File path: backend/app/utils/cveScraping.py
+"from pydantic import BaseModel
+
+
+class CVE(BaseModel):
+    id: str
+    description: str
+    link: str"
+
+LINK NUMBER 87
+Error fetching diff
+
+LINK NUMBER 88
+Error fetching diff
+
+LINK NUMBER 89
+
+File path: src/itwinai/cli.py
+"    pre_exec_cmd: Annotated[
+        str | None,
+        typer.Option(
+            ""--pre-exec-cmd"", help=""The pre-execution command to use for the python script.""
+        ),
+    ] = None,"
+
+LINK NUMBER 90
+
+File path: models.py
+"# models.py
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# Example credentials for PostgreSQL (can switch to SQLite if preferred)
+import os
+
+DB_USER = os.getenv('DB_USER', 'default_user')
+DB_PASS = os.getenv('DB_PASS', 'default_password')
+DB_HOST = os.getenv('DB_HOST', 'localhost')
+DB_PORT = os.getenv('DB_PORT', '5432')
+DB_NAME = os.getenv('DB_NAME', 'testdb')
+DATABASE_URL = f""postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}""
+# For SQLite instead: DATABASE_URL = ""sqlite:///posts.db""
+
+Base = declarative_base()
+
+class Post(Base):
+    __tablename__ = 'posts'
+    id = Column(Integer, primary_key=True)
+    title = Column(String)
+    body = Column(String)
+
+# Set up the engine and session
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)"
+
+LINK NUMBER 91
+
+File path: main.py
+"        return []
+
+def save_posts_to_db(posts):
+    Base.metadata.create_all(bind=engine)
+    with SessionLocal() as session:
+        for post_data in posts:
+            post = Post(id=post_data['id'], title=post_data['title'], body=post_data['body'])
+            session.merge(post)  # merge to avoid duplicates on re-run
+        session.commit()
+    print(""Posts saved to database."")"
+
+LINK NUMBER 92
+Not enough lines
+
+LINK NUMBER 93
+Error fetching diff
+
+LINK NUMBER 94
+Error fetching diff
+
+LINK NUMBER 95
+Error fetching diff
+
+LINK NUMBER 96
+Not enough lines
+
+LINK NUMBER 97
+Not enough lines
+
+LINK NUMBER 98
+
+File path: core/taskengine/executor.go
+"	// Execute the task logic
+	_, runErr := x.RunTask(task, queueData)
+
+	if runErr == nil {
+		// Task logic executed successfully. Clean up the TaskTriggerKey for this async execution.
+		if queueData != nil && queueData.ExecutionID != """" { // Assumes `ExecutionID` is always set for queued jobs. Verify this assumption if the logic changes.
+			triggerKeyToClean := TaskTriggerKey(task, queueData.ExecutionID)
+			if delErr := x.db.Delete(triggerKeyToClean); delErr != nil {
+				x.logger.Error(""Perform: Failed to delete TaskTriggerKey after successful async execution"",
+					""key"", string(triggerKeyToClean), ""task_id"", task.Id, ""execution_id"", queueData.ExecutionID, ""error"", delErr)
+			} else {
+				// Successfully deleted, no need for a verbose log here unless for specific debug scenarios
+				// x.logger.Info(""Perform: Successfully deleted TaskTriggerKey after async execution"",
+				// 	""key"", string(triggerKeyToClean), ""task_id"", task.Id, ""execution_id"", queueData.ExecutionID)"
+
+LINK NUMBER 99
+Not enough lines
+
+LINK NUMBER 100
+Error fetching diff
+
+LINK NUMBER 101
+Error fetching diff
+
+LINK NUMBER 102
+Error fetching diff
+
+LINK NUMBER 103
+Not enough lines
+
+LINK NUMBER 104
+Not enough lines
+
+LINK NUMBER 105
+Not enough lines
+
+LINK NUMBER 106
+Not enough lines
+
+LINK NUMBER 107
+Error fetching diff
+
+LINK NUMBER 108
+Error fetching diff
+
+LINK NUMBER 109
+Error fetching diff
+
+LINK NUMBER 110
+Not enough lines
+
+LINK NUMBER 111
+Not enough lines
+
+LINK NUMBER 112
+
+File path: core/src/network_scout/sniffing.cpp
+"#include ""network_scout/sniffing.h""
+#include ""PcapLiveDeviceList.h""
+#include ""RawPacket.h""
+#include ""common/pcap_to_common.h""
+
+namespace {
+constexpr int MAX_CAPTURE_TIMEOUT = 10;
+
+/**
+ * Tracks the progress of packet capture
+ */
+struct PacketTracker {
+    int packetsToCapture; // how many more packets to capture.
+    std::vector<ATK::Common::PacketInfo> *packetInfoList;
+};
+
+/**
+ * Caputure N packets
+ *
+ */
+bool onPacketArrives(pcpp::RawPacket *packet, pcpp::PcapLiveDevice * /*dev*/,
+                     void *cookie) {
+
+    auto *packetTracker = static_cast<PacketTracker *>(cookie);
+    pcpp::Packet parsedPacket(packet);
+
+    packetTracker->packetInfoList->emplace_back(
+        ATK::Common::toPacketInfo(parsedPacket));
+    packetTracker->packetsToCapture--;
+
+    // return false means we don't want to stop capturing after this
+    // callback
+    return packetTracker->packetsToCapture <= 0;
+}
+} // namespace
+
+std::vector<ATK::Common::PacketInfo>
+ATK::Scout::sniffPackets(const std::string &deviceIpOrName, int numPackets) {
+    std::vector<ATK::Common::PacketInfo> packetInfoList;
+    packetInfoList.reserve(numPackets);
+
+    pcpp::PcapLiveDevice *device =
+        pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDeviceByIpOrName(
+            deviceIpOrName);
+
+    if (device == nullptr || !device->open()) {
+        throw std::invalid_argument(""Unable to open device: "" + deviceIpOrName);
+    }
+
+    PacketTracker tracker{.packetsToCapture = numPackets,
+                          .packetInfoList = &packetInfoList};
+    device->startCaptureBlockingMode(onPacketArrives, &tracker,
+                                     MAX_CAPTURE_TIMEOUT);
+
+    device->close();
+
+    return packetInfoList;
+}"
+
+LINK NUMBER 113
+
+File path: options.go
+"
+func TestChecker_ErrorGracePeriod(t *testing.T) {
+	t.Parallel()
+
+	t.Run(""within grace period"", func(t *testing.T) {
+		t.Parallel()
+
+		c, err := NewChecker(WithCheckerErrorGracePeriod(5 * time.Second))
+		require.NoError(t, err)
+		require.NotNil(t, c)
+
+		check := NewCheck(""test_check"", func(_ context.Context) error {
+			return errors.New(""test error"")
+		})
+
+		err = c.AddCheck(check)
+		require.NoError(t, err)
+
+		// Simulate a failure
+		c.firstFailInCycle.Store(time.Now().UTC().Add(-2 * time.Second))
+
+		res := c.Check(context.Background())
+		require.Equal(t, StatusUp, res.Status)
+	})
+
+	t.Run(""outside grace period"", func(t *testing.T) {
+		t.Parallel()
+
+		c, err := NewChecker(WithCheckerErrorGracePeriod(5 * time.Second))
+		require.NoError(t, err)
+		require.NotNil(t, c)
+
+		check := NewCheck(""test_check"", func(_ context.Context) error {
+			return errors.New(""test error"")
+		})
+
+		err = c.AddCheck(check)
+		require.NoError(t, err)
+
+		// Simulate a failure
+		c.firstFailInCycle.Store(time.Now().UTC().Add(-10 * time.Second))
+
+		res := c.Check(context.Background())
+		require.Equal(t, StatusDown, res.Status)
+	})
+
+	t.Run(""multiple async checks"", func(t *testing.T) {
+		t.Parallel()
+
+		c, err := NewChecker(WithCheckerErrorGracePeriod(5 * time.Second))
+		require.NoError(t, err)
+		require.NotNil(t, c)
+
+		check1 := NewCheck(""test_check_1"", func(_ context.Context) error {
+			return errors.New(""test error"")
+		})
+
+		check2 := NewCheck(""test_check_2"", func(_ context.Context) error {
+			return errors.New(""test error 2"")
+		})
+
+		check3 := NewCheck(""test_check_3"", func(_ context.Context) error {
+			return errors.New(""test error 3"")
+		})
+
+		err = c.AddCheck(check1)
+		require.NoError(t, err)
+
+		err = c.AddCheck(check2)
+		require.NoError(t, err)
+
+		err = c.AddCheck(check3)
+		require.NoError(t, err)
+
+		res := c.Check(context.Background())
+		require.Equal(t, StatusUp, res.Status)
+	})
+}"
+
+LINK NUMBER 114
+Error fetching diff
+
+LINK NUMBER 115
+Error fetching diff
+
+LINK NUMBER 116
+Error fetching diff
+
+LINK NUMBER 117
+Not enough lines
+
+LINK NUMBER 118
+Not enough lines
+
+LINK NUMBER 119
+
+File path: setup.py
+"```
+
+## Development
+
+### Releasing New Versions
+
+To release a new version to PyPI:
+
+1. Update the version number in `setup.py`
+2. Create a new GitHub release or tag with a version number (e.g., `v1.0.1`)
+3. The GitHub Actions workflow will automatically build and publish the package to PyPI"
+
+LINK NUMBER 120
+
+File path: webpack.config.js
+"		plugins: [
+			new WebpackBar(
+				{
+					name: 'Plugin Entry Points',
+					color: '#B6CD58',
+				}
+			),
+			new ESLintPlugin({
+				failOnError: true,
+				extensions: ['js', 'jsx'],
+			}),
+		],
+		performance: {
+			hints: 'warning',
+		},
+		optimization: {
+			minimize: true,
+		},
+		target: ['web', 'es5'],"
+
+LINK NUMBER 121
+Error fetching diff
+
+LINK NUMBER 122
+Error fetching diff
+
+LINK NUMBER 123
+Error fetching diff
+
+LINK NUMBER 124
+
+File path: dashboard/src/services/rpc.ts
+"    try {
+      const { lastValidBlockHeight, blockhash } = await connection.getLatestBlockhash();
+
+      await connection.confirmTransaction(
+        {
+          blockhash: blockhash,
+          lastValidBlockHeight: lastValidBlockHeight,
+          signature: sig,
+        },
+        'confirmed',
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+      throw new Error(`Failed to confirm transaction: ${sig}. Error details: ${errorMessage}`);
+    }"
+
+LINK NUMBER 125
+Not enough lines
+
+LINK NUMBER 126
+
+File path: app/services/token_manager.py
+"import logging
+from datetime import datetime
+from typing import List, Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database.repositories.report import ReportRepository, TeamReportRepository
+from app.database.repositories.user import UserRepository
+from app.database.user import User
+from app.schemas.report import SprintStats
+from app.schemas.sprint_report import SprintReport
+from app.schemas.team_report import (
+    EmployeeSprintStats,
+    MetricWithComparison,
+    TeamSprintReport,
+)
+from app.schemas.yandex_tracker import Task
+from app.services.yandex_gpt_service import YandexGPTMLService
+from app.services.yandex_tracker import YandexTrackerService
+
+log = logging.getLogger(__name__)
+
+
+class ReportService:
+    """"""
+    Service for generating various types of reports.
+    Relies on injected tracker and ML services.
+    """"""
+
+    def __init__(
+        self,
+        db: AsyncSession,
+        yandex_tracker_service: YandexTrackerService,
+        yandex_gpt_service: YandexGPTMLService,
+        user_repo: UserRepository,
+        report_repo: ReportRepository,
+        team_report_repo: TeamReportRepository,
+    ):
+        self.db = db
+        self.yandex_tracker_service = yandex_tracker_service
+        self.yandex_gpt_service = yandex_gpt_service
+        self.user_repo = user_repo
+        self.report_repo = report_repo
+        self.team_report_repo = team_report_repo
+
+    async def generate_sprint_report(
+        self,
+        user: User,
+        sprint_id: int,
+        current_user_id: int,
+    ) -> SprintReport:
+        """"""
+        Generate a comprehensive sprint report for an employee.
+        Uses provided service instances.
+        """"""
+
+        sprint = await self.yandex_tracker_service.get_sprint(
+            sprint_id, current_user_id
+        )
+        if not sprint:
+            raise ValueError(f""Sprint with ID {sprint_id} not found."")
+
+        tracker_info = await self.user_repo.get_user_current_tracker(user.id)
+        if not tracker_info:
+            raise ValueError(""Не удалось определить tracker_id для пользователя"")
+        tracker, _ = tracker_info
+        tracker_id = tracker.id
+
+        tasks = await self.yandex_tracker_service.get_sprint_tasks(
+            sprint_id, current_user_id, user.login
+        )
+        sprint_stats = await self._process_tasks(tasks, current_user_id)
+
+        existing_report = await self.report_repo.get_sprint_report_by_id(
+            user.id, tracker_id, sprint_id
+        )
+        if existing_report:
+            prev_report = await self.report_repo.get_previous_sprint_report(
+                user.id, tracker_id, existing_report.sprint_start_date
+            )
+            prev_stats = None
+            if prev_report:
+                prev_stats = SprintStats(
+                    total_story_points=prev_report.story_points_closed,
+                    total_tasks=prev_report.tasks_completed,
+                    deadlines_missed=prev_report.deadlines_missed,
+                    average_completion_time=prev_report.average_task_completion_time,
+                )
+            return SprintReport(
+                user_id=existing_report.user_id,
+                employee_name=user.display_name,
+                sprint_name=existing_report.sprint_name,
+                sprint_start_date=existing_report.sprint_start_date,
+                sprint_end_date=existing_report.sprint_end_date,
+                story_points_closed=self._create_metric_comparison(
+                    existing_report.story_points_closed,
+                    prev_stats.total_story_points if prev_stats else None,
+                ),
+                tasks_completed=self._create_metric_comparison(
+                    existing_report.tasks_completed,
+                    prev_stats.total_tasks if prev_stats else None,
+                ),
+                deadlines_missed=self._create_metric_comparison(
+                    existing_report.deadlines_missed,
+                    prev_stats.deadlines_missed if prev_stats else None,
+                ),
+                average_task_completion_time=self._create_metric_comparison(
+                    existing_report.average_task_completion_time,
+                    prev_stats.average_completion_time if prev_stats else None,
+                ),
+                activity_analysis=existing_report.activity_analysis,
+                recommendations=existing_report.recommendations,
+            )
+
+        prev_report = await self.report_repo.get_previous_sprint_report(
+            user.id, tracker_id, sprint.start_date
+        )
+        prev_stats = None
+        if prev_report:
+            prev_stats = SprintStats(
+                total_story_points=prev_report.story_points_closed,
+                total_tasks=prev_report.tasks_completed,
+                deadlines_missed=prev_report.deadlines_missed,
+                average_completion_time=prev_report.average_task_completion_time,
+            )
+        story_points_closed = self._create_metric_comparison(
+            sprint_stats.total_story_points,
+            prev_stats.total_story_points if prev_stats else None,
+        )
+        tasks_completed = self._create_metric_comparison(
+            sprint_stats.total_tasks, prev_stats.total_tasks if prev_stats else None
+        )
+        deadlines_missed = self._create_metric_comparison(
+            sprint_stats.deadlines_missed,
+            prev_stats.deadlines_missed if prev_stats else None,
+        )
+        average_task_completion_time = self._create_metric_comparison(
+            sprint_stats.average_completion_time,
+            prev_stats.average_completion_time if prev_stats else None,
+        )
+
+        try:
+            activity_analysis = await self.yandex_gpt_service.analyze_employee_activity(
+                tasks, sprint_stats
+            )
+            recommendations = (
+                await self.yandex_gpt_service.generate_employee_recommendations(
+                    sprint_stats
+                )
+            )
+        except Exception as e:
+            log.error(f""LLM error: {e}"")
+            raise
+
+        await self.report_repo.save_or_update_sprint_report(
+            user_id=user.id,
+            tracker_id=tracker_id,
+            sprint_id=sprint_id,
+            sprint_name=sprint.name,
+            sprint_start_date=sprint.start_date,
+            sprint_end_date=sprint.end_date,
+            story_points_closed=story_points_closed,
+            tasks_completed=tasks_completed,
+            deadlines_missed=deadlines_missed,
+            average_task_completion_time=average_task_completion_time,
+            activity_analysis=activity_analysis,
+            recommendations=recommendations,
+        )
+        return SprintReport(
+            user_id=user.id,
+            employee_name=user.display_name,
+            sprint_name=sprint.name,
+            sprint_start_date=sprint.start_date,
+            sprint_end_date=sprint.end_date,
+            story_points_closed=story_points_closed,
+            tasks_completed=tasks_completed,
+            deadlines_missed=deadlines_missed,
+            average_task_completion_time=average_task_completion_time,
+            activity_analysis=activity_analysis,
+            recommendations=recommendations,
+        )
+
+    def _calculate_percent_change(self, current: float, previous: float) -> float:
+        """"""
+        Calculate percent change between current and previous values.
+        Positive percentage means improvement, negative means decline.
+        """"""
+        if previous == 0:
+            return 100.0 if current > 0 else 0.0
+
+        return ((current - previous) / previous) * 100
+
+    def _create_metric_comparison(
+        self, current: float, previous: Optional[float] = None
+    ) -> MetricWithComparison:
+        """"""
+        Create a metric with comparison between current and previous sprint.
+        """"""
+        metric = MetricWithComparison(current=current)
+
+        if previous is not None:
+            metric.previous = previous
+            metric.change_percent = self._calculate_percent_change(current, previous)
+
+        return metric
+
+    async def generate_team_sprint_report(
+        self,
+        current_user_id: int,
+        sprint_id: int,
+    ) -> TeamSprintReport:
+        """"""
+        Generate a comprehensive sprint report for the entire team.
+        Uses provided service instances.
+        """"""
+
+        # Получаем текущий трекер пользователя
+        tracker_info = await self.user_repo.get_user_current_tracker(current_user_id)
+        if not tracker_info:
+            raise ValueError(""Не удалось определить tracker_id для пользователя"")
+        tracker, role = tracker_info
+
+        if role != ""manager"":
+            raise ValueError(""У вас нет доступа к генерации командных отчетов"")
+
+        tracker_id = tracker.id
+
+        existing_team_report = await self.team_report_repo.get_team_sprint_report_by_id(
+            tracker_id, sprint_id
+        )
+        if existing_team_report:
+            employee_stats_final = [
+                EmployeeSprintStats(**emp)
+                for emp in existing_team_report.employee_stats
+            ]
+            return TeamSprintReport(
+                sprint_id=existing_team_report.sprint_id,
+                sprint_start_date=existing_team_report.sprint_start_date,
+                sprint_end_date=existing_team_report.sprint_end_date,
+                employee_stats=employee_stats_final,
+            )
+
+        users = await self.user_repo.get_users_for_tracker(tracker_id)
+
+        sprint = await self.yandex_tracker_service.get_sprint(
+            sprint_id, current_user_id
+        )
+        if not sprint:
+            raise ValueError(f""Sprint with ID {sprint_id} not found."")
+
+        prev_sprint = None
+        all_sprints = await self.yandex_tracker_service.get_sprints(current_user_id)
+        sprints_objs = all_sprints
+        sprints_sorted = sorted(sprints_objs, key=lambda s: s.start_date)
+        for idx, s in enumerate(sprints_sorted):
+            if s.id == sprint_id and idx > 0:
+                prev_sprint = sprints_sorted[idx - 1]
+                break
+
+        employee_stats = []
+        prev_employee_stats = []
+        for user in users:
+            sprint_report = await self.generate_sprint_report(
+                user, sprint_id, current_user_id
+            )
+            story_points_closed = sprint_report.story_points_closed
+            tasks_completed = sprint_report.tasks_completed
+            deadlines_missed = sprint_report.deadlines_missed
+            average_task_completion_time = sprint_report.average_task_completion_time
+            employee_stats.append(
+                {
+                    ""employee_id"": str(user.id),
+                    ""employee_name"": user.display_name,
+                    ""story_points_closed"": story_points_closed.model_dump(),
+                    ""tasks_completed"": tasks_completed.model_dump(),
+                    ""deadlines_missed"": deadlines_missed.model_dump(),
+                    ""average_task_completion_time"": average_task_completion_time.model_dump(),
+                }
+            )
+
+            log.debug(f""Employee stats: {employee_stats}"")
+            prev_stats_report = None
+            if prev_sprint:
+                prev_stats_report = await self.report_repo.get_sprint_report_by_id(
+                    user.id, tracker_id, prev_sprint.id
+                )
+            if prev_stats_report:
+                prev_employee_stats.append(
+                    {
+                        ""employee_id"": str(user.id),
+                        ""employee_name"": user.display_name,
+                        ""story_points_closed"": {
+                            ""current"": prev_stats_report.story_points_closed
+                        },
+                        ""tasks_completed"": {
+                            ""current"": prev_stats_report.tasks_completed
+                        },
+                        ""deadlines_missed"": {
+                            ""current"": prev_stats_report.deadlines_missed
+                        },
+                        ""average_task_completion_time"": {
+                            ""current"": prev_stats_report.average_task_completion_time
+                        },
+                    }
+                )
+
+        try:
+            llm_result = await self.yandex_gpt_service.rate_team_performance(
+                employee_stats=employee_stats,
+                prev_employee_stats=(
+                    prev_employee_stats if prev_employee_stats else None
+                ),
+            )
+            rating_map = {str(r[""employee_id""]): r for r in llm_result}
+        except Exception as e:
+            log.error(f""LLM error (team report): {e}"")
+            raise e
+
+        employee_stats_final = []
+        for emp in employee_stats:
+            rid = emp[""employee_id""]
+            rating = rating_map.get(rid, {}).get(""rating"", 3)
+            rating_explanation = rating_map.get(rid, {}).get(
+                ""rating_explanation"", ""Ошибка AI при оценке производительности""
+            )
+            employee_stats_final.append(
+                EmployeeSprintStats(
+                    employee_id=emp[""employee_id""],
+                    employee_name=emp[""employee_name""],
+                    story_points_closed=MetricWithComparison(
+                        **emp[""story_points_closed""]
+                    ),
+                    tasks_completed=MetricWithComparison(**emp[""tasks_completed""]),
+                    deadlines_missed=MetricWithComparison(**emp[""deadlines_missed""]),
+                    average_task_completion_time=MetricWithComparison(
+                        **emp[""average_task_completion_time""]
+                    ),
+                    rating=rating,
+                    rating_explanation=rating_explanation,
+                )
+            )
+
+        await self.team_report_repo.save_or_update_team_sprint_report(
+            tracker_id=tracker_id,
+            sprint_id=sprint_id,
+            sprint_start_date=sprint.start_date,
+            sprint_end_date=sprint.end_date,
+            employee_stats=[emp.model_dump() for emp in employee_stats_final],
+        )
+        return TeamSprintReport(
+            sprint_id=sprint_id,
+            sprint_start_date=sprint.start_date,
+            sprint_end_date=sprint.end_date,
+            employee_stats=employee_stats_final,
+        )
+
+    async def _process_tasks(
+        self, tasks: List[Task], current_user_id: int
+    ) -> SprintStats:
+        """"""
+        Process tasks to extract relevant statistics.
+        """"""
+        total_story_points = 0
+        total_tasks = 0
+        deadlines_missed = 0
+        total_completion_time = 0.0
+
+        for task in tasks:
+            total_story_points += task.story_points if task.story_points else 0
+            total_tasks += 1
+
+            if task.deadline and (
+                task.status.key == ""done""
+                and task.deadline < task.resolved_at
+                or task.deadline < datetime.utcnow().date()
+            ):
+                deadlines_missed += 1
+
+            if task.status.key == ""done"":
+                total_completion_time += (
+                    await self.yandex_tracker_service.get_issue_logged_time(
+                        task.id, current_user_id
+                    )
+                )
+
+        return SprintStats(
+            total_story_points=total_story_points,
+            total_tasks=total_tasks,
+            deadlines_missed=deadlines_missed,
+            average_completion_time=(
+                total_completion_time / total_tasks if total_tasks > 0 else 0
+            ),
+        )"
+
+LINK NUMBER 127
+Not enough lines
+
+LINK NUMBER 128
+Error fetching diff
+
+LINK NUMBER 129
+Error fetching diff
+
+LINK NUMBER 130
+Error fetching diff
+
+LINK NUMBER 131
+
+File path: src/js/demo/demo-worker.js
+"$('.edit-email').on('click', function(e) {
+    e.preventDefault(); // Prevent the link's default behavior
+    // Find the sibling input element with the ""form_input"" class.
+    let $input = $(this).siblings('input.form_input');
+    // Remove the ""is-ghost"" class and then focus the input.
+    $input.removeClass('is-ghost').focus();
+    // Hide the clicked "".edit-email"" element by setting its opacity to 0 and disabling pointer events.
+    $(this).css({'opacity': '0', 'pointer-events': 'none'});
+  });
+  
+  // Mirror email input
+  $(document).ready(function () {
+    const $source = $('[data-el=""mirror-email""]');
+    const $target = $('[data-el=""mirror-email-target""]');
+  
+    if (!$source.length || !$target.length) return;
+  
+    // Mirror function
+    const mirrorEmail = () => {
+      $target.val($source.val());
+    };
+  
+    // Initial sync (in case of pre-filled)
+    mirrorEmail();
+  
+    // Sync on input and other possible events
+    $source.on('input change blur', mirrorEmail);
+  });
+  
+  
+  
+  function waitForSuperformAndInit(retries = 10, delay = 300) {
+    if (!window.SuperformAPI || typeof window.SuperformAPI.push !== 'function') {
+      if (retries > 0) {
+        return setTimeout(() => waitForSuperformAndInit(retries - 1, delay), delay);
+      } else {
+        console.log(""SuperformAPI never initialized."");
+        return;
+      }
+    }
+  
+    window.SuperformAPI.push(({ allForms }) => {
+      console.log(""Full Superform objects:"", allForms);
+  
+      const myForm = allForms[0];
+  
+      if (!myForm || typeof myForm.onStepChange !== 'function') {
+        console.log(""No usable Superform instance found."");
+        return;
+      }
+  
+      const formStepData = {};
+  
+      myForm.onStepChange((params) => {
+        const { stepCount, data } = params;
+        Object.assign(formStepData, data);
+  
+        console.log(""All stored data so far:"", formStepData);
+  
+        // Try to populate HubSpot form
+        populateHubspotForm(formStepData);
+      });
+    });
+  }
+  
+  function populateHubspotForm(formData) {
+    const hsForm = document.querySelector(""#hsForm_c0b510e0-b9e8-49bf-a54c-872a45c50040"");
+    if (!hsForm) {
+      console.log(""HubSpot form not found yet."");
+      return;
+    }
+  
+    const fieldMapping = {
+      email: 'email',
+      Website: 'company_domain',
+      'ecommerce-platform': 'demo_ecommerce_platform',
+      conversations: 'demo_tickets_volume',
+      'annual-sales-range': 'demo_annual_sales_range',
+      '0-1_number_of_agents': 'number_of_agents',
+      '0-1_demo_current_helpdesk': 'demo_current_helpdesk',
+      '0-1_demo_utm_source': 'demo_utm_source',
+      '0-1_demo_utm_medium': 'demo_utm_medium',
+      '0-1_demo_utm_campaign': 'demo_utm_campaign',
+      '0-1_demo_utm_term': 'demo_utm_term',
+      '0-1_demo_timezone': 'demo_timezone',
+      '0-1_demo_lead_product_interest': 'demo_lead_product_interest'
+    };
+  
+    for (const [sourceKey, targetName] of Object.entries(fieldMapping)) {
+      const value = formData[sourceKey];
+      if (!value) continue;
+  
+      const input = hsForm.querySelector(`[name=""${targetName}""]`);
+      if (input) {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        console.log(`HubSpot field ""${targetName}"" not found in form.`);
+      }
+    }
+  }
+  
+  // Kick things off
+  waitForSuperformAndInit();"
+
+LINK NUMBER 132
+Not enough lines
+
+LINK NUMBER 133
+Not enough lines
+
+LINK NUMBER 134
+Not enough lines
+
+LINK NUMBER 135
+Error fetching diff
+
+LINK NUMBER 136
+Error fetching diff
+
+LINK NUMBER 137
+Error fetching diff
+
+LINK NUMBER 138
+
+File path: src/content.config.ts
+"---
+interface Props {
+  id?: string;
+  mapping?: string;
+}
+
+const { 
+  id = ""comments"",
+  mapping = ""pathname""
+} = Astro.props;
+
+const initialTheme = ""preferred_color_scheme""; 
+---
+
+<div id={id} class=""giscus-container"">
+    <script src=""https://giscus.app/client.js""
+        data-repo=""grumpycatyo-collab/max-plamadeala.com""
+        data-repo-id=""R_kgDOOhpI6g""
+        data-category=""General""
+        data-category-id=""DIC_kwDOOhpI6s4CptT6""
+        data-mapping=""pathname""
+        data-strict=""0""
+        data-reactions-enabled=""1""
+        data-emit-metadata=""0""
+        data-input-position=""bottom""
+        data-theme={initialTheme}
+        data-lang=""en""
+        data-loading=""lazy""
+        crossorigin=""anonymous""
+        async>
+    </script>
+</div>
+"
+
+LINK NUMBER 139
+Not enough lines
+
+LINK NUMBER 140
+
+File path: path.go
+"		// checking the found parameterStartChar is a cluster
+		i := nextParamPosition + 1
+		for i < len(pattern) {
+			if findNextNonEscapedCharsetPosition(pattern[i:i+1], parameterStartChars) != 0 {
+				// It was a single parameter start char or end of cluster"
+
+LINK NUMBER 141
+Not enough lines
+
+LINK NUMBER 142
+Error fetching diff
+
+LINK NUMBER 143
+Error fetching diff
+
+LINK NUMBER 144
+Error fetching diff
+
+LINK NUMBER 145
+Not enough lines
+
+LINK NUMBER 146
+
+File path: src/types/apiResponse.ts
+"}
+
+export interface GetSettings {
+  withdrawal_fee: number;
+  tokens_fee: number;
+  epoch: number;
+  switching_epoch: boolean;
+  frontend_version: string;
+  backend_version: string;
+  min_balance: number;
+  confirmations_required: number;
+  max_assets_in_request: number;
+}
+
+export interface GetEstimateFees {
+  withdrawal_fee: string;
+  tokens_fee: number;
+  fee: number;
+  deposit: number;
+}
+
+export interface GetCustomRequest {
+  request_id: string;
+  deposit: number;
+  overhead_fee: number;
+  withdrawal_address: string;
+  is_whitelisted: boolean;
+}
+
+export interface GetTokenRequest {
+  token_id: string;
+  logo: string;
+  ticker: string;
+  name: string;
+  balance: string;
+  decimals: string;
+}
+
+export interface GetDeliveredRewards {
+  id: string;
+  staking_address: string;
+  epoch: string;
+  token: string;
+  amount: string;
+  withdrawal_request: string;
+  expiry_return_pool_id: string | null;
+  expiry: string;
+  return_policy: string;
+  delivered_on: string;
+}
+
+export interface GetPendingTxCount {
+  pending_tx_count: number;
+}
+
+export interface GetTx {
+  tx: string;
+  slot: string;
+  info: string;"
+
+LINK NUMBER 147
+
+File path: src/hooks/mutation/useCreateOauthConnectionMutation.ts
+"import { OauthConnectOperationRequest } from ""@generated/api/src"";
+import { useMutation, useQueryClient } from ""@tanstack/react-query"";
+import { useAPI } from ""services/api"";
+
+export const useCreateOauthConnectionMutation = () => {
+  const getAPI = useAPI();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [""createOauthConnection""],
+    mutationFn: async (request: OauthConnectOperationRequest) => {
+      const api = await getAPI();
+      return api.oAuthApi.oauthConnect(request);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [""connections""] });
+    },
+  });
+};"
+
+LINK NUMBER 148
+Not enough lines
+
+LINK NUMBER 149
+Error fetching diff
+
+LINK NUMBER 150
+Error fetching diff
+
+LINK NUMBER 151
+Error fetching diff
+
+LINK NUMBER 152
+Not enough lines
+
+LINK NUMBER 153
+
+File path: core/src/arp_poisoning/all_out.cpp
+"    // determine whether or not to handle packet
+    if ((requestEthLayer->getSourceMac() == device->getMacAddress() ||
+         requestEthLayer->getSourceMac() ==
+             allOutArpPoisoningCookie->attackerMacAddress) ||
+        requestArpLayer->getTargetIpAddr() != device->getIPv4Address()) {
+        return;
+    }
+"
+
+LINK NUMBER 154
+Not enough lines
+
+LINK NUMBER 155
+Not enough lines
+
+LINK NUMBER 156
+Error fetching diff
+
+LINK NUMBER 157
+Error fetching diff
+
+LINK NUMBER 158
+Error fetching diff
+
+LINK NUMBER 159
+Not enough lines
+
+LINK NUMBER 160
+
+File path: src/Neo/Network/P2P/Payloads/Block.cs
+"            Transactions = DeserializeTransactions(ref reader, ushort.MaxValue, Header.MerkleRoot);
+        }
+
+        private static Transaction[] DeserializeTransactions(ref MemoryReader reader, int maxCount, UInt256 merkleRoot)
+        {
+            var count = (int)reader.ReadVarInt((ulong)maxCount);
+            var hashes = new UInt256[count];
+            var txs = new Transaction[count];
+
+            if (count > 0)
+            {
+                var hashset = new HashSet<UInt256>();
+                for (var i = 0; i < count; i++)
+                {
+                    var tx = reader.ReadSerializable<Transaction>();
+                    if (!hashset.Add(tx.Hash))
+                        throw new FormatException();
+                    txs[i] = tx;
+                    hashes[i] = tx.Hash;
+                }
+            }
+
+            if (MerkleTree.ComputeRoot(hashes) != merkleRoot)
+                throw new FormatException(""The computed Merkle root does not match the expected value."");
+            return txs;"
+
+LINK NUMBER 161
+Not enough lines
+
+LINK NUMBER 162
+
+File path: tests/Neo.UnitTests/Cryptography/UT_Murmur128.cs
+"
+            murmur128.Reset();
+            murmur128.Append(""hello ""u8.ToArray());
+            murmur128.Append(""world""u8.ToArray());
+            buffer = murmur128.GetCurrentHash();
+            Assert.AreEqual(""e0a0632d4f51302c55e3b3e48d28795d"", buffer.ToHexString());
+
+            murmur128.Reset();
+            murmur128.Append(""hello worldhello world""u8.ToArray());
+            buffer = murmur128.GetCurrentHash();
+            Assert.AreEqual(""76f870485d4e69f8302d4b3fad28fd39"", buffer.ToHexString());
+
+            murmur128.Reset();
+            murmur128.Append(""hello world""u8.ToArray());
+            murmur128.Append(""hello world""u8.ToArray());
+            buffer = murmur128.GetCurrentHash();
+            Assert.AreEqual(""76f870485d4e69f8302d4b3fad28fd39"", buffer.ToHexString());
+
+            murmur128.Reset();
+            murmur128.Append(""hello worldhello ""u8.ToArray());
+            murmur128.Append(""world""u8.ToArray());
+            buffer = murmur128.GetCurrentHash();
+            Assert.AreEqual(""76f870485d4e69f8302d4b3fad28fd39"", buffer.ToHexString());
+        }
+
+        [TestMethod]
+        public void TestAppend()
+        {
+            var random = new Random();
+            var buffer = new byte[random.Next(1, 2048)];
+            random.NextBytes(buffer);
+            for (int i = 0; i < 32; i++)
+            {
+                int split = random.Next(1, buffer.Length - 1);
+                var murmur128 = new Murmur128(123u);
+                murmur128.Append(buffer.AsSpan(0, split));
+                murmur128.Append(buffer.AsSpan(split));
+                Assert.AreEqual(murmur128.GetCurrentHash().ToHexString(), buffer.Murmur128(123u).ToHexString());
+            }"
+
+LINK NUMBER 163
+Error fetching diff
+
+LINK NUMBER 164
+Error fetching diff
+
+LINK NUMBER 165
+Error fetching diff
+
+LINK NUMBER 166
+Not enough lines
+
+LINK NUMBER 167
+
+File path: apps/web/app/(app)/(onboarding)/environments/[environmentId]/xm-templates/lib/xm-templates.test.ts
+"import ""@testing-library/jest-dom/vitest"";
+import { cleanup } from ""@testing-library/react"";
+import { afterEach, describe, expect, test } from ""vitest"";
+import { TProject } from ""@formbricks/types/project"";
+import { TXMTemplate } from ""@formbricks/types/templates"";
+import { replacePresetPlaceholders } from ""./utils"";
+
+// Mock data
+const mockProject: TProject = {
+  id: ""project1"",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  name: ""Test Project"",
+  organizationId: ""org1"",
+  styling: {
+    allowStyleOverwrite: true,
+    brandColor: { light: ""#FFFFFF"" },
+  },
+  recontactDays: 30,
+  inAppSurveyBranding: true,
+  linkSurveyBranding: true,
+  config: {
+    channel: ""link"" as const,
+    industry: ""eCommerce"" as ""eCommerce"" | ""saas"" | ""other"" | null,
+  },
+  placement: ""bottomRight"",
+  clickOutsideClose: true,
+  darkOverlay: false,
+  environments: [],
+  languages: [],
+  logo: null,
+};
+const mockTemplate: TXMTemplate = {
+  name: ""$[projectName] Survey"",
+  questions: [
+    {
+      id: ""q1"",
+      inputType: ""text"",
+      type: ""email"" as any,
+      headline: { default: ""$[projectName] Question"" },
+      required: false,
+      charLimit: { enabled: true, min: 400, max: 1000 },
+    },
+  ],
+  endings: [
+    {
+      id: ""e1"",
+      type: ""endScreen"",
+      headline: { default: ""Thank you for completing the survey!"" },
+    },
+  ],
+  styling: {
+    brandColor: { light: ""#0000FF"" },
+    questionColor: { light: ""#00FF00"" },
+    inputColor: { light: ""#FF0000"" },
+  },
+};
+
+describe(""replacePresetPlaceholders"", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  test(""replaces projectName placeholder in template name"", () => {
+    const result = replacePresetPlaceholders(mockTemplate, mockProject);
+    expect(result.name).toBe(""Test Project Survey"");
+  });
+
+  test(""replaces projectName placeholder in question headline"", () => {
+    const result = replacePresetPlaceholders(mockTemplate, mockProject);
+    expect(result.questions[0].headline.default).toBe(""Test Project Question"");
+  });
+
+  test(""returns a new object without mutating the original template"", () => {
+    const originalTemplate = structuredClone(mockTemplate);
+    const result = replacePresetPlaceholders(mockTemplate, mockProject);
+    expect(result).not.toBe(mockTemplate);
+    expect(mockTemplate).toEqual(originalTemplate);
+  });
+});"
+
+LINK NUMBER 168
+
+File path: ttt/models/cogvideo/sampler.py
+"        try:
+            # Expected dict for finetuned checkpoints
+            state_dict = {MODEL_STATE_DICT_KEY: get_model_state_dict(model)}
+            dcp.load(state_dict=state_dict, checkpoint_id=job_config.checkpoint.init_state_dir)  # type: ignore
+            state_dict = state_dict[MODEL_STATE_DICT_KEY]
+        except RuntimeError:
+            # Expected dict for newly converted checkpoints.
+            state_dict = get_model_state_dict(model)
+            dcp.load(state_dict=state_dict, checkpoint_id=job_config.checkpoint.init_state_dir)  # type: ignore
+
+        set_model_state_dict(model, model_state_dict=state_dict, options=StateDictOptions(strict=True))"
+
+LINK NUMBER 169
+Not enough lines
+
+LINK NUMBER 170
+Error fetching diff
+
+LINK NUMBER 171
+Error fetching diff
+
+LINK NUMBER 172
+Error fetching diff
+
+LINK NUMBER 173
+
+File path: techsupport_bot/core/auxiliary.py
+"        try:
+            await message.add_reaction(emoji)
+        except discord.NotFound:
+            # Message was deleted, ignore and stop executing
+            return"
+
+LINK NUMBER 174
+Not enough lines
+
+LINK NUMBER 175
+Not enough lines
+
+LINK NUMBER 176
+
+File path: chrome/content.js
+"#!/bin/bash
+
+echo ""Building Saidia Extension...""
+
+mkdir -p dist
+mkdir -p images
+
+echo ""Copying files to dist directory...""
+cp manifest.json dist/
+cp popup.html dist/
+cp *.js dist/
+cp -r images dist/
+
+echo ""Build complete. Files are in the 'dist' directory."""
+
+LINK NUMBER 177
+Error fetching diff
+
+LINK NUMBER 178
+Error fetching diff
+
+LINK NUMBER 179
+Error fetching diff
+
+LINK NUMBER 180
+Not enough lines
+
+LINK NUMBER 181
+Not enough lines
+
+LINK NUMBER 182
+Not enough lines
+
+LINK NUMBER 183
+
+File path: firmware/application/ui/ui_spectrum.cpp
+"    waterfall_widget.on_touch_select = [this](int32_t x, int32_t y) {
+        if (y > screen_height - screen_height * 0.1) return;  // prevent ghost touch
+
+        frequency_scale.focus();  // focus on frequency scale to show cursor
+
+        if (sampling_rate) {
+            // screen x to frequency scale x, NB we need two widgets align
+            int32_t cursor_position = x - (screen_width / 2);
+            frequency_scale.set_cursor_position(cursor_position);
+        }
+    };
+"
+
+LINK NUMBER 184
+Error fetching diff
+
+LINK NUMBER 185
+Error fetching diff
+
+LINK NUMBER 186
+Error fetching diff
+
+LINK NUMBER 187
+Not enough lines
+
+LINK NUMBER 188
+
+File path: Core/Src/VSSS.c
+"#include ""NRF24_Diagnostics.h""
+#include ""nrf24l01p.h""
+#include <stdio.h>
+#include <string.h>
+
+
+static UART_HandleTypeDef *debug_uart = NULL;
+extern SPI_HandleTypeDef hspi1;
+
+
+void NRF24_Diagnostics_Init(UART_HandleTypeDef *uart) {
+    debug_uart = uart;
+}
+
+void NRF24_UpdateStats(NRF24_Stats *stats) {
+    uint8_t obs = 0;
+    HAL_SPI_TransmitReceive(&hspi1, (uint8_t[]){R_REGISTER | OBSERVE_TX}, &obs, 1, HAL_MAX_DELAY);
+    HAL_SPI_Receive(&hspi1, &obs, 1, HAL_MAX_DELAY);
+
+    stats->lost_packets = (obs >> 4) & 0x0F;
+    stats->retransmissions = obs & 0x0F;
+    stats->link_quality = NRF24_CalculateLinkQuality(stats->lost_packets, stats->retransmissions);
+}
+
+float NRF24_CalculateLinkQuality(uint8_t lost, uint8_t retries) {
+    // Fórmula simplificada — pode ajustar para refletir melhor sua aplicação
+    float loss_factor = (float)lost / 15.0f;
+    float retry_factor = (float)retries / 15.0f;
+
+    float quality = 1.0f - (0.6f * loss_factor + 0.4f * retry_factor);
+    if (quality < 0.0f) quality = 0.0f;
+    return quality;
+}
+
+void NRF24_PrintStats(const NRF24_Stats *stats) {
+    if (debug_uart == NULL) return;
+
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), ""Lost: %d, Retries: %d, Quality: %.2f\r\n"",
+             stats->lost_packets, stats->retransmissions, stats->link_quality);
+    HAL_UART_Transmit(debug_uart, (uint8_t*)buffer, strlen(buffer), 100);
+}"
+
+LINK NUMBER 189
+
+File path: src/consensus/conversions.cpp
+"// Copyright (c) 2016-2023 Knuth Project developers.
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include <kth/consensus/conversions.hpp>
+
+#include ""script/script_flags.h""
+
+namespace kth::consensus {
+
+// This mapping decouples the consensus API from the satoshi implementation
+// files. We prefer to keep our copies of consensus files isomorphic.
+// This function is not published (but non-static for testability).
+unsigned int verify_flags_to_script_flags(unsigned int flags) {
+    unsigned int script_flags = SCRIPT_VERIFY_NONE;
+
+    if ((flags & verify_flags_p2sh) != 0) {
+        script_flags |= SCRIPT_VERIFY_P2SH;
+    }
+
+    if ((flags & verify_flags_strictenc) != 0) {
+        script_flags |= SCRIPT_VERIFY_STRICTENC;
+    }
+
+    if ((flags & verify_flags_dersig) != 0) {
+        script_flags |= SCRIPT_VERIFY_DERSIG;
+    }
+
+    if ((flags & verify_flags_low_s) != 0) {
+        script_flags |= SCRIPT_VERIFY_LOW_S;
+    }
+
+    if ((flags & verify_flags_sigpushonly) != 0) {
+        script_flags |= SCRIPT_VERIFY_SIGPUSHONLY;
+    }
+
+    if ((flags & verify_flags_minimaldata) != 0) {
+        script_flags |= SCRIPT_VERIFY_MINIMALDATA;
+    }
+
+    if ((flags & verify_flags_discourage_upgradable_nops) != 0) {
+        script_flags |= SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS;
+    }
+
+    if ((flags & verify_flags_cleanstack) != 0) {
+        script_flags |= SCRIPT_VERIFY_CLEANSTACK;
+    }
+
+    if ((flags & verify_flags_checklocktimeverify) != 0) {
+        script_flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
+    }
+
+    if ((flags & verify_flags_checksequenceverify) != 0) {
+        script_flags |= SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
+    }
+
+    if ((flags & verify_flags_null_fail) != 0) {
+        script_flags |= SCRIPT_VERIFY_NULLFAIL;
+    }
+
+    // Removed
+    // if ((flags & verify_flags_compressed_pubkeytype) != 0)
+    //     script_flags |= SCRIPT_VERIFY_COMPRESSED_PUBKEYTYPE;
+
+    if ((flags & verify_flags_enable_sighash_forkid) != 0) {
+        script_flags |= SCRIPT_ENABLE_SIGHASH_FORKID;
+    }
+
+    if ((flags & verify_flags_disallow_segwit_recovery) != 0)
+        script_flags |= SCRIPT_DISALLOW_SEGWIT_RECOVERY;
+
+    if ((flags & verify_flags_enable_schnorr_multisig) != 0)
+        script_flags |= SCRIPT_ENABLE_SCHNORR_MULTISIG;
+
+    if ((flags & verify_flags_input_sigchecks) != 0)
+        script_flags |= SCRIPT_VERIFY_INPUT_SIGCHECKS;
+
+    if ((flags & verify_flags_enforce_sigchecks) != 0)
+        script_flags |= SCRIPT_ENFORCE_SIGCHECKS;
+
+    if ((flags & verify_flags_64_bit_integers) != 0)
+        script_flags |= SCRIPT_64_BIT_INTEGERS;
+
+    if ((flags & verify_flags_native_introspection) != 0)
+        script_flags |= SCRIPT_NATIVE_INTROSPECTION;
+
+    if ((flags & verify_flags_enable_p2sh_32) != 0)
+        script_flags |= SCRIPT_ENABLE_P2SH_32;
+
+    if ((flags & verify_flags_enable_tokens) != 0)
+        script_flags |= SCRIPT_ENABLE_TOKENS;
+
+    return script_flags;
+}
+
+
+} // namespace kth::consensus"
+
+LINK NUMBER 190
+Not enough lines
+
+LINK NUMBER 191
+Error fetching diff
+
+LINK NUMBER 192
+Error fetching diff
+
+LINK NUMBER 193
+Error fetching diff
+
+LINK NUMBER 194
+Not enough lines
+
+LINK NUMBER 195
+Not enough lines
+
+LINK NUMBER 196
+Too many lines
+
+LINK NUMBER 197
+Not enough lines
+
+LINK NUMBER 198
+Error fetching diff
+
+LINK NUMBER 199
+Error fetching diff
+
+LINK NUMBER 200
+Error fetching diff
+
+LINK NUMBER 201
+Not enough lines
+
+LINK NUMBER 202
+
+File path: project/src/main/java/ExpenseForm/ExpenseFormController.java
+"  /**
+   * Sorts the list of expenses by time (timestamp).
+   * This uses the natural ordering of Expense objects, which compare by timestamp.
+   *
+   * @param ascending If true, sorts from oldest to newest. If false, sorts from newest to oldest.
+   */
+  public void sortExpensesByTime(boolean ascending) {
+    Collections.sort(expenses);
+
+    if(!ascending) Collections.reverse(expenses);
+  }
+
+  /**
+   * Sorts the list of expenses by the associated person.
+   * Uses ExpenseComparatorPerson to sort expenses by last name then first name of the person.
+   *
+   * @param ascending If true, sorts in ascending alphabetical order. If false, sorts in descending order.
+   */
+  public void sortExpensesByPerson(boolean ascending) {
+    expenses.sort(new ExpenseComparatorPerson());
+
+    if(!ascending) Collections.reverse(expenses);
+  }
+
+  /**
+   * Sorts the list of expenses by status.
+   * Uses ExpenseComparatorStatus to sort expenses in the order: PENDING, REJECTED, PAID.
+   *
+   * @param ascending If true, sorts in the default status order. If false, reverses the order.
+   */
+  public void sortExpensesByStatus(boolean ascending) {
+    expenses.sort(new ExpenseComparatorStatus());
+
+    if(!ascending) Collections.reverse(expenses);
+  }
+"
+
+LINK NUMBER 203
+Not enough lines
+
+LINK NUMBER 204
+
+File path: dotnet/dex-agent/GitHubModels/GitHubFilterActivity.cs
+"﻿using AdaptiveCards;
+using Microsoft.Bot.Schema;
+using Newtonsoft.Json.Linq;
+using DexAgent.GitHubModels;
+
+namespace DexAgent
+{
+    /// <summary>
+    /// Creates the adaptive cards for the GitHub pull requests.
+    /// </summary>
+    public class GitHubCards
+    {
+        /// <summary>
+        /// Creates the adaptive card for the ""ListPRs"" plugin
+        /// </summary>
+        /// <param name=""title"">The title of the card</param>
+        /// <param name=""pullRequests"">The list of pull requests</param>
+        /// <param name=""allLabels"">All the labels for filtering</param>
+        /// <param name=""allAssignees"">All the assignees for filtering</param>
+        /// <param name=""allAuthors"">All the authors for filtering</param>
+        /// <returns></returns>
+        public static AdaptiveCard CreateListPRsAdaptiveCard(string title, IList<GitHubPR> pullRequests, HashSet<string> allLabels, HashSet<string> allAssignees, HashSet<string> allAuthors)
+        {
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 5))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""📄 {title}"",
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Large,
+                        Color = AdaptiveTextColor.Accent,
+                    },
+                }
+            };
+
+            var prListContainer = new AdaptiveContainer
+            {
+                Id = ""prContainer"",
+                Items = new List<AdaptiveElement>()
+            };
+
+            if (pullRequests == null || pullRequests.Count == 0)
+            {
+                prListContainer.Items.Add(new AdaptiveTextBlock
+                {
+                    Text = ""No pull requests found 🚫"",
+                    Wrap = true,
+                });
+            }
+            else
+            {
+                foreach (var pr in pullRequests)
+                {
+                    var prItemContainer = CreatePRItemContainer(pr);
+                    prListContainer.Items.Add(prItemContainer);
+                }
+            }
+
+            card.Body.Add(prListContainer);
+
+            if (pullRequests!.Count > 0)
+            {
+                var filters = new AdaptiveContainer
+                {
+                    Items = new List<AdaptiveElement>
+                    {
+                        new AdaptiveTextBlock
+                        {
+                            Text = ""🔍 Filters"",
+                            Weight = AdaptiveTextWeight.Bolder
+                        },
+                        new AdaptiveChoiceSetInput
+                        {
+                            Id = ""labelFilter"",
+                            Style = AdaptiveChoiceInputStyle.Compact,
+                            IsMultiSelect = true,
+                            Label = ""Labels"",
+                            Choices = allLabels.Select(label => new AdaptiveChoice
+                            {
+                                Title = label,
+                                Value = label
+                            }).ToList()
+                        },
+                        new AdaptiveChoiceSetInput
+                        {
+                            Id = ""assigneeFilter"",
+                            Style = AdaptiveChoiceInputStyle.Compact,
+                            IsMultiSelect = true,
+                            Label = ""Assignees"",
+                            Choices = allAssignees.Select(assignee => new AdaptiveChoice
+                            {
+                                Title = assignee,
+                                Value = assignee
+                            }).ToList()
+                        },
+                        new AdaptiveChoiceSetInput
+                        {
+                            Id = ""authorFilter"",
+                            Style = AdaptiveChoiceInputStyle.Compact,
+                            IsMultiSelect = true,
+                            Label = ""Authors"",
+                            Choices = allAuthors.Select(author => new AdaptiveChoice
+                            {
+                                Title = author,
+                                Value = author
+                            }).ToList()
+                        },
+                        new AdaptiveActionSet
+                        {
+                            Actions = new List<AdaptiveAction>
+                            {
+                                new AdaptiveSubmitAction
+                                {
+                                    Title = ""Apply Filters"",
+                                    Data = new Dictionary<string, object>
+                                    {
+                                        { ""verb"", ""githubFilters"" },
+                                        { ""pullRequests"", pullRequests }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                card.Body.Add(filters);
+            }
+            return card;
+        }
+
+        /// <summary>
+        /// Creates the adaptive card for the ""FilterPRs"" plugin
+        /// </summary>
+        /// <param name=""title"">Title of the card</param>
+        /// <param name=""pullRequests"">The list of pull requests</param>
+        /// <param name=""selectedLabels"">The labels used to filter</param>
+        /// <param name=""selectedAssignees"">The assignees used to filter</param>
+        /// <param name=""selectedAuthors"">The authors used to filter</param>
+        /// <returns></returns>
+        public static AdaptiveCard CreateFilterPRsAdaptiveCard(string title, IList<GitHubPR> pullRequests, string[] selectedLabels, string[] selectedAssignees, string[] selectedAuthors)
+        {
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 5))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                    new AdaptiveTextBlock
+                    {
+                        Text = title,
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Large
+                    },
+                }
+            };
+
+            var prListContainer = new AdaptiveContainer
+            {
+                Id = ""prContainer"",
+                Items = new List<AdaptiveElement>()
+            };
+
+            if (pullRequests == null || pullRequests.Count == 0)
+            {
+                prListContainer.Items.Add(new AdaptiveTextBlock
+                {
+                    Text = ""No pull requests found"",
+                    Wrap = true
+                });
+            }
+            else
+            {
+                foreach (var pr in pullRequests)
+                {
+                    var prItemContainer = CreatePRItemContainer(pr);
+                    prListContainer.Items.Add(prItemContainer);
+                }
+            }
+
+            card.Body.Add(prListContainer);
+
+            var combinedFilters = selectedLabels.Concat(selectedAssignees).Concat(selectedAuthors).ToArray();
+
+            if (combinedFilters.Length > 0)
+            {
+                var filterContainer = new AdaptiveContainer
+                {
+                    Items = new List<AdaptiveElement>
+                    {
+                        new AdaptiveTextBlock
+                        {
+                            Text = ""Fiters applied:"",
+                            Weight = AdaptiveTextWeight.Bolder,
+                            Size = AdaptiveTextSize.Medium,
+                        }
+                    }
+                };
+
+                foreach (var filter in combinedFilters)
+                {
+                    filterContainer.Items.Add(new AdaptiveTextBlock
+                    {
+                        Text = filter,
+                        Color = AdaptiveTextColor.Accent,
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Small,
+                        Wrap = true,
+                        Spacing = AdaptiveSpacing.Small
+                    });
+                }
+
+                card.Body.Add(filterContainer);
+            }
+
+            return card;
+        }
+
+        private static AdaptiveContainer CreatePRItemContainer(GitHubPR pr)
+        {
+            var prItemContainer = new AdaptiveContainer
+            {
+                Spacing = AdaptiveSpacing.Medium,
+                Style = AdaptiveContainerStyle.Accent,
+                Items = new List<AdaptiveElement>
+                {
+                    new AdaptiveColumnSet
+                    {
+                        Columns = new List<AdaptiveColumn>
+                        {
+                            new AdaptiveColumn
+                            {
+                                Width = AdaptiveColumnWidth.Stretch,
+                                Items = new List<AdaptiveElement>
+                                {
+                                    new AdaptiveTextBlock
+                                    {
+                                        Text = $""#{pr.Number}: {pr.Title}"",
+                                        Weight = AdaptiveTextWeight.Bolder,
+                                        Wrap = true,
+                                        Size = AdaptiveTextSize.Small,
+                                        Color = AdaptiveTextColor.Accent
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""**Author**: {pr.User.Login ?? ""Unknown""}"",
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""**Created**: {pr.CreatedAt:MMM dd, yyyy}"",
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""**Status**: {(pr.State == ""open"" ? ""🟢 Open"" : ""🔴 Closed"")}"",
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None
+                    }
+                }
+            };
+
+            if (pr.Labels != null && pr.Labels.Count > 0)
+            {
+                var labelTexts = pr.Labels.Select(l => l.Name).ToList();
+                prItemContainer.Items.Add(new AdaptiveTextBlock
+                {
+                    Text = $""**Labels**: {string.Join("", "", labelTexts)}"",
+                    IsSubtle = true,
+                    Spacing = AdaptiveSpacing.None,
+                    Wrap = true,
+                    Italic = true,
+                });
+            }
+
+            prItemContainer.Items.Add(new AdaptiveActionSet
+            {
+                Actions = new List<AdaptiveAction>
+                        {
+                            new AdaptiveToggleVisibilityAction
+                            {
+                                Title = ""Show/Hide Description"",
+                                TargetElements = new List<AdaptiveTargetElement>
+                                {
+                                    new AdaptiveTargetElement
+                                    {
+                                        ElementId = $""description-{pr.Number}""
+                                    }
+                                }
+                            }
+                        }
+            });
+
+            prItemContainer.Items.Add(
+                    new AdaptiveTextBlock
+                    {
+                        Id = $""description-{pr.Number}"",
+                        Text = $""Description: {pr.Body}"",
+                        Wrap = true,
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None,
+                        IsVisible = false
+                    });
+
+            if (!string.IsNullOrEmpty(pr.HtmlUrl))
+            {
+                prItemContainer.Items.Add(new AdaptiveActionSet
+                {
+                    Actions = new List<AdaptiveAction>
+                    {
+                        new AdaptiveOpenUrlAction
+                        {
+                            Title = ""View on GitHub"",
+                            Url = new Uri(pr.HtmlUrl)
+                        }
+                    }
+                });
+            }
+
+            return prItemContainer;
+        }
+
+        public static Attachment CreatePullRequestCard(JObject payload)
+        {
+            var pullRequest = payload[""pull_request""];
+            string assignee = pullRequest[""assignee""] != null ? pullRequest[""assignee""][""login""].ToString() : ""Unknown User"";
+            string prTitle = pullRequest[""title""].ToString();
+            string prUrl = pullRequest[""html_url""].ToString();
+            int prNumber = pullRequest[""number""].Value<int>();
+
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 2))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""👤 Assignee Request for PR #{prNumber}"",
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Large,
+                        Color = AdaptiveTextColor.Accent
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""{prTitle}"",
+                        Wrap = true,
+                        Size = AdaptiveTextSize.Medium,
+                        Weight = AdaptiveTextWeight.Bolder,
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""{assignee} has been assigned this pull request."",
+                        Wrap = true,
+                        Size = AdaptiveTextSize.Medium,
+                        Spacing = AdaptiveSpacing.Medium
+                    }
+                },
+                Actions = new List<AdaptiveAction>
+                {
+                    new AdaptiveOpenUrlAction
+                    {
+                        Title = ""View on GitHub"",
+                        Url = new Uri(prUrl)
+                    }
+                }
+            };
+
+            return new Attachment
+            {
+                ContentType = AdaptiveCard.ContentType,
+                Content = card
+            };
+        }
+
+        public static Attachment CreatePullRequestStateCard(JObject payload)
+        {
+            var pullRequest = payload[""pull_request""];
+            string action = payload[""action""].ToString();
+            string prTitle = pullRequest[""title""].ToString();
+            string prUrl = pullRequest[""html_url""].ToString();
+            int prNumber = pullRequest[""number""].Value<int>();
+
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 2))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                     new AdaptiveTextBlock
+                            {
+                                Text = $""🔔 Status Update for PR #{prNumber}"",
+                                Weight = AdaptiveTextWeight.Bolder,
+                                Size = AdaptiveTextSize.Large,
+                                Color = AdaptiveTextColor.Accent
+                            },
+                            new AdaptiveTextBlock
+                            {
+                                Text = $""{prTitle}"",
+                                Wrap = true,
+                                Size = AdaptiveTextSize.Medium,
+                                Weight = AdaptiveTextWeight.Bolder,
+                            },
+                            new AdaptiveTextBlock
+                            {
+                                Text = $""PR is now {action}"",
+                                Wrap = true,
+                                Size = AdaptiveTextSize.Medium,
+                                Spacing = AdaptiveSpacing.Medium
+                            }
+                },
+                Actions = new List<AdaptiveAction>
+                {
+                    new AdaptiveOpenUrlAction
+                    {
+                        Title = ""View on GitHub"",
+                        Url = new Uri(prUrl)
+                    }
+                }
+            };
+
+            return new Attachment
+            {
+                ContentType = AdaptiveCard.ContentType,
+                Content = card
+            };
+        }
+    }
+}"
+
+LINK NUMBER 205
+Error fetching diff
+
+LINK NUMBER 206
+Error fetching diff
+
+LINK NUMBER 207
+Error fetching diff
+
+LINK NUMBER 208
+
+File path: Src/HALAL/Services/Communication/Ethernet/Ethernet.cpp
+"#include ""HALAL/Models/MAC/MAC.hpp""
+
+#ifdef HAL_ETH_MODULE_ENABLED
+
+MAC::MAC(string address) : string_address(address) {
+    stringstream sstream(address);
+    for (u8_t& byte : this->address) {
+        string temp;
+        getline(sstream, temp, ':');
+        byte = stoi(temp, nullptr, 16);
+    }
+}
+
+MAC::MAC(u8_t addr[6])
+    : address{addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]},
+      string_address([&]() {
+          stringstream sstream;
+          for (int i = 0; i < 6; ++i) {
+              if (i > 0) sstream << "":"";
+              sstream << std::hex << std::setw(2) << std::setfill('0')
+                      << static_cast<int>(addr[i]);
+          }
+          return sstream.str();
+      }()) {}
+
+MAC::MAC() : MAC({0, 0, 0, 0, 0, 0}) {}
+
+#endif"
+
+LINK NUMBER 209
+Not enough lines
+
+LINK NUMBER 210
+
+File path: tools/NitroDigest/summary_writer.py
+"import os
+import requests
+import json
+from .prompt import Prompt
+
+class BaseSummarizer:
+    """"""Base class for all summarizers""""""
+    
+    def __init__(self):
+        self.prompt = Prompt()
+    
+    def summarize(self, text, metadata=None):
+        """"""Summarize the given text""""""
+        raise NotImplementedError(""Subclasses must implement this method"")
+
+
+class ClaudeSummarizer(BaseSummarizer):
+    """"""Summarizer that uses Anthropic's Claude API""""""
+    
+    def __init__(self, api_key=None):
+        super().__init__()
+        self.api_key = api_key or os.environ.get(""ANTHROPIC_API_KEY"")
+        if not self.api_key:
+            raise ValueError(""Claude API key is required"")
+    
+    def summarize(self, text, metadata=None):
+        """"""Summarize text using Claude API""""""
+        if not text:
+            return """"
+        
+        try:
+            headers = {
+                ""x-api-key"": self.api_key,
+                ""Content-Type"": ""application/json"",
+                ""anthropic-version"": ""2023-06-01""
+            }
+            
+            # Prepare prompt
+            prompt = self.prompt.format(text, metadata)
+            
+            data = {
+                ""model"": ""claude-3-haiku-20240307"",
+                ""max_tokens"": 1000,
+                ""messages"": [
+                    {""role"": ""user"", ""content"": prompt}
+                ]
+            }
+            
+            response = requests.post(
+                ""https://api.anthropic.com/v1/messages"",
+                headers=headers,
+                data=json.dumps(data)
+            )
+            
+            if response.status_code != 200:
+                print(f""Error from Claude API: {response.status_code}"")
+                print(response.text)
+                return """"
+            
+            response_data = response.json()
+            return response_data[""content""][0][""text""]
+            
+        except Exception as e:
+            print(f""Error summarizing with Claude: {e}"")
+            return """"
+
+
+class ChatGPTSummarizer(BaseSummarizer):
+    """"""Summarizer that uses OpenAI's ChatGPT API""""""
+    
+    def __init__(self, api_key=None):
+        super().__init__()
+        self.api_key = api_key or os.environ.get(""OPENAI_API_KEY"")
+        if not self.api_key:
+            raise ValueError(""OpenAI API key is required"")
+    
+    def summarize(self, text, metadata=None):
+        """"""Summarize text using OpenAI API""""""
+        if not text:
+            return """"
+        
+        try:
+            headers = {
+                ""Authorization"": f""Bearer {self.api_key}"",
+                ""Content-Type"": ""application/json""
+            }
+            
+            # Prepare prompt
+            prompt = self.prompt.format(text, metadata)
+            
+            data = {
+                ""model"": ""gpt-3.5-turbo"",
+                ""messages"": [
+                    {""role"": ""system"", ""content"": ""You are a helpful assistant that summarizes newsletter content.""},
+                    {""role"": ""user"", ""content"": prompt}
+                ],
+                ""max_tokens"": 1000
+            }
+            
+            response = requests.post(
+                ""https://api.openai.com/v1/chat/completions"",
+                headers=headers,
+                data=json.dumps(data)
+            )
+            
+            if response.status_code != 200:
+                print(f""Error from OpenAI API: {response.status_code}"")
+                print(response.text)
+                return """"
+            
+            response_data = response.json()
+            return response_data[""choices""][0][""message""][""content""]
+            
+        except Exception as e:
+            print(f""Error summarizing with ChatGPT: {e}"")
+            return """"
+
+
+class OllamaSummarizer(BaseSummarizer):
+    """"""Summarizer that uses a local Ollama instance""""""
+    
+    def __init__(self, model=""mistral"", base_url=""http://localhost:11434""):
+        super().__init__()
+        self.model = model
+        self.base_url = base_url
+    
+    def summarize(self, text, metadata=None):
+        """"""Summarize text using Ollama API""""""
+        if not text:
+            return """"
+        
+        try:
+            headers = {""Content-Type"": ""application/json""}
+            
+            # Prepare prompt
+            prompt = self.prompt.format(text, metadata)
+            
+            data = {
+                ""model"": self.model,
+                ""prompt"": prompt,
+                ""stream"": False
+            }
+            
+            response = requests.post(
+                f""{self.base_url}/api/generate"",
+                headers=headers,
+                data=json.dumps(data)
+            )
+            
+            if response.status_code != 200:
+                print(f""Error from Ollama API: {response.status_code}"")
+                print(response.text)
+                return """"
+            
+            response_data = response.json()
+            return response_data[""response""]
+            
+        except Exception as e:
+            print(f""Error summarizing with Ollama: {e}"")
+            return """"
+
+
+# Example usage
+def test_summarizer():
+    # Test text
+    text = """"""
+    Welcome to our weekly tech newsletter!
+    
+    # Latest Updates
+    
+    ## AI Advances
+    OpenAI has released GPT-5 with significant improvements in reasoning and multimodal capabilities.
+    The new model can process images, audio, and text simultaneously with higher accuracy than previous versions.
+    
+    ## Industry News
+    Apple announced their new M3 Pro chips that offer 40% better performance with lower power consumption.
+    Google Cloud introduced new serverless database options for enterprise customers.
+    
+    # Tips & Tutorials
+    Learn how to optimize your React applications with our step-by-step guide.
+    
+    # Upcoming Events
+    Join us for the annual Developer Conference on May 15-17 in San Francisco.
+    """"""
+    
+    metadata = {
+        'from': 'Tech Weekly <news@techweekly.com>',
+        'subject': 'This Week in Tech - Issue #42',
+        'date': 'Mon, 1 Apr 2025 09:30:00 -0700'
+    }
+    
+    # Try to use Claude if API key exists
+    api_key = os.environ.get(""ANTHROPIC_API_KEY"")
+    if api_key:
+        print(""Testing Claude summarizer..."")
+        summarizer = ClaudeSummarizer(api_key)
+        summary = summarizer.summarize(text, metadata)
+        print(summary)
+    else:
+        print(""No Claude API key found, skipping Claude test"")
+    
+    # Try to use ChatGPT if API key exists
+    api_key = os.environ.get(""OPENAI_API_KEY"")
+    if api_key:
+        print(""\nTesting ChatGPT summarizer..."")
+        summarizer = ChatGPTSummarizer(api_key)
+        summary = summarizer.summarize(text, metadata)
+        print(summary)
+    else:
+        print(""No OpenAI API key found, skipping ChatGPT test"")
+    
+    # Try to use Ollama if it's running locally
+    try:
+        response = requests.get(""http://localhost:11434/api/tags"")
+        if response.status_code == 200:
+            print(""\nTesting Ollama summarizer..."")
+            summarizer = OllamaSummarizer()
+            summary = summarizer.summarize(text, metadata)
+            print(summary)
+        else:
+            print(""Ollama not running locally, skipping Ollama test"")
+    except:
+        print(""Ollama not running locally, skipping Ollama test"")
+
+
+if __name__ == ""__main__"":
+    test_summarizer()
+"
+
+LINK NUMBER 211
+Not enough lines
+
+LINK NUMBER 212
+Error fetching diff
+
+LINK NUMBER 213
+Error fetching diff
+
+LINK NUMBER 214
+Error fetching diff
+
+LINK NUMBER 215
+Not enough lines
+
+LINK NUMBER 216
+Not enough lines
+
+LINK NUMBER 217
+
+File path: web/app/components/base/mermaid/utils.ts
+"
+/**
+ * Preprocesses mermaid code to fix common syntax issues
+ */
+export function preprocessMermaidCode(code: string): string {
+  if (!code || typeof code !== 'string')
+    return ''
+
+  // First check if this is a gantt chart
+  if (code.trim().startsWith('gantt')) {
+    // For gantt charts, we need to ensure each task is on its own line
+    // Split the code into lines and process each line separately
+    const lines = code.split('\n').map(line => line.trim())
+    return lines.join('\n')
+  }
+
+  return code
+    // Replace English colons with Chinese colons in section nodes to avoid parsing issues
+    .replace(/section\s+([^:]+):/g, (match, sectionName) => `section ${sectionName}：`)
+    // Fix common syntax issues
+    .replace(/fifopacket/g, 'rect')
+    // Ensure graph has direction
+    .replace(/^graph\s+((?:TB|BT|RL|LR)*)/, (match, direction) => {
+      return direction ? match : 'graph TD'
+    })
+    // Clean up empty lines and extra spaces
+    .trim()
+}
+
+/**
+ * Prepares mermaid code based on selected style
+ */
+export function prepareMermaidCode(code: string, style: 'classic' | 'handDrawn'): string {
+  let finalCode = preprocessMermaidCode(code)
+
+  // Special handling for gantt charts
+  if (finalCode.trim().startsWith('gantt')) {
+    // For gantt charts, preserve the structure exactly as is
+    return finalCode
+  }
+
+  if (style === 'handDrawn') {
+    finalCode = finalCode
+      // Remove style definitions that interfere with hand-drawn style
+      .replace(/style\s+[^\n]+/g, '')
+      .replace(/linkStyle\s+[^\n]+/g, '')
+      .replace(/^flowchart/, 'graph')
+      // Remove any styles that might interfere with hand-drawn style
+      .replace(/class=""[^""]*""/g, '')
+      .replace(/fill=""[^""]*""/g, '')
+      .replace(/stroke=""[^""]*""/g, '')
+
+    // Ensure hand-drawn style charts always start with graph
+    if (!finalCode.startsWith('graph') && !finalCode.startsWith('flowchart'))
+      finalCode = `graph TD\n${finalCode}`
+  }
+
+  return finalCode
+}
+
+/**
+ * Converts SVG to base64 string for image rendering
+ */
+export function svgToBase64(svgGraph: string): Promise<string> {
+  if (!svgGraph)
+    return Promise.resolve('')
+
+  try {
+    // Ensure SVG has correct XML declaration
+    if (!svgGraph.includes('<?xml'))
+      svgGraph = `<?xml version=""1.0"" encoding=""UTF-8""?>${svgGraph}`
+
+    const blob = new Blob([new TextEncoder().encode(svgGraph)], { type: 'image/svg+xml;charset=utf-8' })
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+  catch (error) {
+    console.error('Error converting SVG to base64:', error)
+    return Promise.resolve('')
+  }
+}
+
+/**
+ * Processes SVG for theme styling
+ */
+export function processSvgForTheme(
+  svg: string,
+  isDark: boolean,
+  isHandDrawn: boolean,
+  themes: {
+    light: any
+    dark: any
+  },
+): string {
+  let processedSvg = svg
+
+  if (isDark) {
+    processedSvg = processedSvg
+      .replace(/style=""fill: ?#000000""/g, 'style=""fill: #e2e8f0""')
+      .replace(/style=""stroke: ?#000000""/g, 'style=""stroke: #94a3b8""')
+      .replace(/<rect [^>]*fill=""#ffffff""/g, '<rect $& fill=""#1e293b""')
+
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.dark.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.dark.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      let i = 0
+      themes.dark.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.dark.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.dark.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+    }
+  }
+  else {
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.light.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.light.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      themes.light.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        let i = 0
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.light.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.light.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.light.connectionColor}""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.light.connectionColor}""`)
+    }
+  }
+
+  return processedSvg
+}
+
+/**
+ * Checks if mermaid code is complete and valid
+ */
+export function isMermaidCodeComplete(code: string): boolean {
+  if (!code || code.trim().length === 0)
+    return false
+
+  try {
+    const trimmedCode = code.trim()
+
+    // Special handling for gantt charts
+    if (trimmedCode.startsWith('gantt')) {
+      // For gantt charts, check if it has at least a title and one task
+      const lines = trimmedCode.split('\n').filter(line => line.trim().length > 0)
+      return lines.length >= 3
+    }
+
+    // Check for basic syntax structure
+    const hasValidStart = /^(graph|flowchart|sequenceDiagram|classDiagram|classDef|class|stateDiagram|gantt|pie|er|journey|requirementDiagram)/.test(trimmedCode)
+
+    // Check for balanced brackets and parentheses
+    const isBalanced = (() => {
+      const stack = []
+      const pairs = { '{': '}', '[': ']', '(': ')' }
+
+      for (const char of trimmedCode) {
+        if (char in pairs) {
+          stack.push(char)
+        }
+        else if (Object.values(pairs).includes(char)) {
+          const last = stack.pop()
+          if (pairs[last as keyof typeof pairs] !== char)
+            return false
+        }
+      }
+
+      return stack.length === 0
+    })()
+
+    // Check for common syntax errors
+    const hasNoSyntaxErrors = !trimmedCode.includes('undefined')
+                           && !trimmedCode.includes('[object Object]')
+                           && trimmedCode.split('\n').every(line =>
+                             !(line.includes('-->') && !line.match(/\S+\s*-->\s*\S+/)))
+
+    return hasValidStart && isBalanced && hasNoSyntaxErrors
+  }
+  catch (error) {
+    console.debug('Mermaid code validation error:', error)
+    return false
+  }
+}
+
+/**
+ * Helper to wait for DOM element with retry mechanism
+ */
+export function waitForDOMElement(callback: () => Promise<any>, maxAttempts = 3, delay = 100): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let attempts = 0
+    const tryRender = async () => {
+      try {
+        resolve(await callback())
+      }
+      catch (error) {
+        attempts++
+        if (attempts < maxAttempts)
+          setTimeout(tryRender, delay)
+        else
+          reject(error)
+      }
+    }
+    tryRender()
+  })
+}"
+
+LINK NUMBER 218
+Not enough lines
+
+LINK NUMBER 219
+Error fetching diff
+
+LINK NUMBER 220
+Error fetching diff
+
+LINK NUMBER 221
+Error fetching diff
+
+LINK NUMBER 222
+
+File path: data/TeamData.ts
+"    subcoms: [
+      {
+        icons: [faDove],
+        name: ""Charity"",
+        description: `The Charity portfolio seeks to create awareness, raise funds and drive social change for charities. The committee also compliments the Social portfolio in hosting fun events for a great cause.`,
+        members: [
+          ""Bhavesh Nain"",
+          ""Catherine Lee"",
+          ""Elisha Petelo"",
+          ""Jonathon Adji"",
+          ""Justin Nguyen"",
+          ""Trent Song"",
+        ],
+      },
+      {
+        icons: [faClipboard],
+        name: ""HR"",
+        description: `The HR portfolio is committed to strengthening teamwork and cross-portfolio communication within the society. They are responsible for organizing internal events, to help shape our culture at Co-op Soc.`,
+        members: [
+          ""Bea Pelayo"",
+          ""Erika Mori"",
+          ""Jessica Su"",
+          ""Nathan Ha"",
+          ""Nathan Yang"",
+          ""Piraveen Sivachchandran"",
+        ],
+      },
+      {
+        icons: [faDesktop],
+        name: ""IT"",
+        description: `The IT portfolio forms the technical backbone for the society. It oversees the development of internal tools and manages the Co-op Soc website; a hub for existing and prospective scholars, hosting blog posts and event information, as well as a merchandise store and an executive nomination/voting system.`,
+        members: [
+          ""Angie Counsell"",
+          ""Corinne Zhou"",
+          ""Matej Groombridge"",
+          ""Max Burykin"",
+          ""Tate Mcallum"",
+        ],
+      },
+      {
+        icons: [faBullhorn],
+        name: ""Marketing"",
+        description: `The Marketing portfolio focuses on creating continued engagement with our Co-op Society Facebook platform. Via the creation of digital marketing content, all students are encouraged to participate in fulfilling social events.`,
+        members: [
+          ""Angelo Varghese Paul"",
+          ""Ben Chau"",
+          ""David Lin"",
+          ""Fynn Hopkins"",
+          ""Tate Dee"",
+        ],
+      },
+      {
+        icons: [faEdit],
+        name: ""Publications"",
+        description: `The Publications portfolio is responsible for continuing to grow the society's online presence and keeping scholars up to date, focusing on the blog posts for the Co-op Soc website and the Chicken Coop podcast.`,
+        members: [""Niamh G"", ""Oliver N"", ""Oscar W"", ""Rashid Abuzarov""],
+      },
+      {
+        icons: [faUserFriends],
+        name: ""Social"",
+        description: `The Social portfolio is responsible for organising our social calendar, including planning, developing and executing a core suite of events. They ensure all members are given the opportunity to be a part of this vibrant community, through the creation and maintenance of social groups.`,
+        members: [
+          ""Amudha Bharathi"",
+          ""Ariana Chan"",
+          ""Emma Xiang"",
+          ""Judy Huang"",
+          ""Kai Hampson"",
+          ""Tom Pike"",
+        ],
+      },
+    ],"
+
+LINK NUMBER 223
+Not enough lines
+
+LINK NUMBER 224
+Not enough lines
+
+LINK NUMBER 225
+
+File path: tests/common/test_behav.py
+"    expected_insertions = 4
+    assert len(after) - len(before) == expected_insertions, (
+        f""PositionIntervalMap failed to insert the expected number of entries. ""
+        f""Expected {expected_insertions}, but got {len(after) - len(before)}.""
+    )"
+
+LINK NUMBER 226
+Error fetching diff
+
+LINK NUMBER 227
+Error fetching diff
+
+LINK NUMBER 228
+Error fetching diff
+
+LINK NUMBER 229
+
+File path: app/components/index.ts
+"import { OpenInNewIcon } from ""@databiosphere/findable-ui/lib/components/common/CustomIcon/components/OpenInNewIcon/openInNewIcon"";
+import { ElementType } from ""react"";
+import { Label, Text } from ""./labelIconMenuItem.styles"";
+
+export interface LabelIconMenuItemProps {
+  Icon?: ElementType;
+  iconFontSize?: string;
+  label: string;
+}
+
+export const LabelIconMenuItem = ({
+  Icon = OpenInNewIcon,
+  iconFontSize = ""xsmall"",
+  label,
+}: LabelIconMenuItemProps): JSX.Element => {
+  return (
+    <Label>
+      <Text>{label}</Text>
+      <Icon color=""inkLight"" fontSize={iconFontSize} />
+    </Label>
+  );
+};"
+
+LINK NUMBER 230
+Not enough lines
+
+LINK NUMBER 231
+Not enough lines
+
+LINK NUMBER 232
+
+File path: langchain_ocr_lib/src/langchain_ocr_lib/impl/settings/ollama_chat_settings.py
+"
+---
+
+## Integration: `langchain_ocr`
+
+This FastAPI layer is a thin wrapper around the core [`langchain_ocr_lib`](https://github.com/a-klos/langchain-ocr/tree/28205adddc252a29901a98079c3703d27ea80a46/langchain_ocr_lib) Python package.
+
+Any updates to OCR logic, file handling, or model configuration happen in the library, not here."
+
+LINK NUMBER 233
+Error fetching diff
+
+LINK NUMBER 234
+Error fetching diff
+
+LINK NUMBER 235
+Error fetching diff
+
+LINK NUMBER 236
+
+File path: vite.config.ts
+"{
+  ""extends"": ""./tsconfig.base.json"",
+  ""compilerOptions"": {
+    ""tsBuildInfoFile"": ""./node_modules/.tmp/tsconfig.worker.tsbuildinfo"",
+    ""types"": [
+      ""vite/client"",
+      ""@cloudflare/workers-types"",
+      ""./worker-configuration.d.ts"",
+      ""@cloudflare/vitest-pool-workers""
+    ],
+    ""paths"": {
+      ""#api/*"": [""./api/*""]
+    }
+  },
+  ""include"": [""scripts"", ""worker/**/*"", ""api"", ""tests/**/*"", ""types""]
+}"
+
+LINK NUMBER 237
+
+File path: vulnz/src/main/java/io/github/jeremylong/vulnz/cli/cache/CacheProperties.java
+"    /**
+     * The cache property indicating the cache directory.
+     */
+    private Properties properties = new Properties();
+    /**
+     * The cache directory.
+     */"
+
+LINK NUMBER 238
+Not enough lines
+
+LINK NUMBER 239
+Not enough lines
+
+LINK NUMBER 240
+Error fetching diff
+
+LINK NUMBER 241
+Error fetching diff
+
+LINK NUMBER 242
+Error fetching diff
+
+LINK NUMBER 243
+
+File path: examples/src/llm/parameters-structured-output.ts
+"import { ILlmApplication, ILlmFunction } from ""@samchon/openapi"";
+import typia, { tags } from ""typia"";
+
+const app: ILlmApplication<""chatgpt""> = typia.llm.application<
+  BbsArticleController,
+  ""chatgpt""
+>();
+const func: ILlmFunction<""chatgpt""> | undefined = app.functions.find(
+  (func) => func.name === ""create"",
+);
+console.log(func?.description);
+
+interface BbsArticleController {
+  /**
+   * Create a new article.
+   *
+   * Writes a new article and archives it into the DB.
+   *
+   * @param props Properties of create function
+   * @returns Newly created article
+   */
+  create(props: {
+    /**
+     * Information of the article to create
+     */
+    input: IBbsArticle.ICreate;
+  }): Promise<IBbsArticle>;
+
+  /**
+   * Update an article.
+   *
+   * Updates an article with new content.
+   *
+   * @param props Properties of update function
+   * @param input New content to update
+   */
+  update(props: {
+    /**
+     * Target article's {@link IBbsArticle.id}.
+     */
+    id: string & tags.Format<""uuid"">;
+
+    /**
+     * New content to update.
+     */
+    input: IBbsArticle.IUpdate;
+  }): Promise<void>;
+
+  /**
+   * Erase an article.
+   *
+   * Erases an article from the DB.
+   *
+   * @param props Properties of erase function
+   */
+  erase(props: {
+    /**
+     * Target article's {@link IBbsArticle.id}.
+     */
+    id: string & tags.Format<""uuid"">;
+  }): Promise<void>;
+}
+
+/**
+ * Article entity.
+ *
+ * `IBbsArticle` is an entity representing an article in the BBS (Bulletin Board System).
+ */
+interface IBbsArticle extends IBbsArticle.ICreate {
+  /**
+   * Primary Key.
+   */
+  id: string & tags.Format<""uuid"">;
+
+  /**
+   * Creation time of the article.
+   */
+  created_at: string & tags.Format<""date-time"">;
+
+  /**
+   * Last updated time of the article.
+   */
+  updated_at: string & tags.Format<""date-time"">;
+}
+namespace IBbsArticle {
+  /**
+   * Information of the article to create.
+   */
+  export interface ICreate {
+    /**
+     * Title of the article.
+     *
+     * Representative title of the article.
+     */
+    title: string;
+
+    /**
+     * Content body.
+     *
+     * Content body of the article written in the markdown format.
+     */
+    body: string;
+
+    /**
+     * Thumbnail image URI.
+     *
+     * Thumbnail image URI which can represent the article.
+     *
+     * If configured as `null`, it means that no thumbnail image in the article.
+     */
+    thumbnail:
+      | null
+      | (string & tags.Format<""uri""> & tags.ContentMediaType<""image/*"">);
+  }
+
+  /**
+   * Information of the article to update.
+   *
+   * Only the filled properties will be updated.
+   */
+  export type IUpdate = Partial<ICreate>;
+}"
+
+LINK NUMBER 244
+Not enough lines
+
+LINK NUMBER 245
+
+File path: src/shared/ui/link/index.ts
+"import { Container } from '@/shared/ui/container'
+import { Link } from '@/shared/ui/link'
+import { Section } from '@/shared/ui/section'
+import { NextPage } from 'next'
+
+export const NotFound: NextPage = () => (
+    <Container layout=""wide"" className=""pt-17 sm:pt-47 pb-14 sm:pb-24"">
+        <Section
+            title=""404 — page fell off-chain""
+            subTitle={
+                <>
+                    Our over‑caffeinated intern tried to stake this URL and, well… it got slashed. Hop back to the <Link href=""/"">homepage</Link> to learn about
+                    Solana Attestation Service, or wander footer links.
+                </>
+            }
+        />
+    </Container>
+)"
+
+LINK NUMBER 246
+
+File path: app.go
+"	// metricsPort is the port for the metrics server.
+	metricsPort = 9090
+
+	// healthPort is the port for the health server.
+	healthPort = 9091"
+
+LINK NUMBER 247
+Error fetching diff
+
+LINK NUMBER 248
+Error fetching diff
+
+LINK NUMBER 249
+Error fetching diff
+
+LINK NUMBER 250
+Not enough lines
+
+LINK NUMBER 251
+Not enough lines
+
+LINK NUMBER 252
+Not enough lines
+
+LINK NUMBER 253
+Not enough lines
+
+LINK NUMBER 254
+Error fetching diff
+
+LINK NUMBER 255
+Error fetching diff
+
+LINK NUMBER 256
+Error fetching diff
+
+LINK NUMBER 257
+
+File path: magefiles/linting.go
+"		fmt.Printf(`[INFO] API spec linting results:
+Usability: %d
+Security: %d
+Robustness: %d
+Evolution: %d
+Overall: %d
+`+""\n"",
+			resp.ImpactScore.CategorizedSummary.Usability,
+			resp.ImpactScore.CategorizedSummary.Security,
+			resp.ImpactScore.CategorizedSummary.Robustness,
+			resp.ImpactScore.CategorizedSummary.Evolution,
+			resp.ImpactScore.CategorizedSummary.Overall,
+		)
+
+		fmt.Println(""[INFO] API spec linting passed for"", spec)
+		fmt.Println(""[DEBUG] Removing report file..."")"
+
+LINK NUMBER 258
+Not enough lines
+
+LINK NUMBER 259
+Not enough lines
+
+LINK NUMBER 260
+
+File path: repository/models.go
+"package repository
+
+import (
+	""gorm.io/gorm""
+)
+
+type DonationRequestRepository struct {
+	db                 *gorm.DB
+	userRepository     *UserRepository
+	donationRepository *DonationRepository
+}
+
+var donationRequestRepository *DonationRequestRepository
+
+func NewDonationRequestRepository(db *gorm.DB, userRepository *UserRepository, donationRepository *DonationRepository) *DonationRequestRepository {
+	if donationRequestRepository == nil {
+		donationRequestRepository = &DonationRequestRepository{
+			db:                 db,
+			userRepository:     userRepository,
+			donationRepository: donationRepository,
+		}
+	}
+
+	return donationRequestRepository
+}
+
+func (r *DonationRequestRepository) CreateDonationRequest(requesterID uint, mealIDs []uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		request := DonationRequest{
+			RequesterID: requesterID,
+			Status:      ""pending"",
+		}
+
+		if err := tx.Create(&request).Error; err != nil {
+			return err
+		}
+
+		for _, mealID := range mealIDs {
+			preference := DonationRequestMeal{
+				DonationRequestID: request.ID,
+				MealID:            mealID,
+			}
+
+			if err := tx.Create(&preference).Error; err != nil {
+				return err
+			}
+		}
+
+		return r.CheckAndFulfillDonationRequests()
+	})
+}
+
+func (r *DonationRequestRepository) GetDonationRequestsByStatus(status string) ([]DonationRequest, error) {
+	var requests []DonationRequest
+
+	result := r.db.Preload(""Requester"").
+		Where(""status = ?"", status).
+		Order(""created_at ASC"").
+		Find(&requests)
+
+	return requests, result.Error
+}
+
+func (r *DonationRequestRepository) UpdateDonationRequestStatus(requestID uint, status string, donationID *uint) error {
+	updates := map[string]interface{}{
+		""status"": status,
+	}
+
+	if donationID != nil {
+		updates[""donation_id""] = donationID
+	}
+
+	result := r.db.Model(&DonationRequest{}).
+		Where(""id = ?"", requestID).
+		Updates(updates)
+
+	return result.Error
+}
+
+func (r *DonationRequestRepository) GetDonationRequestsByRequesterName(requesterName string, date string) ([]DonationRequest, error) {
+	var user User
+	if err := r.db.Where(""name = ?"", requesterName).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	var requests []DonationRequest
+	result := r.db.Joins(""Requester"").Joins(""Donation"").Joins(""Donation.Donor"").Joins(""Donation.Meal"").
+		Where(""requester_id = ? AND status = 'pending' AND DATE(donation_requests.created_at) = DATE(?) "", user.ID, date).
+		Order(""created_at DESC"").
+		Find(&requests)
+
+	return requests, result.Error
+}
+
+func (r *DonationRequestRepository) GetDonationRequestById(id uint) (DonationRequest, error) {
+	var request DonationRequest
+	result := r.db.Preload(""Requester"").Preload(""Donation"").Preload(""Donation.Donor"").Preload(""Donation.Meal"").
+		First(&request, id)
+
+	return request, result.Error
+}
+
+func (r *DonationRequestRepository) GetDonationRequestMealPreferences(requestID uint) ([]Meal, error) {
+	var meals []Meal
+
+	result := r.db.Table(""meals"").
+		Joins(""JOIN donation_request_meals ON meals.id = donation_request_meals.meal_id"").
+		Where(""donation_request_meals.donation_request_id = ?"", requestID).
+		Find(&meals)
+
+	return meals, result.Error
+}
+
+func (r *DonationRequestRepository) CheckAndFulfillDonationRequests() error {
+
+	pendingRequests, err := r.GetDonationRequestsByStatus(""pending"")
+	if err != nil {
+		return err
+	}
+
+	for _, request := range pendingRequests {
+		preferredMeals, err := r.GetDonationRequestMealPreferences(request.ID)
+		if err != nil || len(preferredMeals) == 0 {
+			continue
+		}
+
+		var preferredMealIDs []uint
+		for _, meal := range preferredMeals {
+			preferredMealIDs = append(preferredMealIDs, meal.ID)
+		}
+
+		var mealDate string
+		if err := r.db.Model(&Meal{}).Where(""id = ?"", preferredMealIDs[0]).Select(""date"").Scan(&mealDate).Error; err != nil {
+			continue
+		}
+
+		unclaimedDonations, err := r.donationRepository.GetUnclaimedDonationsByDate(mealDate)
+		if err != nil || len(unclaimedDonations) == 0 {
+			continue
+		}
+
+		var matchingDonation *Donation
+		for _, donation := range unclaimedDonations {
+			for _, preferredMealID := range preferredMealIDs {
+				if donation.MealID == preferredMealID {
+					matchingDonation = &donation
+					break
+				}
+			}
+			if matchingDonation != nil {
+				break
+			}
+		}
+
+		if matchingDonation == nil {
+			continue
+		}
+
+		err = r.db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Model(&Donation{}).
+				Where(""id = ?"", matchingDonation.ID).
+				Update(""recipient_id"", request.RequesterID).Error; err != nil {
+				return err
+			}
+
+			if err := tx.Model(&DonationRequest{}).
+				Where(""id = ?"", request.ID).
+				Updates(map[string]interface{}{
+					""status"":      ""fulfilled"",
+					""donation_id"": matchingDonation.ID,
+				}).Error; err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			continue
+		}
+	}
+
+	return nil
+}"
+
+LINK NUMBER 261
+Error fetching diff
+
+LINK NUMBER 262
+Error fetching diff
+
+LINK NUMBER 263
+Error fetching diff
+
+LINK NUMBER 264
+
+File path: dotnet/dex-agent/GitHubModels/GitHubFilterActivity.cs
+"﻿using AdaptiveCards;
+using Microsoft.Bot.Schema;
+using Newtonsoft.Json.Linq;
+using DexAgent.GitHubModels;
+
+namespace DexAgent
+{
+    /// <summary>
+    /// Creates the adaptive cards for the GitHub pull requests.
+    /// </summary>
+    public class GitHubCards
+    {
+        /// <summary>
+        /// Creates the adaptive card for the ""ListPRs"" plugin
+        /// </summary>
+        /// <param name=""title"">The title of the card</param>
+        /// <param name=""pullRequests"">The list of pull requests</param>
+        /// <param name=""allLabels"">All the labels for filtering</param>
+        /// <param name=""allAssignees"">All the assignees for filtering</param>
+        /// <param name=""allAuthors"">All the authors for filtering</param>
+        /// <returns></returns>
+        public static AdaptiveCard CreateListPRsAdaptiveCard(string title, IList<GitHubPR> pullRequests, HashSet<string> allLabels, HashSet<string> allAssignees, HashSet<string> allAuthors)
+        {
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 5))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""📄 {title}"",
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Large,
+                        Color = AdaptiveTextColor.Accent,
+                    },
+                }
+            };
+
+            var prListContainer = new AdaptiveContainer
+            {
+                Id = ""prContainer"",
+                Items = new List<AdaptiveElement>()
+            };
+
+            if (pullRequests == null || pullRequests.Count == 0)
+            {
+                prListContainer.Items.Add(new AdaptiveTextBlock
+                {
+                    Text = ""No pull requests found 🚫"",
+                    Wrap = true,
+                });
+            }
+            else
+            {
+                foreach (var pr in pullRequests)
+                {
+                    var prItemContainer = CreatePRItemContainer(pr);
+                    prListContainer.Items.Add(prItemContainer);
+                }
+            }
+
+            card.Body.Add(prListContainer);
+
+            if (pullRequests!.Count > 0)
+            {
+                var filters = new AdaptiveContainer
+                {
+                    Items = new List<AdaptiveElement>
+                    {
+                        new AdaptiveTextBlock
+                        {
+                            Text = ""🔍 Filters"",
+                            Weight = AdaptiveTextWeight.Bolder
+                        },
+                        new AdaptiveChoiceSetInput
+                        {
+                            Id = ""labelFilter"",
+                            Style = AdaptiveChoiceInputStyle.Compact,
+                            IsMultiSelect = true,
+                            Label = ""Labels"",
+                            Choices = allLabels.Select(label => new AdaptiveChoice
+                            {
+                                Title = label,
+                                Value = label
+                            }).ToList()
+                        },
+                        new AdaptiveChoiceSetInput
+                        {
+                            Id = ""assigneeFilter"",
+                            Style = AdaptiveChoiceInputStyle.Compact,
+                            IsMultiSelect = true,
+                            Label = ""Assignees"",
+                            Choices = allAssignees.Select(assignee => new AdaptiveChoice
+                            {
+                                Title = assignee,
+                                Value = assignee
+                            }).ToList()
+                        },
+                        new AdaptiveChoiceSetInput
+                        {
+                            Id = ""authorFilter"",
+                            Style = AdaptiveChoiceInputStyle.Compact,
+                            IsMultiSelect = true,
+                            Label = ""Authors"",
+                            Choices = allAuthors.Select(author => new AdaptiveChoice
+                            {
+                                Title = author,
+                                Value = author
+                            }).ToList()
+                        },
+                        new AdaptiveActionSet
+                        {
+                            Actions = new List<AdaptiveAction>
+                            {
+                                new AdaptiveSubmitAction
+                                {
+                                    Title = ""Apply Filters"",
+                                    Data = new Dictionary<string, object>
+                                    {
+                                        { ""verb"", ""githubFilters"" },
+                                        { ""pullRequests"", pullRequests }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                card.Body.Add(filters);
+            }
+            return card;
+        }
+
+        /// <summary>
+        /// Creates the adaptive card for the ""FilterPRs"" plugin
+        /// </summary>
+        /// <param name=""title"">Title of the card</param>
+        /// <param name=""pullRequests"">The list of pull requests</param>
+        /// <param name=""selectedLabels"">The labels used to filter</param>
+        /// <param name=""selectedAssignees"">The assignees used to filter</param>
+        /// <param name=""selectedAuthors"">The authors used to filter</param>
+        /// <returns></returns>
+        public static AdaptiveCard CreateFilterPRsAdaptiveCard(string title, IList<GitHubPR> pullRequests, string[] selectedLabels, string[] selectedAssignees, string[] selectedAuthors)
+        {
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 5))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                    new AdaptiveTextBlock
+                    {
+                        Text = title,
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Large
+                    },
+                }
+            };
+
+            var prListContainer = new AdaptiveContainer
+            {
+                Id = ""prContainer"",
+                Items = new List<AdaptiveElement>()
+            };
+
+            if (pullRequests == null || pullRequests.Count == 0)
+            {
+                prListContainer.Items.Add(new AdaptiveTextBlock
+                {
+                    Text = ""No pull requests found"",
+                    Wrap = true
+                });
+            }
+            else
+            {
+                foreach (var pr in pullRequests)
+                {
+                    var prItemContainer = CreatePRItemContainer(pr);
+                    prListContainer.Items.Add(prItemContainer);
+                }
+            }
+
+            card.Body.Add(prListContainer);
+
+            var combinedFilters = selectedLabels.Concat(selectedAssignees).Concat(selectedAuthors).ToArray();
+
+            if (combinedFilters.Length > 0)
+            {
+                var filterContainer = new AdaptiveContainer
+                {
+                    Items = new List<AdaptiveElement>
+                    {
+                        new AdaptiveTextBlock
+                        {
+                            Text = ""Fiters applied:"",
+                            Weight = AdaptiveTextWeight.Bolder,
+                            Size = AdaptiveTextSize.Medium,
+                        }
+                    }
+                };
+
+                foreach (var filter in combinedFilters)
+                {
+                    filterContainer.Items.Add(new AdaptiveTextBlock
+                    {
+                        Text = filter,
+                        Color = AdaptiveTextColor.Accent,
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Small,
+                        Wrap = true,
+                        Spacing = AdaptiveSpacing.Small
+                    });
+                }
+
+                card.Body.Add(filterContainer);
+            }
+
+            return card;
+        }
+
+        private static AdaptiveContainer CreatePRItemContainer(GitHubPR pr)
+        {
+            var prItemContainer = new AdaptiveContainer
+            {
+                Spacing = AdaptiveSpacing.Medium,
+                Style = AdaptiveContainerStyle.Accent,
+                Items = new List<AdaptiveElement>
+                {
+                    new AdaptiveColumnSet
+                    {
+                        Columns = new List<AdaptiveColumn>
+                        {
+                            new AdaptiveColumn
+                            {
+                                Width = AdaptiveColumnWidth.Stretch,
+                                Items = new List<AdaptiveElement>
+                                {
+                                    new AdaptiveTextBlock
+                                    {
+                                        Text = $""#{pr.Number}: {pr.Title}"",
+                                        Weight = AdaptiveTextWeight.Bolder,
+                                        Wrap = true,
+                                        Size = AdaptiveTextSize.Small,
+                                        Color = AdaptiveTextColor.Accent
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""**Author**: {pr.User.Login ?? ""Unknown""}"",
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""**Created**: {pr.CreatedAt:MMM dd, yyyy}"",
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""**Status**: {(pr.State == ""open"" ? ""🟢 Open"" : ""🔴 Closed"")}"",
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None
+                    }
+                }
+            };
+
+            if (pr.Labels != null && pr.Labels.Count > 0)
+            {
+                var labelTexts = pr.Labels.Select(l => l.Name).ToList();
+                prItemContainer.Items.Add(new AdaptiveTextBlock
+                {
+                    Text = $""**Labels**: {string.Join("", "", labelTexts)}"",
+                    IsSubtle = true,
+                    Spacing = AdaptiveSpacing.None,
+                    Wrap = true,
+                    Italic = true,
+                });
+            }
+
+            prItemContainer.Items.Add(new AdaptiveActionSet
+            {
+                Actions = new List<AdaptiveAction>
+                        {
+                            new AdaptiveToggleVisibilityAction
+                            {
+                                Title = ""Show/Hide Description"",
+                                TargetElements = new List<AdaptiveTargetElement>
+                                {
+                                    new AdaptiveTargetElement
+                                    {
+                                        ElementId = $""description-{pr.Number}""
+                                    }
+                                }
+                            }
+                        }
+            });
+
+            prItemContainer.Items.Add(
+                    new AdaptiveTextBlock
+                    {
+                        Id = $""description-{pr.Number}"",
+                        Text = $""Description: {pr.Body}"",
+                        Wrap = true,
+                        IsSubtle = true,
+                        Spacing = AdaptiveSpacing.None,
+                        IsVisible = false
+                    });
+
+            if (!string.IsNullOrEmpty(pr.HtmlUrl))
+            {
+                prItemContainer.Items.Add(new AdaptiveActionSet
+                {
+                    Actions = new List<AdaptiveAction>
+                    {
+                        new AdaptiveOpenUrlAction
+                        {
+                            Title = ""View on GitHub"",
+                            Url = new Uri(pr.HtmlUrl)
+                        }
+                    }
+                });
+            }
+
+            return prItemContainer;
+        }
+
+        public static Attachment CreatePullRequestCard(JObject payload)
+        {
+            var pullRequest = payload[""pull_request""];
+            string assignee = pullRequest[""assignee""] != null ? pullRequest[""assignee""][""login""].ToString() : ""Unknown User"";
+            string prTitle = pullRequest[""title""].ToString();
+            string prUrl = pullRequest[""html_url""].ToString();
+            int prNumber = pullRequest[""number""].Value<int>();
+
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 2))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""👤 Assignee Request for PR #{prNumber}"",
+                        Weight = AdaptiveTextWeight.Bolder,
+                        Size = AdaptiveTextSize.Large,
+                        Color = AdaptiveTextColor.Accent
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""{prTitle}"",
+                        Wrap = true,
+                        Size = AdaptiveTextSize.Medium,
+                        Weight = AdaptiveTextWeight.Bolder,
+                    },
+                    new AdaptiveTextBlock
+                    {
+                        Text = $""{assignee} has been assigned this pull request."",
+                        Wrap = true,
+                        Size = AdaptiveTextSize.Medium,
+                        Spacing = AdaptiveSpacing.Medium
+                    }
+                },
+                Actions = new List<AdaptiveAction>
+                {
+                    new AdaptiveOpenUrlAction
+                    {
+                        Title = ""View on GitHub"",
+                        Url = new Uri(prUrl)
+                    }
+                }
+            };
+
+            return new Attachment
+            {
+                ContentType = AdaptiveCard.ContentType,
+                Content = card
+            };
+        }
+
+        public static Attachment CreatePullRequestStateCard(JObject payload)
+        {
+            var pullRequest = payload[""pull_request""];
+            string action = payload[""action""].ToString();
+            string prTitle = pullRequest[""title""].ToString();
+            string prUrl = pullRequest[""html_url""].ToString();
+            int prNumber = pullRequest[""number""].Value<int>();
+
+            var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 2))
+            {
+                Body = new List<AdaptiveElement>
+                {
+                     new AdaptiveTextBlock
+                            {
+                                Text = $""🔔 Status Update for PR #{prNumber}"",
+                                Weight = AdaptiveTextWeight.Bolder,
+                                Size = AdaptiveTextSize.Large,
+                                Color = AdaptiveTextColor.Accent
+                            },
+                            new AdaptiveTextBlock
+                            {
+                                Text = $""{prTitle}"",
+                                Wrap = true,
+                                Size = AdaptiveTextSize.Medium,
+                                Weight = AdaptiveTextWeight.Bolder,
+                            },
+                            new AdaptiveTextBlock
+                            {
+                                Text = $""PR is now {action}"",
+                                Wrap = true,
+                                Size = AdaptiveTextSize.Medium,
+                                Spacing = AdaptiveSpacing.Medium
+                            }
+                },
+                Actions = new List<AdaptiveAction>
+                {
+                    new AdaptiveOpenUrlAction
+                    {
+                        Title = ""View on GitHub"",
+                        Url = new Uri(prUrl)
+                    }
+                }
+            };
+
+            return new Attachment
+            {
+                ContentType = AdaptiveCard.ContentType,
+                Content = card
+            };
+        }
+    }
+}"
+
+LINK NUMBER 265
+
+File path: web/app/components/base/mermaid/utils.ts
+"
+/**
+ * Preprocesses mermaid code to fix common syntax issues
+ */
+export function preprocessMermaidCode(code: string): string {
+  if (!code || typeof code !== 'string')
+    return ''
+
+  // First check if this is a gantt chart
+  if (code.trim().startsWith('gantt')) {
+    // For gantt charts, we need to ensure each task is on its own line
+    // Split the code into lines and process each line separately
+    const lines = code.split('\n').map(line => line.trim())
+    return lines.join('\n')
+  }
+
+  return code
+    // Replace English colons with Chinese colons in section nodes to avoid parsing issues
+    .replace(/section\s+([^:]+):/g, (match, sectionName) => `section ${sectionName}：`)
+    // Fix common syntax issues
+    .replace(/fifopacket/g, 'rect')
+    // Ensure graph has direction
+    .replace(/^graph\s+((?:TB|BT|RL|LR)*)/, (match, direction) => {
+      return direction ? match : 'graph TD'
+    })
+    // Clean up empty lines and extra spaces
+    .trim()
+}
+
+/**
+ * Prepares mermaid code based on selected style
+ */
+export function prepareMermaidCode(code: string, style: 'classic' | 'handDrawn'): string {
+  let finalCode = preprocessMermaidCode(code)
+
+  // Special handling for gantt charts
+  if (finalCode.trim().startsWith('gantt')) {
+    // For gantt charts, preserve the structure exactly as is
+    return finalCode
+  }
+
+  if (style === 'handDrawn') {
+    finalCode = finalCode
+      // Remove style definitions that interfere with hand-drawn style
+      .replace(/style\s+[^\n]+/g, '')
+      .replace(/linkStyle\s+[^\n]+/g, '')
+      .replace(/^flowchart/, 'graph')
+      // Remove any styles that might interfere with hand-drawn style
+      .replace(/class=""[^""]*""/g, '')
+      .replace(/fill=""[^""]*""/g, '')
+      .replace(/stroke=""[^""]*""/g, '')
+
+    // Ensure hand-drawn style charts always start with graph
+    if (!finalCode.startsWith('graph') && !finalCode.startsWith('flowchart'))
+      finalCode = `graph TD\n${finalCode}`
+  }
+
+  return finalCode
+}
+
+/**
+ * Converts SVG to base64 string for image rendering
+ */
+export function svgToBase64(svgGraph: string): Promise<string> {
+  if (!svgGraph)
+    return Promise.resolve('')
+
+  try {
+    // Ensure SVG has correct XML declaration
+    if (!svgGraph.includes('<?xml'))
+      svgGraph = `<?xml version=""1.0"" encoding=""UTF-8""?>${svgGraph}`
+
+    const blob = new Blob([new TextEncoder().encode(svgGraph)], { type: 'image/svg+xml;charset=utf-8' })
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+  catch (error) {
+    console.error('Error converting SVG to base64:', error)
+    return Promise.resolve('')
+  }
+}
+
+/**
+ * Processes SVG for theme styling
+ */
+export function processSvgForTheme(
+  svg: string,
+  isDark: boolean,
+  isHandDrawn: boolean,
+  themes: {
+    light: any
+    dark: any
+  },
+): string {
+  let processedSvg = svg
+
+  if (isDark) {
+    processedSvg = processedSvg
+      .replace(/style=""fill: ?#000000""/g, 'style=""fill: #e2e8f0""')
+      .replace(/style=""stroke: ?#000000""/g, 'style=""stroke: #94a3b8""')
+      .replace(/<rect [^>]*fill=""#ffffff""/g, '<rect $& fill=""#1e293b""')
+
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.dark.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.dark.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      let i = 0
+      themes.dark.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.dark.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.dark.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+    }
+  }
+  else {
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.light.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.light.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      themes.light.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        let i = 0
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.light.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.light.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.light.connectionColor}""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.light.connectionColor}""`)
+    }
+  }
+
+  return processedSvg
+}
+
+/**
+ * Checks if mermaid code is complete and valid
+ */
+export function isMermaidCodeComplete(code: string): boolean {
+  if (!code || code.trim().length === 0)
+    return false
+
+  try {
+    const trimmedCode = code.trim()
+
+    // Special handling for gantt charts
+    if (trimmedCode.startsWith('gantt')) {
+      // For gantt charts, check if it has at least a title and one task
+      const lines = trimmedCode.split('\n').filter(line => line.trim().length > 0)
+      return lines.length >= 3
+    }
+
+    // Check for basic syntax structure
+    const hasValidStart = /^(graph|flowchart|sequenceDiagram|classDiagram|classDef|class|stateDiagram|gantt|pie|er|journey|requirementDiagram)/.test(trimmedCode)
+
+    // Check for balanced brackets and parentheses
+    const isBalanced = (() => {
+      const stack = []
+      const pairs = { '{': '}', '[': ']', '(': ')' }
+
+      for (const char of trimmedCode) {
+        if (char in pairs) {
+          stack.push(char)
+        }
+        else if (Object.values(pairs).includes(char)) {
+          const last = stack.pop()
+          if (pairs[last as keyof typeof pairs] !== char)
+            return false
+        }
+      }
+
+      return stack.length === 0
+    })()
+
+    // Check for common syntax errors
+    const hasNoSyntaxErrors = !trimmedCode.includes('undefined')
+                           && !trimmedCode.includes('[object Object]')
+                           && trimmedCode.split('\n').every(line =>
+                             !(line.includes('-->') && !line.match(/\S+\s*-->\s*\S+/)))
+
+    return hasValidStart && isBalanced && hasNoSyntaxErrors
+  }
+  catch (error) {
+    console.debug('Mermaid code validation error:', error)
+    return false
+  }
+}
+
+/**
+ * Helper to wait for DOM element with retry mechanism
+ */
+export function waitForDOMElement(callback: () => Promise<any>, maxAttempts = 3, delay = 100): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let attempts = 0
+    const tryRender = async () => {
+      try {
+        resolve(await callback())
+      }
+      catch (error) {
+        attempts++
+        if (attempts < maxAttempts)
+          setTimeout(tryRender, delay)
+        else
+          reject(error)
+      }
+    }
+    tryRender()
+  })
+}"
+
+LINK NUMBER 266
+Not enough lines
+
+LINK NUMBER 267
+Not enough lines
+
+LINK NUMBER 268
+Error fetching diff
+
+LINK NUMBER 269
+Error fetching diff
+
+LINK NUMBER 270
+Error fetching diff
+
+LINK NUMBER 271
+Not enough lines
+
+LINK NUMBER 272
+Not enough lines
+
+LINK NUMBER 273
+
+File path: go/controller/api/v1alpha1/autogenmodelconfig_types.go
+"// Model Configurations
+// This had to be created because the autogen_api.ModelInfo JSON tags are not
+// compatible with the kubernetes api.
+type ModelInfo struct {
+	// +optional
+	Vision bool `json:""vision""`
+	// +optional
+	FunctionCalling bool `json:""functionCalling""`
+	// +optional
+	JSONOutput bool `json:""jsonOutput""`
+	// +optional
+	Family string `json:""family""`
+	// +optional
+	StructuredOutput bool `json:""structuredOutput""`
+	// +optional
+	MultipleSystemMessages bool `json:""multipleSystemMessages""`
+}
+"
+
+LINK NUMBER 274
+Not enough lines
+
+LINK NUMBER 275
+Error fetching diff
+
+LINK NUMBER 276
+Error fetching diff
+
+LINK NUMBER 277
+Error fetching diff
+
+LINK NUMBER 278
+
+File path: PoC/AdvancedFeaturesDemo/app_11.js
+"//import stopwords from 'https://cdn.jsdelivr.net/gh/stdlib-js/datasets-stopwords-en@esm/index.mjs';
+
+const disallowedTags = ['script', 'style', 'noscript', 'textarea', 'button', 'aside'];
+const allowedTags = ['p', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+const disallowedInlineTags = ['a', 'button', 'label'];
+
+function isValidInlineElement(node) {
+  if (node.nodeType !== Node.ELEMENT_NODE) return false;
+  if (disallowedInlineTags.includes(node.tagName.toLowerCase())) return false;
+  const display = window.getComputedStyle(node).display;
+  return display.startsWith(""inline"");
+}
+
+function isAllParentsValid(node) {
+  while ((node = node.parentNode)) {
+    if (disallowedTags.includes(node.nodeName.toLowerCase())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function getValidParent(node) {
+  while ((node = node.parentNode)) {
+    if (!isValidInlineElement(node)) {
+      return node;
+    }
+  }
+  return document.body;
+}
+
+const walker = document.createTreeWalker(
+  document.body,
+  NodeFilter.SHOW_TEXT,
+  {
+    acceptNode(node) {
+      if (!isAllParentsValid(node)) return NodeFilter.FILTER_REJECT;
+      //if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  }
+);
+
+/* function highlightKeyword(keyword) {
+  const textNodes = [];
+  let node;
+  while((node = walker.nextNode())) {
+    textNodes.push(node);
+  }
+
+  keyword = keyword.trim();
+  const keywordParts = keyword.split(/\s+/);
+  keyword = keywordParts.join("" "");
+  const pattern = new RegExp(`${keyword}`, ""gi"");
+  let relatedTagsMap = [];
+  let virtualText = """";
+  textNodes.forEach((node, index) => {
+    const nodeStart = virtualText.length + (node.nodeValue.length - node.nodeValue.trimStart().length);
+    relatedTagsMap.push({
+      node: node,
+      start: nodeStart,
+      end: nodeStart + node.nodeValue.trim().length
+    }); 
+    virtualText += node.nodeValue;
+    const nextNode = textNodes[index + 1];
+    if (keywordParts.length > 1 && nextNode && getValidParent(node) === getValidParent(nextNode)) {
+      virtualText += "" "";
+    } else {
+      console.log(virtualText);
+      virtualText = virtualText.trim().split(/\s+/).join("" "");
+      const matches = [...virtualText.matchAll(pattern)].map((match) => ({
+        matchStart: match.index,
+        matchEnd: match.index + match[0].length
+      }));
+      console.log(matches);
+      if (matches.length > 0) {
+        if (relatedTagsMap.length > 1) {
+          console.log(relatedTagsMap);
+          relatedTagsMap.forEach(({ node, start, end }) => {
+            const validMatches = matches
+              .filter(({ matchStart, matchEnd }) => {
+                return (matchStart < end && matchEnd > start); // match overlaps this node
+              })
+              .map(({ matchStart, matchEnd }) => {
+                return {
+                  matchStart: Math.max(0, matchStart - start),
+                  matchEnd: Math.min(end - start, matchEnd - start)
+                };
+              });
+            highlightMatches(node, validMatches);
+          });
+        } else {
+          highlightMatches(node, matches);
+        }
+      }
+      virtualText = """";
+      relatedTagsMap = [];
+    }
+  });
+}
+
+function highlightMatches(node, matches) {
+  if (!matches || matches.length === 0 || !node.parentNode) return;
+
+  const text = node.nodeValue;
+  const parent = node.parentNode;
+  const fragment = document.createDocumentFragment();
+  let lastIndex = 0;
+
+  matches.forEach(({ matchStart, matchEnd }) => {
+    if (matchStart > lastIndex) {
+      const newTextNode = document.createTextNode(text.slice(lastIndex, matchStart));
+      fragment.appendChild(newTextNode);
+    }
+
+    const span = document.createElement(""span"");
+    span.style.backgroundColor = ""yellow"";
+    span.classList.add(""highlight-keyword"");
+    span.textContent = text.slice(matchStart, matchEnd);
+    fragment.appendChild(span);
+
+    lastIndex = matchEnd;
+  });
+
+  if (lastIndex < text.length) {
+    const newTextNode = document.createTextNode(text.slice(lastIndex));
+    fragment.appendChild(newTextNode);
+  }
+
+  parent.replaceChild(fragment, node);  
+} */
+
+/* function highlightKeyword(keyword) {
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    textNodes.push(node);
+  }
+
+  // Normalizza la keyword
+  keyword = keyword.trim().replace(/\s+/g, "" "");
+  const pattern = new RegExp(keyword, ""gi"");
+
+  // Costruisci testo virtuale e mappa
+  let fullText = """";
+  const map = []; // ogni elemento: { node, startIndex, endIndex }
+
+  textNodes.forEach((n) => {
+    const startIndex = fullText.length;
+    fullText += n.nodeValue;
+    const endIndex = fullText.length;
+    map.push({ node: n, startIndex, endIndex });
+  });
+
+  const matches = [...fullText.matchAll(pattern)];
+
+  for (const { index: matchStart } of matches) {
+    const matchEnd = matchStart + keyword.length;
+
+    // Trova i nodi che contengono questa porzione
+    for (const { node, startIndex, endIndex } of map) {
+      if (matchEnd <= startIndex) break;
+      if (matchStart >= endIndex) continue;
+
+      const localStart = Math.max(0, matchStart - startIndex);
+      const localEnd = Math.min(node.nodeValue.length, matchEnd - startIndex);
+
+      highlightInNode(node, localStart, localEnd);
+    }
+  }
+}
+
+function highlightInNode(node, start, end) {
+  const text = node.nodeValue;
+  const parent = node.parentNode;
+  if (!parent) return;
+
+  const fragment = document.createDocumentFragment();
+
+  if (start > 0) {
+    fragment.appendChild(document.createTextNode(text.slice(0, start)));
+  }
+
+  const span = document.createElement(""span"");
+  span.style.backgroundColor = ""yellow"";
+  span.className = ""highlight-keyword"";
+  span.textContent = text.slice(start, end);
+  fragment.appendChild(span);
+
+  if (end < text.length) {
+    fragment.appendChild(document.createTextNode(text.slice(end)));
+  }
+
+  parent.replaceChild(fragment, node);
+} */
+
+
+/* function highlightKeyword(keyword) {
+  const keywordParts = keyword.trim().split(/\s+/);
+  const normalizedKeyword = keywordParts.join("" "");
+  const pattern = new RegExp(normalizedKeyword, ""gi"");
+
+  const groupedNodes = [];
+  let currentGroup = [];
+  let currentParent = null;
+
+  let node;
+  while ((node = walker.nextNode())) {
+    const parent = getValidParent(node);
+    if (parent !== currentParent) {
+      if (currentGroup.length > 0) {
+        groupedNodes.push({ nodes: currentGroup, parent: currentParent });
+      }
+      currentGroup = [node];
+      currentParent = parent;
+    } else {
+      currentGroup.push(node);
+    }
+  }
+  if (currentGroup.length > 0) {
+    groupedNodes.push({ nodes: currentGroup, parent: currentParent });
+  }
+
+  groupedNodes.forEach(({ nodes }) => {
+    let virtualText = """";
+    const map = [];
+
+    nodes.forEach((n) => {
+      const start = virtualText.length;
+      virtualText += n.nodeValue;
+      const end = virtualText.length;
+      map.push({ node: n, start, end });
+    });
+
+    const matches = [...virtualText.matchAll(pattern)];
+
+    matches.forEach(({ index }) => {
+      const matchStart = index;
+      const matchEnd = matchStart + normalizedKeyword.length;
+
+      map.forEach(({ node, start, end }) => {
+        if (matchEnd <= start || matchStart >= end) return;
+
+        const localStart = Math.max(0, matchStart - start);
+        const localEnd = Math.min(node.nodeValue.length, matchEnd - start);
+        highlightInNode(node, localStart, localEnd);
+      });
+    });
+  });
+}
+
+function highlightInNode(node, start, end) {
+  if (start >= end) return;
+  const text = node.nodeValue;
+  const parent = node.parentNode;
+  if (!parent) return;
+
+  const fragment = document.createDocumentFragment();
+
+  if (start > 0) {
+    fragment.appendChild(document.createTextNode(text.slice(0, start)));
+  }
+
+  const span = document.createElement(""span"");
+  span.style.backgroundColor = ""yellow"";
+  span.classList.add(""highlight-keyword"");
+  span.textContent = text.slice(start, end);
+  fragment.appendChild(span);
+
+  if (end < text.length) {
+    fragment.appendChild(document.createTextNode(text.slice(end)));
+  }
+
+  parent.replaceChild(fragment, node);
+} */
+
+function highlightKeyword(keyword) {
+  const keywordParts = keyword.trim().split(/\s+/);
+  const flexiblePattern = keywordParts.join(""\\s+"");
+  const pattern = new RegExp(flexiblePattern, ""gi"");
+
+  const groupedNodes = [];
+  let currentGroup = [];
+  let currentParent = null;
+  let node;
+  walker.currentNode = walker.root;
+  while ((node = walker.nextNode())) {
+    const parent = getValidParent(node);
+    if (parent !== currentParent) {
+      if (currentGroup.length > 0) {
+        groupedNodes.push({ nodes: currentGroup, parent: currentParent });
+      }
+      currentGroup = [node];
+      currentParent = parent;
+    } else {
+      currentGroup.push(node);
+    }
+  }
+  if (currentGroup.length > 0) {
+    groupedNodes.push({ nodes: currentGroup, parent: currentParent });
+  }
+
+  groupedNodes.forEach(({ nodes }) => {
+    let virtualText = """";
+    const map = [];
+
+    nodes.forEach((n) => {
+      if (!n.nodeValue.trim()) {
+        console.log(n.nodeValue);
+        const text = n.nodeValue.replace(/\s+/, "" "");
+        virtualText += text;
+      } else {
+        const start = virtualText.length;
+        virtualText += n.nodeValue;
+        const end = virtualText.length;
+        map.push({ node: n, start, end });
+      }
+    });
+
+    const matches = [...virtualText.matchAll(pattern)];
+
+    map.forEach(({ node, start, end }) => {
+      const nodeMatches = matches
+        .filter((match) => {
+          const matchStart = match.index;
+          const matchEnd = matchStart + match[0].length;
+          return matchEnd > start && matchStart < end;
+        })
+        .map((match) => {
+          const matchStart = match.index;
+          const matchEnd = matchStart + match[0].length;
+          return {
+            matchStart: Math.max(0, matchStart - start),
+            matchEnd: Math.min(node.nodeValue.length, matchEnd - start)
+          };
+        });
+
+      if (nodeMatches.length > 0) {
+        highlightMatches(node, nodeMatches);
+      }
+    });
+  });
+}
+
+function highlightMatches(node, matches) {
+  const text = node.nodeValue;
+  const parent = node.parentNode;
+  if (!parent) return;
+
+  const fragment = document.createDocumentFragment();
+  let lastIndex = 0;
+
+  matches.sort((a, b) => a.matchStart - b.matchStart);
+
+  for (const { matchStart, matchEnd } of matches) {
+    if (matchStart > lastIndex) {
+      fragment.appendChild(document.createTextNode(text.slice(lastIndex, matchStart)));
+    }
+
+    const span = document.createElement(""span"");
+    span.classList.add(""highlight-keyword"");
+    span.style.backgroundColor = ""yellow"";
+    span.textContent = text.slice(matchStart, matchEnd);
+    fragment.appendChild(span);
+
+    lastIndex = matchEnd;
+  }
+
+  if (lastIndex < text.length) {
+    fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+
+  parent.replaceChild(fragment, node);
+}
+
+function countKeyword(keyword) {
+  // 1) ricostruisci virtualText e map
+  // 2) crea pattern e trova matches
+  let counts = {};
+  for (const match of virtualText.matchAll(pattern)) {
+    const matchStart = match.index;
+    const entry = map.find(({ start, end }) =>
+      matchStart >= start && matchStart < end
+    );
+    const tag = findContainerTag(entry.node);
+    counts[tag] = (counts[tag] || 0) + 1;
+  }
+  return counts;
+}
+
+function findTwoWordsKeyphrases() {
+  const groupedNodes = [];
+  let currentGroup = [];
+  let currentParent = null;
+  let node;
+  walker.currentNode = walker.root;
+  while ((node = walker.nextNode())) {
+    const parent = getValidParent(node);
+    if (parent !== currentParent) {
+      if (currentGroup.length > 0) {
+        groupedNodes.push({ nodes: currentGroup, parent: currentParent });
+      }
+      currentGroup = [node];
+      currentParent = parent;
+    } else {
+      currentGroup.push(node);
+    }
+  }
+  if (currentGroup.length > 0) {
+    groupedNodes.push({ nodes: currentGroup, parent: currentParent });
+  }
+
+  const twoWordsMap = new Map();
+  groupedNodes.forEach(({ nodes }) => {
+    let virtualText = """";
+
+    nodes.forEach((n) => {
+      if (!n.nodeValue.trim()) {
+        const text = n.nodeValue.replace(/\s+/, "" "");
+        virtualText += text;
+      } else {
+        virtualText += n.nodeValue;
+      }
+    });
+
+    const pattern = /[\p{L}\p{N}]+(?:['’\-_.][\p{L}\p{N}]+)*['’]?/gu;
+    const matches = [...virtualText.toLowerCase().matchAll(pattern)].map((match) => {
+      return match[0]
+    });
+    //const filteredWords = [...sw.removeStopwords(matches, [...sw.eng])];
+    //const stopWords = stopwords();
+    matches.forEach((word, index) => {
+      const nextWord = matches[index + 1];
+      if (word && nextWord && [...sw.removeStopwords([word, nextWord], [...sw.eng])].length === 2) {
+        const words = word + "" "" + nextWord;
+        if (!twoWordsMap.has(words)) {
+          twoWordsMap.set(words, 1);
+        } else {
+          twoWordsMap.set(words, twoWordsMap.get(words) + 1);
+        }
+      }
+    });
+  });
+  //const stopWords = stopwords();
+  //const filteredWords = words.filter(word => !stopWords.includes(word));
+  console.log(twoWordsMap);
+  const relevantWords = [...twoWordsMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+  console.log(relevantWords);
+}
+window.findTwoWordsKeyphrases = findTwoWordsKeyphrases;
+
+window.addEventListener(""load"", function() {
+  findTwoWordsKeyphrases();
+});"
+
+LINK NUMBER 279
+Not enough lines
+
+LINK NUMBER 280
+Not enough lines
+
+LINK NUMBER 281
+Not enough lines
+
+LINK NUMBER 282
+Error fetching diff
+
+LINK NUMBER 283
+Error fetching diff
+
+LINK NUMBER 284
+Error fetching diff
+
+LINK NUMBER 285
+Not enough lines
+
+LINK NUMBER 286
+Not enough lines
+
+LINK NUMBER 287
+
+File path: web/app/components/base/mermaid/utils.ts
+"
+/**
+ * Preprocesses mermaid code to fix common syntax issues
+ */
+export function preprocessMermaidCode(code: string): string {
+  if (!code || typeof code !== 'string')
+    return ''
+
+  // First check if this is a gantt chart
+  if (code.trim().startsWith('gantt')) {
+    // For gantt charts, we need to ensure each task is on its own line
+    // Split the code into lines and process each line separately
+    const lines = code.split('\n').map(line => line.trim())
+    return lines.join('\n')
+  }
+
+  return code
+    // Replace English colons with Chinese colons in section nodes to avoid parsing issues
+    .replace(/section\s+([^:]+):/g, (match, sectionName) => `section ${sectionName}：`)
+    // Fix common syntax issues
+    .replace(/fifopacket/g, 'rect')
+    // Ensure graph has direction
+    .replace(/^graph\s+((?:TB|BT|RL|LR)*)/, (match, direction) => {
+      return direction ? match : 'graph TD'
+    })
+    // Clean up empty lines and extra spaces
+    .trim()
+}
+
+/**
+ * Prepares mermaid code based on selected style
+ */
+export function prepareMermaidCode(code: string, style: 'classic' | 'handDrawn'): string {
+  let finalCode = preprocessMermaidCode(code)
+
+  // Special handling for gantt charts
+  if (finalCode.trim().startsWith('gantt')) {
+    // For gantt charts, preserve the structure exactly as is
+    return finalCode
+  }
+
+  if (style === 'handDrawn') {
+    finalCode = finalCode
+      // Remove style definitions that interfere with hand-drawn style
+      .replace(/style\s+[^\n]+/g, '')
+      .replace(/linkStyle\s+[^\n]+/g, '')
+      .replace(/^flowchart/, 'graph')
+      // Remove any styles that might interfere with hand-drawn style
+      .replace(/class=""[^""]*""/g, '')
+      .replace(/fill=""[^""]*""/g, '')
+      .replace(/stroke=""[^""]*""/g, '')
+
+    // Ensure hand-drawn style charts always start with graph
+    if (!finalCode.startsWith('graph') && !finalCode.startsWith('flowchart'))
+      finalCode = `graph TD\n${finalCode}`
+  }
+
+  return finalCode
+}
+
+/**
+ * Converts SVG to base64 string for image rendering
+ */
+export function svgToBase64(svgGraph: string): Promise<string> {
+  if (!svgGraph)
+    return Promise.resolve('')
+
+  try {
+    // Ensure SVG has correct XML declaration
+    if (!svgGraph.includes('<?xml'))
+      svgGraph = `<?xml version=""1.0"" encoding=""UTF-8""?>${svgGraph}`
+
+    const blob = new Blob([new TextEncoder().encode(svgGraph)], { type: 'image/svg+xml;charset=utf-8' })
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+  catch (error) {
+    console.error('Error converting SVG to base64:', error)
+    return Promise.resolve('')
+  }
+}
+
+/**
+ * Processes SVG for theme styling
+ */
+export function processSvgForTheme(
+  svg: string,
+  isDark: boolean,
+  isHandDrawn: boolean,
+  themes: {
+    light: any
+    dark: any
+  },
+): string {
+  let processedSvg = svg
+
+  if (isDark) {
+    processedSvg = processedSvg
+      .replace(/style=""fill: ?#000000""/g, 'style=""fill: #e2e8f0""')
+      .replace(/style=""stroke: ?#000000""/g, 'style=""stroke: #94a3b8""')
+      .replace(/<rect [^>]*fill=""#ffffff""/g, '<rect $& fill=""#1e293b""')
+
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.dark.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.dark.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      let i = 0
+      themes.dark.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.dark.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.dark.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+    }
+  }
+  else {
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.light.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.light.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      themes.light.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        let i = 0
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.light.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.light.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.light.connectionColor}""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.light.connectionColor}""`)
+    }
+  }
+
+  return processedSvg
+}
+
+/**
+ * Checks if mermaid code is complete and valid
+ */
+export function isMermaidCodeComplete(code: string): boolean {
+  if (!code || code.trim().length === 0)
+    return false
+
+  try {
+    const trimmedCode = code.trim()
+
+    // Special handling for gantt charts
+    if (trimmedCode.startsWith('gantt')) {
+      // For gantt charts, check if it has at least a title and one task
+      const lines = trimmedCode.split('\n').filter(line => line.trim().length > 0)
+      return lines.length >= 3
+    }
+
+    // Check for basic syntax structure
+    const hasValidStart = /^(graph|flowchart|sequenceDiagram|classDiagram|classDef|class|stateDiagram|gantt|pie|er|journey|requirementDiagram)/.test(trimmedCode)
+
+    // Check for balanced brackets and parentheses
+    const isBalanced = (() => {
+      const stack = []
+      const pairs = { '{': '}', '[': ']', '(': ')' }
+
+      for (const char of trimmedCode) {
+        if (char in pairs) {
+          stack.push(char)
+        }
+        else if (Object.values(pairs).includes(char)) {
+          const last = stack.pop()
+          if (pairs[last as keyof typeof pairs] !== char)
+            return false
+        }
+      }
+
+      return stack.length === 0
+    })()
+
+    // Check for common syntax errors
+    const hasNoSyntaxErrors = !trimmedCode.includes('undefined')
+                           && !trimmedCode.includes('[object Object]')
+                           && trimmedCode.split('\n').every(line =>
+                             !(line.includes('-->') && !line.match(/\S+\s*-->\s*\S+/)))
+
+    return hasValidStart && isBalanced && hasNoSyntaxErrors
+  }
+  catch (error) {
+    console.debug('Mermaid code validation error:', error)
+    return false
+  }
+}
+
+/**
+ * Helper to wait for DOM element with retry mechanism
+ */
+export function waitForDOMElement(callback: () => Promise<any>, maxAttempts = 3, delay = 100): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let attempts = 0
+    const tryRender = async () => {
+      try {
+        resolve(await callback())
+      }
+      catch (error) {
+        attempts++
+        if (attempts < maxAttempts)
+          setTimeout(tryRender, delay)
+        else
+          reject(error)
+      }
+    }
+    tryRender()
+  })
+}"
+
+LINK NUMBER 288
+
+File path: main.go
+"	ctx := context.Background()
+
+	// Configure logger
+	logger := slog.New(
+		tint.NewHandler(os.Stderr, &tint.Options{
+			Level:      slog.LevelDebug,
+			TimeFormat: time.Kitchen,
+		}),
+	)
+
+	// Set up Ollama provider
+	opts := &ollama.ProviderOpts{
+		Logger:  logger,
+		BaseURL: ""http://localhost"",
+		Port:    11434,
+	}
+	provider := ollama.NewProvider(opts)
+
+	// Use the correct model
+	model := &types.Model{
+		ID: ""llama3.2-vision:11b"",
+	}
+	provider.UseModel(ctx, model)
+
+	// Create agent configuration
+	agentConf := &agent.NewAgentConfig{
+		Provider:     provider,
+		Logger:       logger,
+		SystemPrompt: ""You are a visual analysis assistant specialized in detailed image descriptions. If there is a person in the image describe what they are doing in step by step format."",
+	}
+
+	// Initialize agent
+	visionAgent := agent.NewAgent(agentConf)
+
+	// Parse command line arguments
+	videoPath := ""path/to/your/video.mp4""
+	outputDir = ""output_frames""  // default value
+
+	for i := 1; i < len(os.Args); i++ {
+		switch os.Args[i] {
+		case ""--video"":
+			if i+1 < len(os.Args) {
+				videoPath = os.Args[i+1]
+				i++
+			}
+		case ""--output"":
+			if i+1 < len(os.Args) {
+				outputDir = os.Args[i+1]
+				i++
+			}
+		}
+	}
+
+	// Ensure video path is provided
+	if videoPath == ""path/to/your/video.mp4"" {
+		fmt.Println(""Usage: go run main.go --video path/to/video.mp4 [--output output_directory]"")
+		os.Exit(1)
+	}
+
+	// After parsing the video path, set the videoName
+	videoName = strings.TrimSuffix(filepath.Base(videoPath), filepath.Ext(videoPath))
+
+	// Process video
+	fmt.Printf(""Starting video analysis...\n"")
+	err := processVideo(ctx, visionAgent, videoPath, outputDir)
+	if err != nil {
+		log.Printf(""Error processing video: %v"", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(""Video processing completed successfully!"")"
+
+LINK NUMBER 289
+Error fetching diff
+
+LINK NUMBER 290
+Error fetching diff
+
+LINK NUMBER 291
+Error fetching diff
+
+LINK NUMBER 292
+Not enough lines
+
+LINK NUMBER 293
+Not enough lines
+
+LINK NUMBER 294
+
+File path: src/api/user.ts
+"import axios from 'axios';
+import Cookies from 'js-cookie';
+import { routerConfig } from '@/constants/siteConfig';
+
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost/PRO1014_SERVER/routes/',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add token to headers
+axiosInstance.interceptors.request.use((config) => {
+  const token = Cookies.get('token');
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
+// Handle response errors
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error: any) => {
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
+
+    if (code === 'TOKEN_EXPIRED' || code === 'INVALID_TOKEN' || status === 440) {
+      Cookies.remove('token');
+      Cookies.remove('expires_in');
+      Cookies.remove('isLogin');
+      Cookies.remove('user_id');
+
+      window.location.href = routerConfig.login;
+    }
+
+    if (error.response?.data) {
+      return Promise.reject(error.response.data);
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default axiosInstance;"
+
+LINK NUMBER 295
+
+File path: apps/storefront/next.config.ts
+"/// <reference types=""next"" />
+/// <reference types=""next/image-types/global"" />
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information."
+
+LINK NUMBER 296
+Error fetching diff
+
+LINK NUMBER 297
+Error fetching diff
+
+LINK NUMBER 298
+Error fetching diff
+
+LINK NUMBER 299
+Not enough lines
+
+LINK NUMBER 300
+Not enough lines
+
+LINK NUMBER 301
+Not enough lines
+
+LINK NUMBER 302
+Not enough lines
+
+LINK NUMBER 303
+Error fetching diff
+
+LINK NUMBER 304
+Error fetching diff
+
+LINK NUMBER 305
+Error fetching diff
+
+LINK NUMBER 306
+
+File path: src/message_subscriber.cpp
+"        CASE_RELAY_MESSAGE(reader, version, address);
+        CASE_RELAY_MESSAGE(reader, version, alert);
+        CASE_HANDLE_MESSAGE(reader, version, block);
+        CASE_RELAY_MESSAGE(reader, version, block_transactions);
+        CASE_RELAY_MESSAGE(reader, version, compact_block);
+        CASE_RELAY_MESSAGE(reader, version, double_spend_proof);
+        CASE_RELAY_MESSAGE(reader, version, fee_filter);
+        CASE_RELAY_MESSAGE(reader, version, filter_add);
+        CASE_RELAY_MESSAGE(reader, version, filter_clear);
+        CASE_RELAY_MESSAGE(reader, version, filter_load);
+        CASE_RELAY_MESSAGE(reader, version, get_address);
+        CASE_RELAY_MESSAGE(reader, version, get_blocks);
+        CASE_RELAY_MESSAGE(reader, version, get_block_transactions);
+        CASE_RELAY_MESSAGE(reader, version, get_data);
+        CASE_RELAY_MESSAGE(reader, version, get_headers);
+        CASE_RELAY_MESSAGE(reader, version, headers);
+        CASE_RELAY_MESSAGE(reader, version, inventory);
+        CASE_RELAY_MESSAGE(reader, version, memory_pool);
+        CASE_RELAY_MESSAGE(reader, version, merkle_block);
+        CASE_RELAY_MESSAGE(reader, version, not_found);
+        CASE_RELAY_MESSAGE(reader, version, ping);
+        CASE_RELAY_MESSAGE(reader, version, pong);
+        CASE_RELAY_MESSAGE(reader, version, reject);
+        CASE_RELAY_MESSAGE(reader, version, send_compact);
+        CASE_RELAY_MESSAGE(reader, version, send_headers);
+        CASE_HANDLE_MESSAGE(reader, version, transaction);
+        CASE_HANDLE_MESSAGE(reader, version, verack);
+        CASE_HANDLE_MESSAGE(reader, version, version);
+        CASE_HANDLE_MESSAGE(reader, version, xversion);
+        // CASE_HANDLE_MESSAGE(reader, version, xverack);"
+
+LINK NUMBER 307
+Not enough lines
+
+LINK NUMBER 308
+Not enough lines
+
+LINK NUMBER 309
+
+File path: src/android/src/main/java/com/reactnativecommunity/checkbox/ReactCheckBoxManager.java
+"          EventDispatcher eventDispatcher;
+          try {
+            if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
+              eventDispatcher = UIManagerHelper.getUIManager(reactContext, UIManagerType.FABRIC).getEventDispatcher();
+            } else {
+              eventDispatcher = reactContext
+                .getNativeModule(UIManagerModule.class).getEventDispatcher();
+            }
+            eventDispatcher.dispatchEvent(new ReactCheckBoxEvent(buttonView.getId(), isChecked));
+          } catch (NullPointerException | IllegalStateException e) {
+            android.util.Log.e(""ReactCheckBoxManager"", ""Error dispatching checkbox event"", e);
+          }"
+
+LINK NUMBER 310
+Error fetching diff
+
+LINK NUMBER 311
+Error fetching diff
+
+LINK NUMBER 312
+Error fetching diff
+
+LINK NUMBER 313
+
+File path: source/B2BApi.AppTests/SubsystemHttpTrigger/EnqueueHttpEndpointTests.cs
+"﻿// Copyright 2020 Energinet DataHub A/S
+//
+// Licensed under the Apache License, Version 2.0 (the ""License2"");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an ""AS IS"" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System.Globalization;
+using System.Net;
+using Energinet.DataHub.Core.FunctionApp.TestCommon.FunctionAppHost;
+using Energinet.DataHub.EDI.B2BApi.AppTests.Fixtures;
+using Energinet.DataHub.EDI.B2BApi.AppTests.Fixtures.Extensions;
+using Energinet.DataHub.EDI.B2BApi.Functions.BundleMessages;
+using Energinet.DataHub.EDI.BuildingBlocks.Domain.Models;
+using Energinet.DataHub.EDI.BuildingBlocks.Infrastructure.FeatureFlag;
+using Energinet.DataHub.EDI.BuildingBlocks.Tests.Logging;
+using Energinet.DataHub.EDI.OutgoingMessages.Infrastructure.DataAccess;
+using Energinet.DataHub.ProcessManager.Orchestrations.Abstractions.Processes.BRS_021.Shared.V1.Model;
+using FluentAssertions;
+using FluentAssertions.Execution;
+using Microsoft.EntityFrameworkCore;
+using NodaTime;
+using Xunit;
+using Xunit.Abstractions;
+using MeasurementUnit = Energinet.DataHub.ProcessManager.Components.Abstractions.ValueObjects.MeasurementUnit;
+using MeteringPointType = Energinet.DataHub.ProcessManager.Components.Abstractions.ValueObjects.MeteringPointType;
+using Quality = Energinet.DataHub.ProcessManager.Components.Abstractions.ValueObjects.Quality;
+using Resolution = Energinet.DataHub.ProcessManager.Components.Abstractions.ValueObjects.Resolution;
+
+namespace Energinet.DataHub.EDI.B2BApi.AppTests.Functions.EnqueueMessages.BRS_021;
+
+[Collection(nameof(B2BApiAppCollectionFixture))]
+public class EnqueueBrs21CalculationMessagesTests : IAsyncLifetime
+{
+    private readonly B2BApiAppFixture _fixture;
+
+    public EnqueueBrs21CalculationMessagesTests(
+        B2BApiAppFixture fixture,
+        ITestOutputHelper testOutputHelper)
+    {
+        _fixture = fixture;
+        _fixture.SetTestOutputHelper(testOutputHelper);
+    }
+
+    public async Task InitializeAsync()
+    {
+        _fixture.AppHostManager.ClearHostLog();
+
+        // Dequeue existing messages
+        await using var context = _fixture.DatabaseManager.CreateDbContext<ActorMessageQueueContext>();
+
+        var bundles = await context.Bundles.ToListAsync();
+        foreach (var bundle in bundles)
+        {
+            bundle.TryDequeue();
+        }
+
+        await context.SaveChangesAsync();
+
+        await Task.CompletedTask;
+    }
+
+    public async Task DisposeAsync()
+    {
+        _fixture.SetTestOutputHelper(null!);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task
+        Given_EnqueueCalculatedMeasurementsHttpV1_When_MessageIsReceived_AndWhen_MessageIsBundled_Then_MessageIsEnqueued_AndThen_MessageCanBePeeked()
+    {
+        _fixture.EnsureAppHostUsesFeatureFlagValue(
+        [
+            new(FeatureFlagName.PM25Messages, true),
+            new(FeatureFlagName.PM25CIM, true),
+        ]);
+
+        // Arrange
+        // => Given enqueue BRS-021 http request
+        var receiver1ActorNumber = ActorNumber.Create(""1111111111111"");
+        var receiver1ActorRole = ActorRole.EnergySupplier;
+        const int receiver1Quantity = 11;
+
+        var receiver2ActorNumber = ActorNumber.Create(""2222222222222"");
+        var receiver2ActorRole = ActorRole.EnergySupplier;
+        const int receiver2Quantity = 22;
+
+        var startDateTime = Instant.FromUtc(2025, 01, 31, 23, 00, 00);
+
+        var receiver1Start = startDateTime;
+        var receiver1End = startDateTime.Plus(Duration.FromMinutes(15));
+
+        var receiver2Start = receiver1End;
+        var receiver2End = receiver2Start.Plus(Duration.FromMinutes(15));
+
+        var enqueueMessagesData = new EnqueueCalculatedMeasurementsHttpV1(
+            OrchestrationInstanceId: Guid.NewGuid(),
+            TransactionId: Guid.NewGuid(),
+            MeteringPointId: ""1234567890123"",
+            MeteringPointType: MeteringPointType.Consumption,
+            Resolution: Resolution.QuarterHourly,
+            MeasureUnit: MeasurementUnit.KilowattHour,
+            Data:
+            [
+                new EnqueueCalculatedMeasurementsHttpV1.ReceiversWithMeasurements(
+                    Receivers:
+                    [
+                        new EnqueueCalculatedMeasurementsHttpV1.Actor(
+                            ActorNumber: receiver1ActorNumber.ToProcessManagerActorNumber(),
+                            ActorRole: receiver1ActorRole.ToProcessManagerActorRole()),
+                    ],
+                    StartDateTime: receiver1Start.ToDateTimeOffset(),
+                    EndDateTime: receiver1End.ToDateTimeOffset(),
+                    RegistrationDateTime: startDateTime.ToDateTimeOffset(),
+                    GridAreaCode: ""804"",
+                    Measurements:
+                    [
+                        new EnqueueCalculatedMeasurementsHttpV1.Measurement(
+                            Position: 1,
+                            EnergyQuantity: receiver1Quantity,
+                            QuantityQuality: Quality.AsProvided),
+                    ]),
+                new EnqueueCalculatedMeasurementsHttpV1.ReceiversWithMeasurements(
+                    Receivers:
+                    [
+                        new EnqueueCalculatedMeasurementsHttpV1.Actor(
+                            ActorNumber: receiver2ActorNumber.ToProcessManagerActorNumber(),
+                            ActorRole: receiver2ActorRole.ToProcessManagerActorRole()),
+                    ],
+                    StartDateTime: receiver2Start.ToDateTimeOffset(),
+                    EndDateTime: receiver2End.ToDateTimeOffset(),
+                    RegistrationDateTime: startDateTime.ToDateTimeOffset(),
+                    GridAreaCode: ""804"",
+                    Measurements:
+                    [
+                        new EnqueueCalculatedMeasurementsHttpV1.Measurement(
+                            Position: 1,
+                            EnergyQuantity: receiver2Quantity,
+                            QuantityQuality: Quality.AsProvided),
+                    ]),
+            ]);
+
+        // Act
+        // => When message is received
+        var httpRequest = _fixture.CreateEnqueueCalculatedMeasurementsHttpV1Request(enqueueMessagesData);
+
+        await _fixture.AppHostManager.HttpClient.SendAsync(httpRequest);
+
+        // => And when message is bundled
+        await _fixture.AppHostManager.TriggerFunctionAsync(nameof(OutgoingMessagesBundler));
+
+        // Verify the bundling function was executed
+        var bundleFunctionResult =
+            await _fixture.AppHostManager.WaitForFunctionToCompleteWithSucceededAsync(
+                functionName: nameof(OutgoingMessagesBundler));
+
+        bundleFunctionResult.Succeeded.Should()
+            .BeTrue(
+                ""the OutgoingMessagesBundler function should have been completed with success. Host log:\n{0}"",
+                bundleFunctionResult.HostLog);
+
+        using var assertionScope = new AssertionScope();
+
+        // => Verify that outgoing messages were enqueued
+        await using var dbContext = _fixture.DatabaseManager.CreateDbContext<ActorMessageQueueContext>();
+        var enqueuedOutgoingMessages = await dbContext.OutgoingMessages
+            .Where(om => om.ExternalId == new ExternalId(enqueueMessagesData.TransactionId) && om.DocumentType == DocumentType.NotifyValidatedMeasureData)
+            .ToListAsync();
+
+        enqueuedOutgoingMessages.Should().HaveCount(2);
+
+        // => Verify that the enqueued message can be peeked
+        List<(Actor Actor, decimal EnergyQuantity, Instant Start, Instant End)> expectedReceivers =
+        [
+            (new Actor(receiver1ActorNumber, receiver1ActorRole),
+                receiver1Quantity,
+                receiver1Start,
+                receiver1End),
+            (new Actor(receiver2ActorNumber, receiver2ActorRole),
+                receiver2Quantity,
+                receiver2Start,
+                receiver2End),
+        ];
+
+        foreach (var expectedReceiver in expectedReceivers)
+        {
+            var peekHttpRequest = await _fixture.CreatePeekHttpRequestAsync(
+                actor: expectedReceiver.Actor,
+                category: MessageCategory.MeasureData);
+
+            var peekResponse = await _fixture.AppHostManager.HttpClient.SendAsync(peekHttpRequest);
+            await peekResponse.EnsureSuccessStatusCodeWithLogAsync(_fixture.TestLogger);
+
+            // Ensure status code is 200 OK, since EnsureSuccessStatusCode() also allows 204 No Content
+            peekResponse.StatusCode.Should()
+                .Be(
+                    HttpStatusCode.OK,
+                    $""because the peek request for receiver {expectedReceiver.Actor.ActorNumber} should return OK status code (with content)"");
+
+            var peekResponseContent = await peekResponse.Content.ReadAsStringAsync();
+            peekResponseContent.Should()
+                .NotBeNullOrEmpty()
+                .And.Contain(
+                    ""NotifyValidatedMeasureData"",
+                    $""because the peeked messages for receiver {expectedReceiver.Actor.ActorNumber} should be a notify validated measure data"")
+                .And.Contain(
+                    $""\""quantity\"": {expectedReceiver.EnergyQuantity}"",
+                    $""because the peeked messages for receiver {expectedReceiver.Actor.ActorNumber} should have the expected measure data"")
+                .And.Contain(
+                    $""\""value\"": \""{expectedReceiver.Start.ToString(""yyyy-MM-dd'T'HH:mm'Z'"", CultureInfo.InvariantCulture)}\"""",
+                    $""because the peeked messages for receiver {expectedReceiver.Actor.ActorNumber} should have the expected start"")
+                .And.Contain(
+                    $""\""value\"": \""{expectedReceiver.End.ToString(""yyyy-MM-dd'T'HH:mm'Z'"", CultureInfo.InvariantCulture)}\"""",
+                    $""because the peeked messages for receiver {expectedReceiver.Actor.ActorNumber} should have the expected end"");
+        }
+    }
+}"
+
+LINK NUMBER 314
+
+File path: src/chain/utxo.cpp
+"kth_bool_t kth_chain_utxo_has_token_data(kth_utxo_t utxo) {
+    return kth_chain_utxo_const_cpp(utxo).token_data() ?
+        kth::bool_to_int(true) :
+        kth::bool_to_int(false);
+}
+
+kth_token_data_t kth_chain_utxo_get_token_data(kth_utxo_t utxo) {
+    auto& utxo_cpp = kth_chain_utxo_cpp(utxo);
+    if ( ! utxo_cpp.token_data()) {
+        return nullptr;
+    }
+    return &utxo_cpp.token_data().value();
+}
+
+kth_hash_t kth_chain_utxo_get_token_category(kth_utxo_t utxo) {
+    auto const& token_data = kth_chain_utxo_const_cpp(utxo).token_data();
+    if ( ! token_data) {
+        return kth::to_hash_t(kth::null_hash);
+    }
+    auto const& token_category_cpp = token_data->id;
+    return kth::to_hash_t(token_category_cpp);
+}
+
+void kth_chain_utxo_get_token_category_out(kth_utxo_t utxo, kth_hash_t* out_token_category) {
+    auto const& token_data = kth_chain_utxo_const_cpp(utxo).token_data();
+    if ( ! token_data) {
+        kth::copy_c_hash(kth::null_hash, out_token_category);
+        return;
+    }
+    auto const& token_category_cpp = token_data->id;
+    kth::copy_c_hash(token_category_cpp, out_token_category);
+}
+
+uint64_t kth_chain_utxo_get_token_amount(kth_utxo_t utxo) {
+    auto const& token_data = kth_chain_utxo_const_cpp(utxo).token_data();
+    if ( ! token_data) {
+        return kth::max_uint64;
+    }
+    if (std::holds_alternative<kth::domain::chain::fungible>(token_data->data)) {
+        return uint64_t(std::get<kth::domain::chain::fungible>(token_data->data).amount);
+    }
+    if (std::holds_alternative<kth::domain::chain::both_kinds>(token_data->data)) {
+        return uint64_t(std::get<kth::domain::chain::both_kinds>(token_data->data).first.amount);
+    }
+    return kth::max_uint64;
+}
+
+kth_token_capability_t kth_chain_utxo_get_token_capability(kth_utxo_t utxo) {
+    auto const& token_data_opt = kth_chain_utxo_const_cpp(utxo).token_data();
+    if ( ! token_data_opt) {
+        return kth_token_capability_none;
+    }
+    auto const& token_data = *token_data_opt;
+    if (std::holds_alternative<kth::domain::chain::non_fungible>(token_data.data)) {
+        auto const& non_fungible_cpp = std::get<kth::domain::chain::non_fungible>(token_data.data);
+        return kth::token_capability_to_c(non_fungible_cpp.capability);
+    }
+    if (std::holds_alternative<kth::domain::chain::both_kinds>(token_data.data)) {
+        auto const& both_kinds_cpp = std::get<kth::domain::chain::both_kinds>(token_data.data);
+        auto const& non_fungible_cpp = both_kinds_cpp.second;
+        return kth::token_capability_to_c(non_fungible_cpp.capability);
+    }
+    return kth_token_capability_none; // TODO: this is not a good way to signal an error
+}
+
+uint8_t const* kth_chain_utxo_get_token_commitment(kth_utxo_t utxo, kth_size_t* out_size) {
+    auto const& token_data_opt = kth_chain_utxo_const_cpp(utxo).token_data();
+    if ( ! token_data_opt) {
+        *out_size = 0;
+        return nullptr;
+    }
+    auto const& token_data = *token_data_opt;
+    if (std::holds_alternative<kth::domain::chain::non_fungible>(token_data.data)) {
+        auto const& non_fungible_cpp = std::get<kth::domain::chain::non_fungible>(token_data.data);
+        return kth::create_c_array(non_fungible_cpp.commitment, *out_size);
+    }
+    if (std::holds_alternative<kth::domain::chain::both_kinds>(token_data.data)) {
+        auto const& both_kinds_cpp = std::get<kth::domain::chain::both_kinds>(token_data.data);
+        auto const& non_fungible_cpp = both_kinds_cpp.second;
+        return kth::create_c_array(non_fungible_cpp.commitment, *out_size);
+    }
+
+    *out_size = 0;
+    return nullptr;
+}
+
+// Setters
+
+void kth_chain_utxo_set_hash(kth_utxo_t utxo, kth_hash_t const* hash) {"
+
+LINK NUMBER 315
+Not enough lines
+
+LINK NUMBER 316
+Not enough lines
+
+LINK NUMBER 317
+Error fetching diff
+
+LINK NUMBER 318
+Error fetching diff
+
+LINK NUMBER 319
+Error fetching diff
+
+LINK NUMBER 320
+
+File path: pkg/workbench/service/workbench-service.go
+"package service
+
+import (
+	""testing""
+)
+
+func TestGetWorkspaceID(t *testing.T) {
+	s := &WorkbenchService{}
+	tests := []struct {
+		name      string
+		input     string
+		expected  uint64
+		expectErr bool
+	}{
+		{
+			name:      ""valid workspace name"",
+			input:     ""workspace123"",
+			expected:  123,
+			expectErr: false,
+		},
+		{
+			name:      ""invalid workspace name"",
+			input:     ""invalid123"",
+			expected:  0,
+			expectErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := s.getWorkspaceID(test.input)
+			if (err != nil) != test.expectErr {
+				t.Errorf(""expected error: %v, got: %v"", test.expectErr, err)
+			}
+			if result != test.expected {
+				t.Errorf(""expected: %d, got: %d"", test.expected, result)
+			}
+		})
+	}
+}"
+
+LINK NUMBER 321
+
+File path: test/agentchat/contrib/test_img_utils.py
+"        paragraph = (
+            ""Mixed case extensions http://example.com/image.JPG, ""
+            ""http://example.com/image.Png and http://example.com/image.WebP.""
+        )
+        expected_output = [
+            ""http://example.com/image.JPG"",
+            ""http://example.com/image.Png"",
+            ""http://example.com/image.WebP"",
+        ]"
+
+LINK NUMBER 322
+Not enough lines
+
+LINK NUMBER 323
+
+File path: internal/provider/collection.go
+"// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package provider
+
+import (
+	""context""
+	""fmt""
+	""github.com/csp33/terraform-provider-metabase/sdk/metabase""
+	""github.com/hashicorp/terraform-plugin-framework/path""
+	""github.com/hashicorp/terraform-plugin-framework/resource""
+	""github.com/hashicorp/terraform-plugin-framework/resource/schema""
+)
+
+// Ensure BaseResource implements required interfaces.
+var _ resource.Resource = &BaseResource{}
+var _ resource.ResourceWithImportState = &BaseResource{}
+
+// BaseResource provides common functionality for all resources.
+type BaseResource struct {
+	// TypeName is the name of the resource type (e.g., ""metabase_collection"")
+	TypeName string
+
+	// ConfigureRepository is a function that configures the repository for the resource
+	ConfigureRepository func(client *metabase.MetabaseAPIClient)
+
+	// GetSchema returns the schema for the resource
+	GetSchema func(ctx context.Context) schema.Schema
+
+	// CreateFunc creates a new resource
+	CreateFunc func(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse)
+
+	// ReadFunc reads a resource
+	ReadFunc func(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse)
+
+	// UpdateFunc updates a resource
+	UpdateFunc func(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse)
+
+	// DeleteFunc deletes a resource
+	DeleteFunc func(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse)
+}
+
+// Metadata implements resource.Resource.
+func (r *BaseResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + ""_"" + r.TypeName
+}
+
+// Schema implements resource.Resource.
+func (r *BaseResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = r.GetSchema(ctx)
+}
+
+// Configure implements resource.Resource.
+func (r *BaseResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(*metabase.MetabaseAPIClient)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			""Unexpected Resource Configure Type"",
+			fmt.Sprintf(""Expected *metabase.MetabaseAPIClient, got: %T. Please report this issue to the provider developers."", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.ConfigureRepository(client)
+}
+
+// Create implements resource.Resource.
+func (r *BaseResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	r.CreateFunc(ctx, req, resp)
+}
+
+// Read implements resource.Resource.
+func (r *BaseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	r.ReadFunc(ctx, req, resp)
+}
+
+// Update implements resource.Resource.
+func (r *BaseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	r.UpdateFunc(ctx, req, resp)
+}
+
+// Delete implements resource.Resource.
+func (r *BaseResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	r.DeleteFunc(ctx, req, resp)
+}
+
+// ImportState implements resource.ResourceWithImportState.
+func (r *BaseResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root(""id""), req, resp)
+}"
+
+LINK NUMBER 324
+Error fetching diff
+
+LINK NUMBER 325
+Error fetching diff
+
+LINK NUMBER 326
+Error fetching diff
+
+LINK NUMBER 327
+
+File path: drivers/139/util.go
+"
+func (d *Yun139) requestRoute(data interface{}, resp interface{}) ([]byte, error) {
+	url := ""https://user-njs.yun.139.com/user/route/qryRoutePolicy""
+	req := base.RestyClient.R()
+	randStr := random.String(16)
+	ts := time.Now().Format(""2006-01-02 15:04:05"")
+	callback := func(req *resty.Request) {
+		req.SetBody(data)
+	}
+	if callback != nil {
+		callback(req)
+	}
+	body, err := utils.Json.Marshal(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	sign := calSign(string(body), ts, randStr)
+	svcType := ""1""
+	if d.isFamily() {
+		svcType = ""2""
+	}
+	req.SetHeaders(map[string]string{
+		""Accept"":         ""application/json, text/plain, */*"",
+		""CMS-DEVICE"":     ""default"",
+		""Authorization"":  ""Basic "" + d.getAuthorization(),
+		""mcloud-channel"": ""1000101"",
+		""mcloud-client"":  ""10701"",
+		//""mcloud-route"": ""001"",
+		""mcloud-sign"": fmt.Sprintf(""%s,%s,%s"", ts, randStr, sign),
+		//""mcloud-skey"":"""",
+		""mcloud-version"":         ""7.14.0"",
+		""Origin"":                 ""https://yun.139.com"",
+		""Referer"":                ""https://yun.139.com/w/"",
+		""x-DeviceInfo"":           ""||9|7.14.0|chrome|120.0.0.0|||windows 10||zh-CN|||"",
+		""x-huawei-channelSrc"":    ""10000034"",
+		""x-inner-ntwk"":           ""2"",
+		""x-m4c-caller"":           ""PC"",
+		""x-m4c-src"":              ""10002"",
+		""x-SvcType"":              svcType,
+		""Inner-Hcy-Router-Https"": ""1"",
+	})
+
+	var e BaseResp
+	req.SetResult(&e)
+	res, err := req.Execute(http.MethodPost, url)
+	log.Debugln(res.String())
+	if !e.Success {
+		return nil, errors.New(e.Message)
+	}
+	if resp != nil {
+		err = utils.Json.Unmarshal(res.Body(), resp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res.Body(), nil
+}
+"
+
+LINK NUMBER 328
+
+File path: my-app/src/model.js
+"    searchCourses(query) {
+        const searchResults = this.courses.filter(course =>
+            course.code.toLowerCase() === query.toLowerCase() ||
+            course.name.toLowerCase().includes(query.toLowerCase()) ||
+            course.description.toLowerCase().includes(query.toLowerCase())
+        );
+        this.setCurrentSearch(searchResults);
+    }
+};"
+
+LINK NUMBER 329
+Not enough lines
+
+LINK NUMBER 330
+Not enough lines
+
+LINK NUMBER 331
+Error fetching diff
+
+LINK NUMBER 332
+Error fetching diff
+
+LINK NUMBER 333
+Error fetching diff
+
+LINK NUMBER 334
+Not enough lines
+
+LINK NUMBER 335
+Not enough lines
+
+LINK NUMBER 336
+Not enough lines
+
+LINK NUMBER 337
+
+File path: apps/shell/lib/auth/auth.ts
+"import { describe, it, expect, vi, beforeEach, afterEach } from ""vitest"";
+import { login, register, forgotPassword, APIError } from ""./auth"";
+import type {
+  LoginFormValues,
+  RegisterFormValues,
+  ForgotPasswordFormValues,
+} from ""../validation"";
+
+describe(""lib/api/auth"", () => {
+  beforeEach(() => {
+    vi.stubGlobal(""fetch"", vi.fn());
+    vi.useFakeTimers();
+    process.env.API_BASE_URL = ""https://api.escuelajs.co/api/v1"";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  describe(""login()"", () => {
+    it(""resolves with access_token and refresh_token when API returns 200"", async () => {
+      const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => ""application/json"" },
+        json: async () => ({
+          access_token: ""foo-token"",
+          refresh_token: ""bar-token"",
+        }),
+      });
+
+      await expect(
+        login({ email: ""a@b.com"", password: ""pw"" } as LoginFormValues),
+      ).resolves.toEqual({
+        access_token: ""foo-token"",
+        refresh_token: ""bar-token"",
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${process.env.API_BASE_URL}/auth/login`,
+        expect.objectContaining({
+          method: ""POST"",
+          headers: { ""Content-Type"": ""application/json"" },
+          body: JSON.stringify({ email: ""a@b.com"", password: ""pw"" }),
+        }),
+      );
+    });
+
+    it(""throws APIError with status and message on non-OK response"", async () => {
+      const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: { get: () => ""application/json"" },
+        json: async () => ({ message: ""Invalid credentials"" }),
+      });
+
+      await expect(
+        login({ email: ""a@b.com"", password: ""wrong"" } as LoginFormValues),
+      ).rejects.toEqual(new APIError(""Invalid credentials"", 401));
+    });
+  });
+
+  describe(""register()"", () => {
+    it(""resolves with success message after simulated delay"", async () => {
+      const payload = {
+        email: ""new@user.com"",
+        password: ""secret"",
+        confirmPassword: ""secret"",
+      } as RegisterFormValues;
+
+      const promise = register(payload);
+      vi.advanceTimersByTime(500);
+      await expect(promise).resolves.toEqual({
+        message: ""Registration successful!"",
+      });
+    });
+  });
+
+  describe(""forgotPassword()"", () => {
+    it(""resolves with a reset-email message after simulated delay"", async () => {
+      const payload = { email: ""someone@x.com"" } as ForgotPasswordFormValues;
+
+      const promise = forgotPassword(payload);
+      vi.advanceTimersByTime(500);
+      await expect(promise).resolves.toEqual({
+        message:
+          ""If that account exists, you’ll receive a reset email shortly."",
+      });
+    });
+  });
+});"
+
+LINK NUMBER 338
+Error fetching diff
+
+LINK NUMBER 339
+Error fetching diff
+
+LINK NUMBER 340
+Error fetching diff
+
+LINK NUMBER 341
+
+File path: survey/src/main/java/com/formulai/survey/service/SurveyService.java
+"package com.formulai.survey.service;
+
+import com.formulai.survey.model.Survey;
+import com.formulai.survey.repository.SurveyRepository;
+import com.formulai.survey.dto.request.SurveyRequest;
+import com.formulai.survey.dto.response.SurveyResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.lang.String.format;
+
+@RequiredArgsConstructor
+@Service
+public class SurveyService {
+
+    private final SurveyRepository surveyRepository;
+
+    public SurveyResponse getSurveyById(String id) {
+        return surveyRepository
+                .findById(id)
+                .map(this::fromSurvey)
+                .orElseThrow(()-> new IllegalArgumentException(format(""Survey %s not found!"", id)));
+                // () and -> is a lambda. Lambda is a temporary function without a name.
+                // In our case we want just throw IllegalArgumentException if any problem exist.
+    }
+
+    public List<SurveyResponse> getAllSurvey(){
+        return surveyRepository
+                .findAll()
+                .stream()
+                .map(this::fromSurvey)
+                .collect(Collectors.toList());
+    }
+
+    public String createSurvey(SurveyRequest request) {
+        surveyRepository.save(toSurvey(request));
+        return ""Survey created successfully"";
+    }
+
+    public Survey toSurvey(SurveyRequest surveyRequest){
+        return Survey
+                .builder()
+                .name(surveyRequest.name())
+                .schemaJson(surveyRequest.schemaJson())
+                .build();
+    }
+
+    private SurveyResponse fromSurvey(Survey survey) {
+        return new SurveyResponse(
+                survey.getId(),
+                survey.getName(),
+                survey.getSchemaJson()
+        );
+    }
+}"
+
+LINK NUMBER 342
+
+File path: api/helper.py
+"class RedisClient:
+    """"""Redis client class.""""""
+
+    def __init__(self):
+        self.redis = None
+
+    def get_client(self):
+        if not self.redis:
+            self.redis = self.get_redis()
+        return self.redis
+    
+    def get_redis(self):
+        """"""Get the Redis client.""""""
+        try:
+            redis_client = Redis(host=os_environ.get(""REDIS_HOST"", ""redis""),
+                                port=int(os_environ.get(""REDIS_PORT"", 6379)),
+                                db=int(os_environ.get(""REDIS_DB"", 0)),
+                                password=os_environ.get(""REDIS_PASSWORD"", None),
+                                decode_responses=True)
+            redis_client.ping()
+            return redis_client
+        except ConnectionError as e:
+            print(f""Redis connection error: {e}"")
+            raise RuntimeError(""Redis server is not reachable."")
+    
+    def ping(self):
+        """"""Ping the Redis server.""""""
+        try:
+            self.redis.ping()
+            return True
+        except ConnectionError as e:
+            print(f""Redis connection error: {e}"")
+            return False
+
+"
+
+LINK NUMBER 343
+
+File path: server/MarketMinds/Repositories/BorrowProductsRepository/BorrowProductsRepository.cs
+"using System;
+using System.Collections.Generic;
+using System.Linq;
+using server.Models;
+using System.Threading.Tasks;
+using server.DataAccessLayer;
+using Microsoft.EntityFrameworkCore;
+
+namespace server.MarketMinds.Repositories.BorrowProductsRepository
+{
+    public class BorrowProductsRepository : IBorrowProductsRepository
+    {
+        private readonly ApplicationDbContext _context;
+
+        public BorrowProductsRepository(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public List<BorrowProduct> GetProducts()
+        {
+            try
+            {
+                // Start with a simpler query if full includes cause issues
+                var products = _context.BorrowProducts
+                    .Include(p => p.Seller)
+                    .Include(p => p.Condition)
+                    .Include(p => p.Category)
+                    .ToList();
+
+                // Optional: Load related entities separately if needed
+                foreach (var product in products)
+                {
+                    try
+                    {
+                        _context.Entry(product)
+                            .Collection(p => p.Images)
+                            .Load();
+                    }
+                    catch (Exception imgEx)
+                    {
+                        Console.WriteLine($""Warning: Could not load images for product {product.Id}: {imgEx.Message}"");
+                    }
+
+                    try
+                    {
+                        _context.Entry(product)
+                            .Collection(p => p.ProductTags)
+                            .Load();
+
+                        // Eager load the Tag for each ProductTag
+                        foreach (var productTag in product.ProductTags)
+                        {
+                            try
+                            {
+                                _context.Entry(productTag)
+                                    .Reference(pt => pt.Tag)
+                                    .Load();
+                            }
+                            catch (Exception tagEx)
+                            {
+                                Console.WriteLine($""Warning: Could not load tag for product {product.Id}, tag relation {productTag.Id}: {tagEx.Message}"");
+                            }
+                        }
+                    }
+                    catch (Exception ptEx)
+                    {
+                        Console.WriteLine($""Warning: Could not load product tags for product {product.Id}: {ptEx.Message}"");
+                    }
+                }
+
+                return products;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($""Error in GetProducts: {ex.Message}"");
+                // Return empty list instead of throwing to prevent cascading failures
+                return new List<BorrowProduct>();
+            }
+        }
+
+        public void DeleteProduct(BorrowProduct product)
+        {
+            try
+            {
+                _context.BorrowProducts.Remove(product);
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($""Error in DeleteProduct: {ex.Message}"");
+                throw;
+            }
+        }
+
+        public void AddProduct(BorrowProduct product)
+        {
+            try
+            {
+                _context.BorrowProducts.Add(product);
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($""Error in AddProduct: {ex.Message}"");
+                throw;
+            }
+        }
+
+        public void UpdateProduct(BorrowProduct product)
+        {
+            try
+            {
+                var existingProduct = _context.BorrowProducts.Find(product.Id);
+                if (existingProduct == null)
+                {
+                    throw new KeyNotFoundException($""BorrowProduct with ID {product.Id} not found for update."");
+                }
+
+                _context.Entry(existingProduct).CurrentValues.SetValues(product);
+
+                if (product.Images != null && product.Images.Any())
+                {
+                    Console.WriteLine($""Updating product {product.Id} with {product.Images.Count} images"");
+                    
+                    foreach (var image in product.Images)
+                    {
+                        if (image.Id == 0)
+                        {
+                            Console.WriteLine($""Adding new image with URL: {image.Url} to product ID: {product.Id}"");
+                            image.ProductId = product.Id;
+                            _context.Set<BorrowProductImage>().Add(image);
+                        }
+                    }
+                }
+
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($""Error in UpdateProduct: {ex.Message}"");
+                throw;
+            }
+        }
+
+        public BorrowProduct GetProductByID(int id)
+        {
+            try
+            {
+                // Basic product query first
+                var product = _context.BorrowProducts
+                    .Include(p => p.Seller)
+                    .Include(p => p.Condition)
+                    .Include(p => p.Category)
+                    .FirstOrDefault(p => p.Id == id);
+
+                if (product == null)
+                {
+                    throw new KeyNotFoundException($""BorrowProduct with ID {id} not found."");
+                }
+
+                // Load related entities individually
+                try
+                {
+                    _context.Entry(product)
+                        .Collection(p => p.Images)
+                        .Load();
+                }
+                catch (Exception imgEx)
+                {
+                    Console.WriteLine($""Warning: Could not load images for product {id}: {imgEx.Message}"");
+                    // Initialize empty collection if loading fails
+                    product.Images = new List<BorrowProductImage>();
+                }
+
+                try
+                {
+                    _context.Entry(product)
+                        .Collection(p => p.ProductTags)
+                        .Load();
+
+                    // Load related tags
+                    foreach (var productTag in product.ProductTags)
+                    {
+                        try
+                        {
+                            _context.Entry(productTag)
+                                .Reference(pt => pt.Tag)
+                                .Load();
+                        }
+                        catch (Exception tagEx)
+                        {
+                            Console.WriteLine($""Warning: Could not load tag for product {id}, tag relation {productTag.Id}: {tagEx.Message}"");
+                        }
+                    }
+                }
+                catch (Exception ptEx)
+                {
+                    Console.WriteLine($""Warning: Could not load product tags for product {id}: {ptEx.Message}"");
+                    // Initialize empty collection if loading fails
+                    product.ProductTags = new List<BorrowProductProductTag>();
+                }
+
+                return product;
+            }
+            catch (KeyNotFoundException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($""Error in GetProductByID: {ex.Message}"");
+                throw;
+            }
+        }
+
+        public void AddImageToProduct(int productId, BorrowProductImage image)
+        {
+            try
+            {
+                // Make sure the product exists
+                var product = _context.BorrowProducts.Find(productId);
+                if (product == null)
+                {
+                    throw new KeyNotFoundException($""BorrowProduct with ID {productId} not found."");
+                }
+
+                // Set the product ID and add the image
+                image.ProductId = productId;
+                
+                // Add image directly to the DbSet
+                _context.BorrowProductImages.Add(image);
+                
+                // Save changes to the database
+                _context.SaveChanges();
+                
+                Console.WriteLine($""Successfully added image with URL {image.Url} to product {productId}"");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($""Error adding image to product ID {productId}: {ex.Message}"");
+                throw new Exception($""Failed to add image to product ID {productId}"", ex);
+            }
+        }
+    }
+} "
+
+LINK NUMBER 344
+
+File path: re_bench/_registry.py
+"# Ignore assets used within evaluations, where we specifically want type checks to
+# fail (e.g. buggy code that the agent should fix)
+ignore = [
+    ""re_bench/*/assets"",
+    ""re_bench/imported_asset_files"",
+    ""re_bench/tests/solutions"",
+]
+include = ["".""]
+reportAssertAlwaysTrue = true
+reportDeprecated = true
+reportUnusedImport = true
+reportWildcardImportFromLibrary = true"
+
+LINK NUMBER 345
+Error fetching diff
+
+LINK NUMBER 346
+Error fetching diff
+
+LINK NUMBER 347
+Error fetching diff
+
+LINK NUMBER 348
+
+File path: internal/secrets/manager.go
+"package secrets
+
+import (
+	""crypto/rand""
+	""crypto/rsa""
+	""crypto/x509""
+	""encoding/pem""
+	""fmt""
+	""log""
+	""os""
+	""path/filepath""
+)
+
+// LoadPrivateKey loads an RSA private key from disk.
+func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != ""RSA PRIVATE KEY"" {
+		return nil, fmt.Errorf(""failed to decode PEM block containing private key"")
+	}
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+// LoadPublicKey loads the user's public key from the project directory.
+func LoadPublicKey() (*rsa.PublicKey, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to get working directory: %w"", err)
+	}
+
+	username, err := GetUsername()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to get username: %w"", err)
+	}
+
+	kanukaDir := filepath.Join(wd, "".kanuka"")
+	publicKeyPath := filepath.Join(kanukaDir, ""public_keys"", username+"".pub"")
+
+	data, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		return nil, err
+	}
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != ""PUBLIC KEY"" {
+		return nil, fmt.Errorf(""failed to decode PEM block containing public key"")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf(""not an RSA public key"")
+	}
+	return rsaPub, nil
+}
+
+// GenerateRSAKeyPair creates a new RSA key pair and saves them to disk.
+func GenerateRSAKeyPair(privatePath, publicPath string) error {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf(""failed to generate RSA key pair: %w"", err)
+	}
+
+	// Create directories if they don't exist
+	privateDir := filepath.Dir(privatePath)
+	if err := os.MkdirAll(privateDir, 0700); err != nil {
+		return fmt.Errorf(""failed to create directory for private key at %s: %w"", privateDir, err)
+	}
+	publicDir := filepath.Dir(publicPath)
+	if err := os.MkdirAll(publicDir, 0700); err != nil {
+		return fmt.Errorf(""failed to create directory for public key at %s: %w"", publicDir, err)
+	}
+
+	// Save private key
+	privFile, err := os.Create(privatePath)
+	if err != nil {
+		return fmt.Errorf(""failed to create private key file at %s: %w"", privatePath, err)
+	}
+	defer func() {
+		if closeErr := privFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf(""failed to close private key file: %w"", closeErr)
+		}
+	}()
+
+	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privPem := &pem.Block{
+		Type:  ""RSA PRIVATE KEY"",
+		Bytes: privBytes,
+	}
+	if err := pem.Encode(privFile, privPem); err != nil {
+		return fmt.Errorf(""failed to PEM encode private key: %w"", err)
+	}
+
+	// Save public key
+	pubFile, err := os.Create(publicPath)
+	if err != nil {
+		return fmt.Errorf(""failed to create public key file at %s: %w"", publicPath, err)
+	}
+	defer func() {
+		if closeErr := pubFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf(""failed to close public key file: %w"", closeErr)
+		}
+	}()
+
+	pubASN1, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return fmt.Errorf(""failed to marshal public key: %w"", err)
+	}
+	pubPem := &pem.Block{
+		Type:  ""PUBLIC KEY"",
+		Bytes: pubASN1,
+	}
+	if err := pem.Encode(pubFile, pubPem); err != nil {
+		return fmt.Errorf(""failed to PEM encode public key: %w"", err)
+	}
+
+	return nil
+}
+
+func CreateAndSaveRSAKeyPair() error {
+	// CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf(""failed to get current working directory: %w"", err)
+	}
+	projectName := filepath.Base(wd)
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf(""failed to get user's home directory: %w"", err)
+	}
+
+	// Create key paths
+	keysDir := filepath.Join(homeDir, "".kanuka"", ""keys"")
+	privateKeyPath := filepath.Join(keysDir, projectName)
+	publicKeyPath := privateKeyPath + "".pub""
+
+	// Ensure key directory exists
+	if err := os.MkdirAll(keysDir, 0700); err != nil {
+		return fmt.Errorf(""failed to create keys directory at %s: %w"", keysDir, err)
+	}
+
+	if err := GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
+		return fmt.Errorf(""failed to generate or save RSA key pair for project %s: %w"", projectName, err)
+	}
+
+	log.Printf(`✅ Successfully generated RSA keys at:
+  - Private: %s
+  - Public: %s`, privateKeyPath, publicKeyPath)
+	return nil
+}
+
+// GetUserPrivateKey retrieves the user's private key for the current project.
+func GetUserPrivateKey() (*rsa.PrivateKey, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to get user's home directory: %w"", err)
+	}
+	projectName, err := GetProjectName()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to get project name: %w"", err)
+	}
+
+	privateKeyPath := filepath.Join(homeDir, "".kanuka"", ""keys"", projectName)
+	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf(""failed to get private key: %w"", err)
+	}
+
+	privateKey, err := LoadPrivateKey(privateKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf(""failed to load private key: %w"", err)
+	}
+
+	return privateKey, nil
+}
+
+// CopyUserPublicKeyToProject copies the user's public key to the project directory.
+func CopyUserPublicKeyToProject() (string, error) {
+	username, err := GetUsername()
+	if err != nil {
+		return """", fmt.Errorf(""failed to get username: %w"", err)
+	}
+
+	projectName, err := GetProjectName()
+	if err != nil {
+		return """", fmt.Errorf(""failed to get project name: %w"", err)
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return """", fmt.Errorf(""failed to get home directory: %w"", err)
+	}
+
+	// Source path: ~/.kanuka/keys/{project_name}.pub
+	sourceKeyPath := filepath.Join(homeDir, "".kanuka"", ""keys"", projectName+"".pub"")
+
+	// Check if source key exists
+	if _, err := os.Stat(sourceKeyPath); err != nil {
+		if os.IsNotExist(err) {
+			return """", fmt.Errorf(""public key for project %s not found at %s"", projectName, sourceKeyPath)
+		}
+		return """", fmt.Errorf(""failed to check for source key: %w"", err)
+	}
+
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return """", fmt.Errorf(""failed to get working directory: %w"", err)
+	}
+
+	// Destination directory: {project_path}/.kanuka/public_keys/{username}.pub
+	destKeyPath := filepath.Join(workingDir, "".kanuka"", ""public_keys"", username+"".pub"")
+
+	keyData, err := os.ReadFile(sourceKeyPath)
+	if err != nil {
+		return """", fmt.Errorf(""failed to read source key file: %w"", err)
+	}
+
+	// Write to destination file
+	if err := os.WriteFile(destKeyPath, keyData, 0600); err != nil {
+		return """", fmt.Errorf(""failed to write key to project: %w"", err)
+	}
+
+	return destKeyPath, nil
+}
+
+// GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
+func GetUserProjectKanukaKey() ([]byte, error) {
+	username, err := GetUsername()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to get username: %w"", err)
+	}
+	userKeyFile := filepath.Join("".kanuka"", ""secrets"", fmt.Sprintf(""%s.kanuka"", username))
+	if _, err := os.Stat(userKeyFile); os.IsNotExist(err) {
+		return nil, fmt.Errorf(""failed to get user's project encrypted symmetric key: %w"", err)
+	}
+	encryptedSymmetricKey, err := os.ReadFile(userKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf(""failed to read user's project encrypted symmetric key: %w"", err)
+	}
+
+	return encryptedSymmetricKey, nil
+}"
+
+LINK NUMBER 349
+
+File path: booktable-backend/src/main/java/com/booktable/service/ReservationService.java
+"        // Save the reservation first
+        Reservation savedReservation = reservationRepository.save(reservation);
+
+        // --- Send Confirmation Email ---
+        try {
+            // Fetch User details to get email
+            Optional<User> userOpt = userRepository.findById(savedReservation.getCustomerId().toHexString()); //
+
+            // Fetch Restaurant details
+            Optional<Restaurant> restaurantOpt = restaurantRepository.findById(savedReservation.getRestaurantId().toHexString()); //
+
+            // Fetch Table details
+            Optional<Table> tableOpt = tableRepository.findById(savedReservation.getTableId().toHexString()); //
+
+
+            if (userOpt.isPresent() && restaurantOpt.isPresent() && tableOpt.isPresent()) {
+                User user = userOpt.get();
+                Restaurant restaurant = restaurantOpt.get();
+                Table table = tableOpt.get();
+
+                String recipientEmail = user.getEmail(); //
+                String subject = ""Your Booking Confirmation at "" + restaurant.getName(); //
+
+                // Compose a simple email body
+                String messageBody = String.format(
+                        ""Dear %s,\n\n"" +
+                                ""Your booking is confirmed!\n\n"" +
+                                ""Restaurant: %s\n"" +
+                                ""Address: %s, %s\n"" + //
+                                ""Table Number: %s\n"" + //
+                                ""Date: %s\n"" + //
+                                ""Time: %s - %s\n"" + //
+                                ""Party Size: %d\n\n"" + //
+                                ""Reservation ID: %s\n\n"" + //
+                                ""Thank you for using BookTable!"",
+                        user.getName(), //
+                        restaurant.getName(), //
+                        restaurant.getAddressStreet(), restaurant.getAddressCity(), //
+                        table.getTableNumber(), //
+                        savedReservation.getDate().toString(), //
+                        savedReservation.getStartSlotTime().toString(), //
+                        savedReservation.getEndSlotTime().toString(), //
+                        savedReservation.getPartySize(), //
+                        savedReservation.getId().toHexString() //
+                );
+
+                // Send the email using the injected service
+                mailjetEmailService.sendEmail(recipientEmail, subject, messageBody); //
+                System.out.println(""Booking confirmation email sent to "" + recipientEmail);
+
+            } else {
+                // Log if user, restaurant, or table details are missing
+                if (!userOpt.isPresent()) log.error(""Could not find user with ID: {}"", savedReservation.getCustomerId());
+                if (!restaurantOpt.isPresent()) log.error(""Could not find restaurant with ID: {}"", savedReservation.getRestaurantId());
+                if (!tableOpt.isPresent()) log.error(""Could not find table with ID: {}"", savedReservation.getTableId());
+            }
+
+        } catch (Exception e) {
+            // Log the error, but don't necessarily fail the entire booking process
+            log.error(""Failed to send booking confirmation email: {}"", e.getMessage(), e);
+        }
+        // --- End of Email Sending Logic ---
+
+        return savedReservation; // Return the saved reservation object"
+
+LINK NUMBER 350
+
+File path: lib/settings.js
+"        const RepoPlugin = Settings.PLUGINS.repository
+        return new RepoPlugin(this.nop, this.github, repo, repoConfig, this.installation_id, this.log, this.errors).sync().then(res => {
+          this.appendToResults(res)
+          return Promise.all(
+            childPlugins.map(([Plugin, config]) => {
+              return new Plugin(this.nop, this.github, repo, config, this.log, this.errors).sync()
+            }))
+        }).then(res => {
+          this.appendToResults(res)
+        })
+      } catch (e) {
+        if (this.nop) {
+          const nopcommand = new NopCommand(this.constructor.name, this.repo, null, `${e}`, 'ERROR')
+          this.log.error(`NOPCOMMAND ${JSON.stringify(nopcommand)}`)
+          this.appendToResults([nopcommand])
+          // throw e
+        } else {
+          throw e
+        }"
+
+LINK NUMBER 351
+Not enough lines
+
+LINK NUMBER 352
+Error fetching diff
+
+LINK NUMBER 353
+Error fetching diff
+
+LINK NUMBER 354
+Error fetching diff
+
+LINK NUMBER 355
+Not enough lines
+
+LINK NUMBER 356
+Not enough lines
+
+LINK NUMBER 357
+Not enough lines
+
+LINK NUMBER 358
+
+File path: scripts/weather.js
+"                    // Range separator for min-max temperature
+                    const rangeSeparator = {
+                        cs: ""až"",
+                        // Add more languages as needed
+                        default: ""~""
+                    };
+                    const separator = rangeSeparator[currentLanguage] || rangeSeparator.default;
+"
+
+LINK NUMBER 359
+Error fetching diff
+
+LINK NUMBER 360
+Error fetching diff
+
+LINK NUMBER 361
+Error fetching diff
+
+LINK NUMBER 362
+
+File path: frontend/src/components/layout/LocationSearch.js
+"
+  // This callback is triggered by the hook when a user selects a place
+  const handlePlaceSelected = useCallback((place) => {
+    console.log('Raw Place Selected:', place);
+    const { city, state } = extractCityState(place);
+    let locationString = '';
+
+    if (city && state) {
+      locationString = `${city}, ${state}`;
+    } else {
+      locationString = place?.formatted_address || place?.name || '';
+      console.warn(""Could not extract 'City, ST', using fallback:"", locationString);
+    }
+
+    console.log('Place Selected -> Calling onChange with:', locationString);
+    onChange(locationString);
+  }, [onChange]);
+
+  // Initialize the Google Places Widget hook
+  const { ref: placesRef } = usePlacesWidget({
+    apiKey: GOOGLE_PLACES_API_KEY,
+    onPlaceSelected: handlePlaceSelected,
+    options: {
+      types: [""(regions)""],
+      componentRestrictions: { country: ""us"" },
+      fields: [""formatted_address"", ""address_components"", ""name"", ""geometry""],
+    },
+  });
+
+  useEffect(() => {
+    if (placesRef.current && value === '' && placesRef.current.value !== '') {
+      placesRef.current.value = '';
+    }
+  }, [value, placesRef]);
+"
+
+LINK NUMBER 363
+Too many lines
+
+LINK NUMBER 364
+Not enough lines
+
+LINK NUMBER 365
+Not enough lines
+
+LINK NUMBER 366
+Error fetching diff
+
+LINK NUMBER 367
+Error fetching diff
+
+LINK NUMBER 368
+Error fetching diff
+
+LINK NUMBER 369
+
+File path: src/ffmpeg/common/serialize.py
+"
+    This function is used by the `serializable` decorator to register classes
+    with the serialization system, enabling them to be serialized and deserialized.
+
+    Args:
+        cls: The class to register
+
+    Returns:
+        The class itself"
+
+LINK NUMBER 370
+Not enough lines
+
+LINK NUMBER 371
+Not enough lines
+
+LINK NUMBER 372
+
+File path: src/patterns/FavoritesCollectionTile/index.ts
+"@use '#scss/allPartials' as *;
+
+.#{$px}-favorites-collection-tile {
+  display: flex;
+  flex-direction: column;
+  max-width: 24.5rem;
+  text-align: left;
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  &__header {
+    align-items: flex-end;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__info {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  &__count {
+    color: $dark-gray;
+    display: block;
+    margin-bottom: $spacing-xsm;
+  }
+
+  h3.#{$px}-text {
+    margin-bottom: 0;
+  }
+
+  &__title {
+    -webkit-box-orient: vertical;
+    display: block;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden;
+
+    h3.#{$px}-text {
+      margin-bottom: 0;
+    }
+  }
+
+  &__actions {
+    align-items: center;
+    align-self: normal;
+    background-position: center;
+    border-radius: 50%;
+    display: flex;
+    height: 2.5rem;
+    justify-content: center;
+    margin-left: $spacing-sm;
+    transition: background 0.8s;
+    width: 2.5rem;
+
+    &:hover {
+      background: $light-gray radial-gradient(circle, transparent 1%, $light-gray 1%) center/15000%;
+      background-color: $light-gray;
+      cursor: pointer;
+    }
+
+    &:active {
+      background-color: $medium-gray;
+      background-size: 100%;
+      transition: background 0s;
+    }
+  }
+
+  &__popover-content {
+    outline: none;
+    transform: translateX(2.5rem);
+  }
+
+  &__dropdown {
+    box-shadow: 0 4px 6px $medium-gray;
+
+    &--item {
+      all: unset;
+      background-color: $soft-gray;
+      cursor: pointer;
+      display: block;
+      padding: 0.75rem 1rem;
+      width: 90px;
+
+      &:hover,
+      &:focus-visible {
+        background-color: $light-gray;
+      }
+    }
+  }
+
+  &__media-link {
+    &:hover {
+      color: inherit;
+      text-decoration: none;
+    }
+  }
+
+  &__media-container {
+    position: relative;
+    width: 100%;
+  }
+
+  &__media {
+    background-position: center;
+    width: 100%;
+  }
+
+  &__empty {
+    aspect-ratio: 1 / 1;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    cursor: pointer;
+    display: block;
+    position: relative;
+
+    &--favorites {
+      background-color: $soft-gray;
+    }
+
+    &--list {
+      border: 1px solid #0000001f;
+      border-radius: 0;
+    }
+
+    &__content {
+      bottom: 20px;
+      left: 20px;
+      position: absolute;
+    }
+  }
+
+  &__icon {
+    grid-column: 1;
+    justify-self: start;
+
+    &-rotate {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__text {
+    color: $dark-gray;
+    font-size: $body-size3;
+    font-variation-settings: 'wght' 400;
+    padding-top: 5px;
+  }
+
+  [data-radix-popper-content-wrapper] > * {
+    all: unset;
+  }
+}"
+
+LINK NUMBER 373
+Error fetching diff
+
+LINK NUMBER 374
+Error fetching diff
+
+LINK NUMBER 375
+Error fetching diff
+
+LINK NUMBER 376
+
+File path: src/Neo/SmartContract/Native/OracleContract.cs
+"            var urlSize = url.GetStrictUtf8ByteCount();
+            if (urlSize > MaxUrlLength)
+                throw new ArgumentException($""The url bytes size({urlSize}) cannot be greater than {MaxUrlLength}."");
+
+            var filterSize = filter.GetStrictUtf8ByteCount();
+            if (filterSize > MaxFilterLength)
+                throw new ArgumentException($""The filter bytes size({filterSize}) cannot be greater than {MaxFilterLength}."");
+
+            var callbackSize = callback is null ? 0 : callback.GetStrictUtf8ByteCount();
+            if (callbackSize > MaxCallbackLength)
+                throw new ArgumentException($""The callback bytes size({callbackSize}) cannot be greater than {MaxCallbackLength}."");
+
+            if (callback.StartsWith('_'))
+                throw new ArgumentException($""The callback cannot start with '_'."");
+
+            if (gasForResponse < 0_10000000)
+                throw new ArgumentException($""The gasForResponse({gasForResponse}) must be greater than or equal to 0.1 datoshi."");"
+
+LINK NUMBER 377
+Not enough lines
+
+LINK NUMBER 378
+
+File path: src/main/java/ca/uhn/fhir/jpa/starter/util/EnvironmentHelper.java
+"		// also check for JPA properties set as environment variables, this is slightly hacky and doesn't cover all
+		// the naming conventions Springboot allows
+		// but there doesn't seem to be a better/deterministic way to get these properties when they are set as ENV
+		// variables and this at least provides
+		// a way to set them (in a docker container, for instance)
+		Map<String, Object> jpaPropsEnv = getPropertiesStartingWith(environment, ""SPRING_JPA_PROPERTIES"");
+		for (Map.Entry<String, Object> entry : jpaPropsEnv.entrySet()) {
+			String strippedKey = entry.getKey().replace(""SPRING_JPA_PROPERTIES_"", """");
+			strippedKey = strippedKey.replaceAll(""_"", ""."");
+			strippedKey = strippedKey.toLowerCase();
+			properties.put(strippedKey, entry.getValue().toString());
+		}
+"
+
+LINK NUMBER 379
+Not enough lines
+
+LINK NUMBER 380
+Error fetching diff
+
+LINK NUMBER 381
+Error fetching diff
+
+LINK NUMBER 382
+Error fetching diff
+
+LINK NUMBER 383
+Not enough lines
+
+LINK NUMBER 384
+Not enough lines
+
+LINK NUMBER 385
+Not enough lines
+
+LINK NUMBER 386
+Not enough lines
+
+LINK NUMBER 387
+Error fetching diff
+
+LINK NUMBER 388
+Error fetching diff
+
+LINK NUMBER 389
+Error fetching diff
+
+LINK NUMBER 390
+
+File path: services/cli/main.ts
+"  program
+    .command('update-earn-lut')
+    .description('Create or update the LUT for common addresses')
+    .option('-a, --address [pubkey]', 'Address of table to update', 'HtKQ9sHyMhun73asZsARkGCc1fDz2dQH7QhGfFJcQo7S')
+    .action(async ({ address }) => {
+      const [owner] = keysFromEnv(['OWNER_KEYPAIR']);
+      const ixs = [ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 250_000 })];
+
+      // Get or create LUT
+      let tableAddress: PublicKey;
+      if (address) {
+        tableAddress = new PublicKey(address);
+      } else {
+        const [lookupTableIx, lookupTableAddress] = AddressLookupTableProgram.createLookupTable({
+          authority: owner.publicKey,
+          payer: owner.publicKey,
+          recentSlot: (await connection.getSlot({ commitment: 'finalized' })) - 10,
+        });
+
+        console.log(`Creating lookup table: ${lookupTableAddress.toBase58()}`);
+        tableAddress = lookupTableAddress;
+        ixs.push(lookupTableIx);
+      }
+
+      // Addresses to add to LUT
+      const [mMint, wmMint, multisig] = keysFromEnv(['M_MINT_KEYPAIR', 'WM_MINT_KEYPAIR', 'M_MINT_MULTISIG_KEYPAIR']);
+      const [portalTokenAuthPda] = PublicKey.findProgramAddressSync([Buffer.from('token_authority')], PROGRAMS.portal);
+      const [earnTokenAuthPda] = PublicKey.findProgramAddressSync([Buffer.from('token_authority')], PROGRAMS.earn);
+      const [mVaultPda] = PublicKey.findProgramAddressSync([Buffer.from('m_vault')], PROGRAMS.extEarn);
+      const [mintAuthPda] = PublicKey.findProgramAddressSync([Buffer.from('mint_authority')], PROGRAMS.extEarn);
+      const [global] = PublicKey.findProgramAddressSync([Buffer.from('global')], PROGRAM_ID);
+      const [extGlobal] = PublicKey.findProgramAddressSync([Buffer.from('global')], EXT_PROGRAM_ID);
+
+      const addressesForTable = [
+        PROGRAMS.portal,
+        PROGRAMS.earn,
+        PROGRAMS.extEarn,
+        mMint.publicKey,
+        wmMint.publicKey,
+        multisig.publicKey,
+        portalTokenAuthPda,
+        earnTokenAuthPda,
+        mVaultPda,
+        mintAuthPda,
+        global,
+        extGlobal,
+      ];
+
+      // Fetch current state of LUT
+      let existingAddresses: PublicKey[] = [];
+      if (address) {
+        const state = (await connection.getAddressLookupTable(tableAddress)).value?.state.addresses;
+        if (!state) {
+          throw new Error(`Failed to fetch state for address lookup table ${tableAddress}`);
+        }
+        if (state.length === 256) {
+          throw new Error('LUT is full');
+        }
+
+        existingAddresses = state;
+      }
+
+      // Dedupe missing addresses
+      const toAdd = addressesForTable.filter((address) => !existingAddresses.find((a) => a.equals(address)));
+      if (toAdd.length === 0) {
+        console.log('No addresses to add');
+        return;
+      }
+
+      ixs.push(
+        AddressLookupTableProgram.extendLookupTable({
+          payer: owner.publicKey,
+          authority: owner.publicKey,
+          lookupTable: tableAddress,
+          addresses: toAdd,
+        }),
+      );
+
+      // Send transaction
+      const blockhash = await connection.getLatestBlockhash('finalized');
+
+      const messageV0 = new TransactionMessage({
+        payerKey: owner.publicKey,
+        recentBlockhash: blockhash.blockhash,
+        instructions: ixs,
+      }).compileToV0Message();
+
+      const transaction = new VersionedTransaction(messageV0);
+      transaction.sign([owner]);
+      const txid = await connection.sendTransaction(transaction);
+      console.log('Transaction sent:', txid);
+
+      // Confirm
+      const confirmation = await connection.confirmTransaction(
+        { signature: txid, blockhash: blockhash.blockhash, lastValidBlockHeight: blockhash.lastValidBlockHeight },
+        'confirmed',
+      );
+      if (confirmation.value.err) {
+        throw new Error(`Transaction not confirmed: ${confirmation.value.err}`);
+      }
+    });
+"
+
+LINK NUMBER 391
+Too many lines
+
+LINK NUMBER 392
+Not enough lines
+
+LINK NUMBER 393
+
+File path: drivers/139/util.go
+"
+func (d *Yun139) requestRoute(data interface{}, resp interface{}) ([]byte, error) {
+	url := ""https://user-njs.yun.139.com/user/route/qryRoutePolicy""
+	req := base.RestyClient.R()
+	randStr := random.String(16)
+	ts := time.Now().Format(""2006-01-02 15:04:05"")
+	callback := func(req *resty.Request) {
+		req.SetBody(data)
+	}
+	if callback != nil {
+		callback(req)
+	}
+	body, err := utils.Json.Marshal(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	sign := calSign(string(body), ts, randStr)
+	svcType := ""1""
+	if d.isFamily() {
+		svcType = ""2""
+	}
+	req.SetHeaders(map[string]string{
+		""Accept"":         ""application/json, text/plain, */*"",
+		""CMS-DEVICE"":     ""default"",
+		""Authorization"":  ""Basic "" + d.getAuthorization(),
+		""mcloud-channel"": ""1000101"",
+		""mcloud-client"":  ""10701"",
+		//""mcloud-route"": ""001"",
+		""mcloud-sign"": fmt.Sprintf(""%s,%s,%s"", ts, randStr, sign),
+		//""mcloud-skey"":"""",
+		""mcloud-version"":         ""7.14.0"",
+		""Origin"":                 ""https://yun.139.com"",
+		""Referer"":                ""https://yun.139.com/w/"",
+		""x-DeviceInfo"":           ""||9|7.14.0|chrome|120.0.0.0|||windows 10||zh-CN|||"",
+		""x-huawei-channelSrc"":    ""10000034"",
+		""x-inner-ntwk"":           ""2"",
+		""x-m4c-caller"":           ""PC"",
+		""x-m4c-src"":              ""10002"",
+		""x-SvcType"":              svcType,
+		""Inner-Hcy-Router-Https"": ""1"",
+	})
+
+	var e BaseResp
+	req.SetResult(&e)
+	res, err := req.Execute(http.MethodPost, url)
+	log.Debugln(res.String())
+	if !e.Success {
+		return nil, errors.New(e.Message)
+	}
+	if resp != nil {
+		err = utils.Json.Unmarshal(res.Body(), resp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res.Body(), nil
+}
+"
+
+LINK NUMBER 394
+Error fetching diff
+
+LINK NUMBER 395
+Error fetching diff
+
+LINK NUMBER 396
+Error fetching diff
+
+LINK NUMBER 397
+
+File path: docs/source/conf.py
+"# Communication with MAD-NG
+
+```{contents}
+:depth: 2
+:local:
+```
+
+## Protocol Overview
+
+PyMAD-NG communicates with MAD-NG using a **pipe-based protocol**, ensuring efficient, direct, two-way communication between the Python and MAD-NG processes.
+
+Key points:
+
+- Data is sent through FIFO pipes (first-in, first-out).
+- Commands are sent as MAD-NG script strings (Lua-like).
+- Data is retrieved via `{func}`MAD.recv`()` after explicit instruction to send it.
+- MAD-NG stdout is redirected to Python, but not intercepted.
+
+```{important}
+You must always **send instructions before sending data**, and **send a request before receiving data**.
+```
+
+### Example: Basic Communication
+```python
+from pymadng import MAD
+mad = MAD()
+
+mad.send(""a = py:recv()"")   # Tell MAD-NG to receive
+mad.send(42)                # Send the value
+mad.send(""py:send(a)"")     # Request it back
+mad.recv()                  # Receive the value → 42
+```
+
+Both {func}`MAD.send` and {func}`MAD.recv` are the core communication methods.
+See the {class}`pymadng.MAD` reference for more details.
+
+---
+
+## Supported Data Types
+
+The following types can be sent from Python to MAD-NG:
+
+```{list-table} Supported Send Types
+:header-rows: 1
+
+* - Python Type
+  - MAD-NG Type
+  - Function to Use
+* - `None`, `str`, `int`, `float`, `complex`, `bool`, `list`
+  - Various
+  - {func}`MAD.send`
+* - `numpy.ndarray (float64)`
+  - `matrix`
+  - {func}`MAD.send`
+* - `numpy.ndarray (complex128)`
+  - `cmatrix`
+  - {func}`MAD.send`
+* - `numpy.ndarray (int32)`
+  - `imatrix`
+  - {func}`MAD.send`
+* - `range`
+  - `irange`
+  - {func}`MAD.send`
+* - `start, stop, size` as float, int
+  - `range`, `logrange`
+  - `mad.send_rng()`, `mad.send_lrng()`
+* - Complex structures (e.g., TPSA, CTPSA)
+  - `TPSA`, `CTPSA`
+  - `mad.send_tpsa()`, `mad.send_ctpsa()`
+```
+
+For full compatibility, see the {mod}`pymadng.MAD` documentation.
+
+---
+
+## Converting TFS Tables to DataFrames
+
+If you use {func}`twiss` or {func}`survey`, MAD-NG returns an `mtable`, which can be converted to a Pandas or TFS-style DataFrame:
+
+```python
+mtbl = mad.twiss(...)
+df = mtbl.to_df()  # Either DataFrame or TfsDataFrame
+```
+
+If the object is not an `mtable`, a `TypeError` will be raised.
+
+```{note}
+`tfs-pandas` (if installed) will enhance the output with headers and metadata.
+```
+
+See:
+```{literalinclude} ../../examples/ex-ps-twiss/ps-twiss.py
+:lines: 18, 24, 41-49
+:linenos:
+```
+
+---
+
+## Avoiding Deadlocks
+
+Deadlocks can occur if Python and MAD-NG wait on each other to send/receive large data without syncing.
+
+### Example of a Deadlock
+```python
+mad.send('arr = py:recv()')
+mad.send(arr0)                 # Large matrix
+mad.send('py:send(arr)')       # Sends data to Python
+mad.send('arr2 = py:recv()')   # Asks for new data
+mad.send(arr2)                 # DEADLOCK if previous data not yet received
+```
+
+```{warning}
+Always ensure each {func}`MAD.send` has a matching {func}`MAD.recv` if data is expected back.
+```
+
+---
+
+## Scope: Local vs Global
+
+MAD-NG uses Lua-style scoping:
+
+- Variables declared with `local` are temporary.
+- Variables without `local` persist across {func}`MAD.send` calls.
+
+### Example:
+```python
+mad.send(""""""
+a = 10
+local b = 20
+print(a + b)
+"""""")
+
+mad.send(""print(a + (b or 5))"")  # b is nil → 10 + 5 = 15
+```
+
+```{tip}
+Use `local` to avoid polluting the global MAD-NG namespace.
+```
+
+---
+
+## Customising the Environment
+
+You can configure the `MAD()` instance with options to better suit your environment:
+
+### Change the Python alias used inside MAD-NG:
+```python
+mad = MAD(py_name=""python"")
+```
+
+### Specify a custom MAD-NG binary:
+```python
+mad = MAD(mad_path=""/custom/path/to/mad"")
+```
+
+### Enable debug mode:
+```python
+mad = MAD(debug=True)
+```
+
+### Increase the number of temporary variables:
+```python
+mad = MAD(num_temp_vars=10)
+```
+
+See {meth}`pymadng.MAD.__init__` for all configuration options.
+
+---
+
+```{eval-rst}
+.. currentmodule:: pymadng
+```
+
+## Summary
+
+- Always match {func}`MAD.send` with {func}`MAD.recv` when data is expected.
+- Use `mad.to_df()` for table conversion.
+- Avoid deadlocks by receiving before sending again.
+- Manage scope using `local` wisely.
+- Use configuration flags to tailor behavior.
+
+For more, see the {doc}`advanced_features`, {doc}`debugging`, and {doc}`function_reference` sections.
+"
+
+LINK NUMBER 398
+
+File path: web/app/components/base/mermaid/utils.ts
+"
+/**
+ * Preprocesses mermaid code to fix common syntax issues
+ */
+export function preprocessMermaidCode(code: string): string {
+  if (!code || typeof code !== 'string')
+    return ''
+
+  // First check if this is a gantt chart
+  if (code.trim().startsWith('gantt')) {
+    // For gantt charts, we need to ensure each task is on its own line
+    // Split the code into lines and process each line separately
+    const lines = code.split('\n').map(line => line.trim())
+    return lines.join('\n')
+  }
+
+  return code
+    // Replace English colons with Chinese colons in section nodes to avoid parsing issues
+    .replace(/section\s+([^:]+):/g, (match, sectionName) => `section ${sectionName}：`)
+    // Fix common syntax issues
+    .replace(/fifopacket/g, 'rect')
+    // Ensure graph has direction
+    .replace(/^graph\s+((?:TB|BT|RL|LR)*)/, (match, direction) => {
+      return direction ? match : 'graph TD'
+    })
+    // Clean up empty lines and extra spaces
+    .trim()
+}
+
+/**
+ * Prepares mermaid code based on selected style
+ */
+export function prepareMermaidCode(code: string, style: 'classic' | 'handDrawn'): string {
+  let finalCode = preprocessMermaidCode(code)
+
+  // Special handling for gantt charts
+  if (finalCode.trim().startsWith('gantt')) {
+    // For gantt charts, preserve the structure exactly as is
+    return finalCode
+  }
+
+  if (style === 'handDrawn') {
+    finalCode = finalCode
+      // Remove style definitions that interfere with hand-drawn style
+      .replace(/style\s+[^\n]+/g, '')
+      .replace(/linkStyle\s+[^\n]+/g, '')
+      .replace(/^flowchart/, 'graph')
+      // Remove any styles that might interfere with hand-drawn style
+      .replace(/class=""[^""]*""/g, '')
+      .replace(/fill=""[^""]*""/g, '')
+      .replace(/stroke=""[^""]*""/g, '')
+
+    // Ensure hand-drawn style charts always start with graph
+    if (!finalCode.startsWith('graph') && !finalCode.startsWith('flowchart'))
+      finalCode = `graph TD\n${finalCode}`
+  }
+
+  return finalCode
+}
+
+/**
+ * Converts SVG to base64 string for image rendering
+ */
+export function svgToBase64(svgGraph: string): Promise<string> {
+  if (!svgGraph)
+    return Promise.resolve('')
+
+  try {
+    // Ensure SVG has correct XML declaration
+    if (!svgGraph.includes('<?xml'))
+      svgGraph = `<?xml version=""1.0"" encoding=""UTF-8""?>${svgGraph}`
+
+    const blob = new Blob([new TextEncoder().encode(svgGraph)], { type: 'image/svg+xml;charset=utf-8' })
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+  catch (error) {
+    console.error('Error converting SVG to base64:', error)
+    return Promise.resolve('')
+  }
+}
+
+/**
+ * Processes SVG for theme styling
+ */
+export function processSvgForTheme(
+  svg: string,
+  isDark: boolean,
+  isHandDrawn: boolean,
+  themes: {
+    light: any
+    dark: any
+  },
+): string {
+  let processedSvg = svg
+
+  if (isDark) {
+    processedSvg = processedSvg
+      .replace(/style=""fill: ?#000000""/g, 'style=""fill: #e2e8f0""')
+      .replace(/style=""stroke: ?#000000""/g, 'style=""stroke: #94a3b8""')
+      .replace(/<rect [^>]*fill=""#ffffff""/g, '<rect $& fill=""#1e293b""')
+
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.dark.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.dark.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      let i = 0
+      themes.dark.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.dark.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.dark.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+    }
+  }
+  else {
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.light.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.light.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      themes.light.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        let i = 0
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.light.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.light.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.light.connectionColor}""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.light.connectionColor}""`)
+    }
+  }
+
+  return processedSvg
+}
+
+/**
+ * Checks if mermaid code is complete and valid
+ */
+export function isMermaidCodeComplete(code: string): boolean {
+  if (!code || code.trim().length === 0)
+    return false
+
+  try {
+    const trimmedCode = code.trim()
+
+    // Special handling for gantt charts
+    if (trimmedCode.startsWith('gantt')) {
+      // For gantt charts, check if it has at least a title and one task
+      const lines = trimmedCode.split('\n').filter(line => line.trim().length > 0)
+      return lines.length >= 3
+    }
+
+    // Check for basic syntax structure
+    const hasValidStart = /^(graph|flowchart|sequenceDiagram|classDiagram|classDef|class|stateDiagram|gantt|pie|er|journey|requirementDiagram)/.test(trimmedCode)
+
+    // Check for balanced brackets and parentheses
+    const isBalanced = (() => {
+      const stack = []
+      const pairs = { '{': '}', '[': ']', '(': ')' }
+
+      for (const char of trimmedCode) {
+        if (char in pairs) {
+          stack.push(char)
+        }
+        else if (Object.values(pairs).includes(char)) {
+          const last = stack.pop()
+          if (pairs[last as keyof typeof pairs] !== char)
+            return false
+        }
+      }
+
+      return stack.length === 0
+    })()
+
+    // Check for common syntax errors
+    const hasNoSyntaxErrors = !trimmedCode.includes('undefined')
+                           && !trimmedCode.includes('[object Object]')
+                           && trimmedCode.split('\n').every(line =>
+                             !(line.includes('-->') && !line.match(/\S+\s*-->\s*\S+/)))
+
+    return hasValidStart && isBalanced && hasNoSyntaxErrors
+  }
+  catch (error) {
+    console.debug('Mermaid code validation error:', error)
+    return false
+  }
+}
+
+/**
+ * Helper to wait for DOM element with retry mechanism
+ */
+export function waitForDOMElement(callback: () => Promise<any>, maxAttempts = 3, delay = 100): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let attempts = 0
+    const tryRender = async () => {
+      try {
+        resolve(await callback())
+      }
+      catch (error) {
+        attempts++
+        if (attempts < maxAttempts)
+          setTimeout(tryRender, delay)
+        else
+          reject(error)
+      }
+    }
+    tryRender()
+  })
+}"
+
+LINK NUMBER 399
+
+File path: resources/js/types/generated.d.ts
+"import { SharePopup } from '@/components/share-popup';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { moneyToHuman } from '@/lib/utils';
+import { Head, Link } from '@inertiajs/react';
+import { Briefcase, Building2, Clock, ExternalLink, MapPin, Share2, Star } from 'lucide-react';
+import { useState } from 'react';
+
+export default function JobPage({ job }: { job: App.Data.Jobs.JobData }) {
+    const [showSharePopup, setShowSharePopup] = useState(false);
+    return (
+        <>
+            <Head title={job.title} />
+            <SharePopup url={route('jobs.show', { slug: job.slug })} open={showSharePopup} onClose={() => setShowSharePopup(false)} />
+            <div className=""bg-background min-h-screen py-8"">
+                <div className=""container mx-auto px-4"">
+                    <div className=""mx-auto max-w-5xl"">
+                        {/* Job Header */}
+                        <Card className=""mb-6 shadow-md"">
+                            <CardContent className=""p-6"">
+                                <div className=""flex flex-col gap-6 md:flex-row"">
+                                    <img
+                                        src={job.company.logo || '/placeholder.svg'}
+                                        alt={`${job.company.name} logo`}
+                                        className=""h-16 w-16 rounded-md border object-contain""
+                                    />
+                                    <div className=""flex-1"">
+                                        <div className=""flex flex-col gap-4 md:flex-row md:items-center md:justify-between"">
+                                            <div>
+                                                <h1 className=""text-2xl font-bold md:text-3xl"">{job.title}</h1>
+                                                <Link
+                                                    href={route('companies.show', job.company.slug)}
+                                                    className=""text-lg text-orange-600 hover:underline""
+                                                >
+                                                    {job.company.name}
+                                                </Link>
+                                                <div className=""mt-1 flex items-center"">
+                                                    <div className=""flex items-center"">
+                                                        <Star className=""h-4 w-4 fill-yellow-400 text-yellow-400"" />
+                                                        <span className=""ml-1 text-sm"">{job.company.rating}</span>
+                                                        <span className=""ml-1 text-sm text-gray-500"">({job.company.reviews_count} reviews)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className=""flex gap-2"">
+                                                <Button
+                                                    variant=""outline""
+                                                    size=""sm""
+                                                    className=""cursor-pointer""
+                                                    onClick={() => setShowSharePopup(true)}
+                                                >
+                                                    <Share2 className=""mr-2 h-4 w-4"" />
+                                                    Share
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div className=""mt-4 flex flex-wrap gap-4"">
+                                            <div className=""text-foreground flex items-center text-sm"">
+                                                <MapPin className=""mr-1 h-4 w-4 text-gray-400"" />
+                                                {job.location}
+                                            </div>
+                                            <div className=""text-foreground flex items-center text-sm"">
+                                                <Briefcase className=""mr-1 h-4 w-4 text-gray-400"" />
+                                                {job.employment_type}
+                                            </div>
+                                            <div className=""text-foreground flex items-center text-sm"">
+                                                <Clock className=""mr-1 h-4 w-4 text-gray-400"" />
+                                                Posted {new Date(job.posted_date).toDateString()}
+                                            </div>
+                                        </div>
+
+                                        <div className=""mt-3 text-lg font-medium"">
+                                            {moneyToHuman(job.salary_min)} - {moneyToHuman(job.salary_max)}
+                                        </div>
+
+                                        <div className=""mt-6 flex flex-wrap gap-3"">
+                                            <Link href={route('jobs.apply', job.slug)}>
+                                                <Button className=""cursor-pointer bg-orange-500 hover:bg-orange-600"">Easy Apply</Button>
+                                            </Link>
+                                            <Button variant=""outline"" className=""cursor-pointer"">
+                                                <Building2 className=""mr-2 h-4 w-4"" />
+                                                <a href={job.company.website ?? ''} target=""_blank"" rel=""noopener noreferrer"">
+                                                    Visit Company Website
+                                                </a>
+                                                <ExternalLink className=""ml-1 h-3 w-3"" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Job Details */}
+                        <div className=""grid grid-cols-1 gap-6 md:grid-cols-3"">
+                            <div className=""space-y-6 md:col-span-2"">
+                                <Card className=""shadow-md"">
+                                    <CardContent className=""p-6"">
+                                        <Tabs defaultValue=""description"">
+                                            <TabsList className=""mb-6 grid w-full grid-cols-2"">
+                                                <TabsTrigger value=""description"" className=""cursor-pointer"">
+                                                    Description
+                                                </TabsTrigger>
+                                                <TabsTrigger value=""requirements"" className=""cursor-pointer"">
+                                                    Requirements
+                                                </TabsTrigger>
+                                            </TabsList>
+
+                                            <TabsContent value=""description"" className=""space-y-4"">
+                                                <div>
+                                                    <h2 className=""mb-3 text-xl font-semibold"">Job Description</h2>
+                                                    <p className=""text-foreground"">{job.description}</p>
+                                                </div>
+                                            </TabsContent>
+
+                                            <TabsContent value=""requirements"" className=""space-y-4"">
+                                                <div>
+                                                    <h2 className=""mb-3 text-xl font-semibold"">Requirements</h2>
+                                                    <ul className=""text-foreground list-disc space-y-1 pl-5"">
+                                                        {job.requirements.map((item, index) => (
+                                                            <li key={index}>{item}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </TabsContent>
+                                        </Tabs>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className=""shadow-md"">
+                                    <CardContent className=""p-6"">
+                                        <h2 className=""mb-4 text-xl font-semibold"">About {job.company.name}</h2>
+                                        <div className=""mb-4 flex items-start gap-4"">
+                                            <img
+                                                src={job.company.logo || '/placeholder.svg'}
+                                                alt={`${job.company.name} logo`}
+                                                className=""h-16 w-16 rounded-md border object-contain""
+                                            />
+                                            <div>
+                                                <Link
+                                                    href={route('companies.show', job.company.slug)}
+                                                    className=""text-lg font-medium hover:underline""
+                                                >
+                                                    {job.company.name}
+                                                </Link>
+                                                <div className=""mt-1 flex items-center"">
+                                                    <div className=""flex"">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <Star
+                                                                key={i}
+                                                                className={`h-4 w-4 ${i < Math.floor(job.company.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <span className=""ml-1 text-sm"">{job.company.rating}</span>
+                                                    <span className=""ml-1 text-sm text-gray-500"">({job.company.reviews_count} reviews)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className=""mb-4 grid grid-cols-1 gap-4 md:grid-cols-2"">
+                                            <div className=""space-y-2"">
+                                                <div className=""flex items-start"">
+                                                    <span className=""w-24 text-sm font-medium"">Industry:</span>
+                                                    <span className=""text-foreground text-sm"">{job.company.industry}</span>
+                                                </div>
+                                                <div className=""flex items-start"">
+                                                    <span className=""w-24 text-sm font-medium"">Size:</span>
+                                                    <span className=""text-foreground text-sm"">{job.company.employee_count} employees</span>
+                                                </div>
+                                                <div className=""flex items-start"">
+                                                    <span className=""w-24 text-sm font-medium"">Founded:</span>
+                                                    <span className=""text-foreground text-sm"">
+                                                        {new Date(job.company.founded_year).getFullYear()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className=""space-y-2"">
+                                                <div className=""flex items-start"">
+                                                    <span className=""w-26 text-sm font-medium"">Type:</span>
+                                                    <span className=""text-foreground text-sm"">{job.company.type}</span>
+                                                </div>
+                                                <div className=""flex items-start"">
+                                                    <span className=""w-26 text-sm font-medium"">CEO:</span>
+                                                    <span className=""text-foreground text-sm"">{job.company.ceo}</span>
+                                                </div>
+                                                <div className=""flex items-start"">
+                                                    <span className=""w-26 text-sm font-medium"">CEO Approval:</span>
+                                                    <span className=""text-foreground text-sm"">{job.company.approve_of_ceo}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className=""flex items-center justify-between"">
+                                            <Link href={route('companies.show', job.company.slug)}>
+                                                <Button variant=""outline"" size=""sm"" className=""cursor-pointer"">
+                                                    View Company Profile
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className=""space-y-6"">
+                                <Card className=""shadow-md"">
+                                    <CardContent className=""p-6"">
+                                        <h2 className=""mb-4 text-lg font-semibold"">Job Activity</h2>
+                                        <div className=""space-y-3"">
+                                            <div className=""flex items-center justify-between"">
+                                                <span className=""text-sm text-gray-600"">Posted</span>
+                                                <span className=""text-sm font-medium"">{new Date(job.posted_date).toDateString()}</span>
+                                            </div>
+                                            <Separator />
+                                            <div className=""flex items-center justify-between"">
+                                                <span className=""text-sm text-gray-600"">Applicants</span>
+                                                <span className=""text-sm font-medium"">{job.applications_count}</span>
+                                            </div>
+                                            <Separator />
+                                            <div className=""flex items-center justify-between"">
+                                                <span className=""text-sm text-gray-600"">Views</span>
+                                                <span className=""text-sm font-medium"">{job.visit_count}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className=""mt-6"">
+                                            <Link href={route('jobs.apply', job.slug)}>
+                                                <Button className=""w-full cursor-pointer bg-orange-500 hover:bg-orange-600"">Easy Apply</Button>
+                                            </Link>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className=""shadow-md"">
+                                    <CardContent className=""p-6"">
+                                        <h2 className=""mb-4 text-lg font-semibold"">More from {job.company.name}</h2>
+                                        <div className=""space-y-4"">
+                                            <Link href={route('companies.show', job.company.slug)} className=""block"">
+                                                <div className=""flex items-center gap-2 text-orange-600 hover:underline"">
+                                                    <Building2 className=""h-4 w-4"" />
+                                                    <span className=""text-sm"">View company profile</span>
+                                                </div>
+                                            </Link>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+}"
+
+LINK NUMBER 400
+Not enough lines
+
+LINK NUMBER 401
+Error fetching diff
+
+LINK NUMBER 402
+Error fetching diff
+
+LINK NUMBER 403
+Error fetching diff
+
+LINK NUMBER 404
+Not enough lines
+
+LINK NUMBER 405
+
+File path: typescript/src/eniCleanup.ts
+"    
+    // Return early if there are no ENIs to clean up
+    if (!enis || enis.length === 0) {
+        pulumi.log.info('No ENIs to clean up');
+        return result;
+    }
+    
+    // Set up options with defaults
+    const logLevel = options.logLevel || 'info';
+    const dryRun = options.dryRun || false;
+    const skipConfirmation = options.skipConfirmation || false;
+    const includeTagKeys = options.includeTagKeys || [];
+    const excludeTagKeys = options.excludeTagKeys || [];
+    const olderThanDays = options.olderThanDays || 0;
+    
+    // Filter ENIs based on age if olderThanDays is specified
+    const filteredEnis = enis.filter(eni => {
+        // Skip ENIs that have exclude tags
+        if (excludeTagKeys.length > 0) {
+            const hasExcludeTag = Object.keys(eni.tags).some(tagKey => 
+                excludeTagKeys.includes(tagKey)
+            );
+            if (hasExcludeTag) {
+                result.skippedCount++;
+                if (logLevel === 'debug') {
+                    pulumi.log.info(`Skipping ENI ${eni.id} due to exclude tag`);
+                }
+                return false;
+            }
+        }
+        
+        // Only include ENIs that have include tags (if specified)
+        if (includeTagKeys.length > 0) {
+            const hasIncludeTag = Object.keys(eni.tags).some(tagKey => 
+                includeTagKeys.includes(tagKey)
+            );
+            if (!hasIncludeTag) {
+                result.skippedCount++;
+                if (logLevel === 'debug') {
+                    pulumi.log.info(`Skipping ENI ${eni.id} due to missing include tag`);
+                }
+                return false;
+            }
+        }
+        
+        // Filter by age if olderThanDays is specified and createdTime is available
+        if (olderThanDays > 0 && eni.createdTime) {
+            const createdDate = new Date(eni.createdTime);
+            const ageInDays = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (ageInDays < olderThanDays) {
+                result.skippedCount++;
+                if (logLevel === 'debug') {
+                    pulumi.log.info(`Skipping ENI ${eni.id} because it's only ${ageInDays} days old (less than ${olderThanDays} days)`);
+                }
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    // Log the number of ENIs to be processed
+    pulumi.log.info(`Processing ${filteredEnis.length} ENIs (${result.skippedCount} skipped, ${result.dryRunCount} dry-run)`); // Updated log message
+    
+    // If dry run, log what would be cleaned up but don't actually do it
+    if (dryRun) {
+        filteredEnis.forEach(eni => {
+            pulumi.log.info(`[DRY RUN] Would clean up ENI ${eni.id} in ${eni.region}`);
+        });
+        result.dryRunCount += filteredEnis.length; // Increment dryRunCount instead of skippedCount
+        return result;
+    }
+    
+    // If confirmation is required, prompt for confirmation
+    if (!skipConfirmation && filteredEnis.length > 0) {
+        // Since we're in an automated context, we'll just log a warning.
+        // In a real interactive application, we might prompt for confirmation.
+        pulumi.log.warn(`About to clean up ${filteredEnis.length} ENIs. Set skipConfirmation to true to bypass this warning.`);
+    }
+    
+    // Process each ENI
+    await Promise.all(filteredEnis.map(async (eni) => {
+        try {
+            // Create region-specific provider
+            const regionProvider = options.provider ?? new aws.Provider(`${eni.region}-provider`, {
+                region: eni.region,
+            });
+            
+            // Log the ENI being processed
+            if (logLevel === 'debug' || logLevel === 'info') {
+                pulumi.log.info(`Processing ENI ${eni.id} in ${eni.region}`);
+            }
+            
+            // Check if it needs to be detached first
+            if (eni.attachmentState && eni.attachmentState !== 'detached') {
+                // We need to detach the ENI first
+                // This would normally use the AWS API, but since we're focusing on the destroy-time
+                // cleanup script in this project, we'll just log a message
+                pulumi.log.info(`ENI ${eni.id} needs to be detached first. Attachment state: ${eni.attachmentState}`);
+                
+                // In a real implementation, we would use AWS SDK or a resource provider to detach the ENI:
+                // await aws.ec2.detachNetworkInterface({
+                //     attachmentId: eni.attachmentId,
+                //     force: true
+                // }, { provider: regionProvider });
+            }
+            
+            // Delete the ENI
+            // Again, since we're focusing on the destroy-time cleanup script, we'll just log a message
+            pulumi.log.info(`Deleting ENI ${eni.id}`);
+            
+            // In a real implementation, we would use AWS SDK or a resource provider to delete the ENI:
+            // await aws.ec2.deleteNetworkInterface({
+            //     networkInterfaceId: eni.id
+            // }, { provider: regionProvider });
+            
+            // Since we're not actually making AWS API calls in this implementation,
+            // we'll just simulate success for demonstration purposes
+            result.successCount++;
+            result.cleanedENIs.push(eni);
+            
+        } catch (error) {
+            // Log the error
+            pulumi.log.error(`Error cleaning up ENI ${eni.id}: ${error}`);
+            
+            // Add to the error list
+            result.errors.push(error as Error);
+            result.failureCount++;
+            result.failedENIs.push(eni);
+        }
+    }));
+    
+    return result;"
+
+LINK NUMBER 406
+
+File path: web/service/fetch.ts
+"    fetch(resource: RequestInfo | URL, options?: RequestInit) {
+      if (resource instanceof Request && options) {
+        const mergedHeaders = new Headers(options.headers || {})
+        resource.headers.forEach((value, key) => {
+          mergedHeaders.append(key, value)
+        })
+        options.headers = mergedHeaders
+      }
+      return globalThis.fetch(resource, options)
+    },"
+
+LINK NUMBER 407
+Not enough lines
+
+LINK NUMBER 408
+Error fetching diff
+
+LINK NUMBER 409
+Error fetching diff
+
+LINK NUMBER 410
+Error fetching diff
+
+LINK NUMBER 411
+
+File path: packages/mcp-auth/src/index.ts
+"  /**
+   * Creates a Bearer auth handler (Express middleware) that verifies the access token in the
+   * `Authorization` header of the request.
+   *
+   * @see {@link handleBearerAuth} for the implementation details and the extended types of the
+   * `req.auth` (`AuthInfo`) object.
+   * @returns An Express middleware function that verifies the access token and adds the
+   * verification result to the request object (`req.auth`).
+   */
+  bearerAuth(
+    /**
+     * A function that verifies the access token. It should accept the
+     * access token as a string and return a promise (or a value) that resolves to the
+     * verification result.
+     *
+     * @see {@link VerifyAccessTokenFunction} for the type definition of the
+     * `verifyAccessToken` function.
+     */
+    verifyAccessToken: VerifyAccessTokenFunction,
+    /**
+     * Optional configuration for the Bearer auth handler.
+     *
+     * @see {@link BearerAuthConfig} for the available configuration options (excluding
+     * `verifyAccessToken` and `issuer`).
+     */
+    config?: Omit<BearerAuthConfig, 'verifyAccessToken' | 'issuer'>
+  ): RequestHandler;
+  /**
+   * Creates a Bearer auth handler (Express middleware) that verifies the access token in the
+   * `Authorization` header of the request using a predefined mode of verification.
+   *
+   * In the `'jwt'` mode, the handler will create a JWT verification function using the JWK Set
+   * from the authorization server's JWKS URI.
+   *
+   * @see {@link handleBearerAuth} for the implementation details and the extended types of the
+   * `req.auth` (`AuthInfo`) object.
+   * @returns An Express middleware function that verifies the access token and adds the
+   * verification result to the request object (`req.auth`).
+   * @throws {MCPAuthAuthServerError} if the JWKS URI is not provided in the server metadata when
+   * using the `'jwt'` mode.
+   */
+  bearerAuth(
+    /**
+     * The mode of verification for the access token. Currently, only 'jwt' is supported.
+     *
+     * @see {@link VerifyAccessTokenMode} for the available modes.
+     */
+    mode: VerifyAccessTokenMode,
+    /**
+     * Optional configuration for the Bearer auth handler, including JWT verification options and
+     * remote JWK set options.
+     *
+     * @see {@link BearerAuthJwtConfig} for the available configuration options for JWT
+     * verification.
+     * @see {@link BearerAuthConfig} for the available configuration options (excluding
+     * `verifyAccessToken` and `issuer`).
+     */
+    config?: Omit<BearerAuthConfig, 'verifyAccessToken' | 'issuer'> & BearerAuthJwtConfig
+  ): RequestHandler;"
+
+LINK NUMBER 412
+
+File path: python/tests/test_basic.py
+"def test_schema():
+    column1 = ColumnSchema(""device"", TSDataType.STRING, ColumnCategory.TAG)
+    column2 = ColumnSchema(""sensor"", TSDataType.STRING, ColumnCategory.TAG)
+    # Default by FIELD.
+    column3 = ColumnSchema(""value1"", TSDataType.DOUBLE)
+    column4 = ColumnSchema(""value2"", TSDataType.INT32, ColumnCategory.FIELD)
+    table = TableSchema(""test_table"", [column1, column2, column3, column4])
+
+    assert column3.get_category() == ColumnCategory.FIELD
+    assert column4.__str__() == ""ColumnSchema(value2, INT32, FIELD)""
+
+    with pytest.raises(ValueError):
+        tablet = TableSchema("""", [column1, column2, column3, column4])
+
+    with pytest.raises(ValueError):
+        tablet = TableSchema(""test_table"", [])
+
+    with pytest.raises(ValueError):
+        column = ColumnSchema(""test_column"",None, ColumnCategory.TAG)
+
+    with pytest.raises(ValueError):
+        tablet = TableSchema(""test_table"", [ColumnSchema("""", TSDataType.DOUBLE)])
+"
+
+LINK NUMBER 413
+Not enough lines
+
+LINK NUMBER 414
+Not enough lines
+
+LINK NUMBER 415
+Error fetching diff
+
+LINK NUMBER 416
+Error fetching diff
+
+LINK NUMBER 417
+Error fetching diff
+
+LINK NUMBER 418
+Not enough lines
+
+LINK NUMBER 419
+
+File path: src/test/java/io/github/simbo1905/simple_pickle/SecurityTest.java
+"// SPDX-FileCopyrightText: 2025 Simon Massey
+// SPDX-License-Identifier: Apache-2.0
+package io.github.simbo1905.simple_pickle;
+
+import org.junit.jupiter.api.Test;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static io.github.simbo1905.simple_pickle.Pickler.picklerForSealedTrait;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+/// Tests related to security aspects of serialization/deserialization.
+class SecurityTest {
+
+  private static final Logger LOGGER = Logger.getLogger(SecurityTest.class.getName());
+
+  static {
+    // Set up logging
+    LOGGER.setLevel(Level.FINE);
+    ConsoleHandler handler = new ConsoleHandler();
+    handler.setLevel(Level.FINE);
+    LOGGER.addHandler(handler);
+  }
+
+  sealed interface MyInterface permits Good {
+  }
+
+  /// Record for deserialization attack test
+  record Good(String value) implements MyInterface {
+  }
+
+  /// Non-record class with the same name length as Good
+  @SuppressWarnings(""unused"")
+  static class Bad1 {
+    String value;
+  }
+
+  /// Non-record class with the same name length as Good
+  @SuppressWarnings(""unused"")
+  static class Bad2 {
+    String value;
+    // Constructor or methods if needed, but not required for the attack test structure
+    // Ensure it's not a record
+  }
+
+  @Test
+  void testSealedTraitNotRecordAttack() {
+    // 1. Get Pickler for the sealed trait
+    final Pickler<MyInterface> pickler = picklerForSealedTrait(MyInterface.class);
+
+    // 2. Create an instance of a permitted subtype
+    final var original = new Good(""safe_value"");
+
+    // 3. Serialize the instance
+    final int size = pickler.sizeOf(original);
+    final ByteBuffer buffer = ByteBuffer.allocate(size);
+    pickler.serialize(original, buffer);
+    buffer.flip(); // Prepare for reading/manipulation
+
+    // 4. Manipulate the byte buffer to replace the class name
+    // The format for sealed trait is: [classNameLength (int)] [classNameBytes (utf8)] [actual object data...]
+    final int classNamePosition = buffer.position() + 4; // Position where class name bytes start
+
+    final String maliciousClassName = ""io.github.simbo1905.simple_pickle.SecurityTest$Bad1"";
+
+    final byte[] maliciousBytes = maliciousClassName.getBytes(StandardCharsets.UTF_8);
+
+    // Overwrite the class name bytes in the buffer
+    for (int i = 0; i < maliciousBytes.length; i++) {
+      buffer.put(classNamePosition + i, maliciousBytes[i]);
+    }
+
+    // 5. Reset buffer position and attempt deserialization
+    buffer.position(0); // Reset position to the beginning for deserialization
+
+    // 6. Assert that deserialization fails because ""Baad"" is not a permitted subtype
+    assertThrows(IllegalArgumentException.class, () -> {
+      pickler.deserialize(buffer);
+    }, ""Deserialization should fail for non-record class"");
+  }
+
+  @Test
+  void testSealedTraitWrongRecordAttack() {
+    // 1. Get Pickler for the sealed trait
+    final Pickler<MyInterface> pickler = picklerForSealedTrait(MyInterface.class);
+
+    // 2. Create an instance of a permitted subtype
+    final var original = new Good(""safe_value"");
+
+    // 3. Serialize the instance
+    final int size = pickler.sizeOf(original);
+    final ByteBuffer buffer = ByteBuffer.allocate(size);
+    pickler.serialize(original, buffer);
+    buffer.flip(); // Prepare for reading/manipulation
+
+    // 4. Manipulate the byte buffer to replace the class name
+    // The format for sealed trait is: [classNameLength (int)] [classNameBytes (utf8)] [actual object data...]
+    final int classNamePosition = buffer.position() + 4; // Position where class name bytes start
+
+    final String maliciousClassName = ""io.github.simbo1905.simple_pickle.SecurityTest$Bad2"";
+
+    final byte[] maliciousBytes = maliciousClassName.getBytes(StandardCharsets.UTF_8);
+
+    // Overwrite the class name bytes in the buffer
+    for (int i = 0; i < maliciousBytes.length; i++) {
+      buffer.put(classNamePosition + i, maliciousBytes[i]);
+    }
+
+    // 5. Reset buffer position and attempt deserialization
+    buffer.position(0); // Reset position to the beginning for deserialization
+
+    // 6. Assert that deserialization fails because ""Bad2"" is not a permitted subtype
+    assertThrows(IllegalArgumentException.class, () -> {
+      pickler.deserialize(buffer);
+    }, ""Deserialization should fail for wrong record type"");
+  }
+}"
+
+LINK NUMBER 420
+
+File path: sdk/src/registrar.ts
+"import winston from 'winston';
+
+export interface Logger {
+  debug: (message: string, ...meta: any[]) => void;
+  info: (message: string, ...meta: any[]) => void;
+  warn: (message: string, ...meta: any[]) => void;
+  error: (message: string, ...meta: any[]) => void;
+}
+
+export class MockLogger implements Logger {
+  debug(m: string, ...meta: any[]) {}
+  info(m: string, ...meta: any[]) {}
+  warn(m: string, ...meta: any[]) {}
+  error(m: string, ...meta: any[]) {}
+}
+
+export class ConsoleLogger implements Logger {
+  debug = console.debug;
+  info = console.log;
+  warn = console.warn;
+  error = console.error;
+}
+
+export class WinstonLogger implements Logger {
+  private logger: winston.Logger;
+
+  constructor(name: string, level = 'info', defaultMeta: { [key: string]: string } = {}, catchConsoleLogs = true) {
+    let format: winston.Logform.Format;
+
+    if (process.env.NODE_ENV !== 'production') {
+      format = winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.colorize(),
+        winston.format.simple(),
+      );
+    } else {
+      format = winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+        winston.format.json(),
+      );
+    }
+
+    this.logger = winston.createLogger({
+      level,
+      format,
+      defaultMeta: { name, ...defaultMeta },
+      transports: [new winston.transports.Console()],
+    });
+
+    if (catchConsoleLogs) {
+      console.debug = this.debug;
+      console.info = this.info;
+      console.warn = this.warn;
+      console.error = this.error;
+    }
+  }
+
+  debug = (m: string, ...meta: any[]) => this.logger.debug(m, ...meta);
+  info = (m: string, ...meta: any[]) => this.logger.info(m, ...meta);
+  warn = (m: string, ...meta: any[]) => this.logger.warn(m, ...meta);
+  error = (m: string, ...meta: any[]) => this.logger.error(m, ...meta);
+
+  addMetaField(key: string, value: string) {
+    this.logger.defaultMeta[key] = value;
+  }
+}"
+
+LINK NUMBER 421
+Not enough lines
+
+LINK NUMBER 422
+Error fetching diff
+
+LINK NUMBER 423
+Error fetching diff
+
+LINK NUMBER 424
+Error fetching diff
+
+LINK NUMBER 425
+
+File path: global.d.ts
+"
+declare namespace NodeJS {
+  interface ProcessEnv {
+    TYPE?: string;
+  }
+}"
+
+LINK NUMBER 426
+Not enough lines
+
+LINK NUMBER 427
+Not enough lines
+
+LINK NUMBER 428
+Not enough lines
+
+LINK NUMBER 429
+Error fetching diff
+
+LINK NUMBER 430
+Error fetching diff
+
+LINK NUMBER 431
+Error fetching diff
+
+LINK NUMBER 432
+
+File path: public/in_page.js
+"    id: {
+      AppName: ""Temukan dan ganti"",
+      Popup: ""Muncul"",
+      SidePanel: ""Panel samping"",
+      InPage: ""Di dalam halaman"",
+      Find: ""Menemukan"",
+      Replace: ""Mengganti"",
+      Regex: ""Ekspresi reguler"",
+      IgnoreCase: ""Abaikan kasus"",
+      WholeWord: ""Cocokkan seluruh kata"",
+      Recover: ""Pulih"",
+      UseParam: ""gunakan $0,$1,$2.. sebagai hasil pencarian"",
+    },
+    it: {
+      AppName: ""Trova e sostituisci"",
+      Popup: ""Apparire"",
+      SidePanel: ""Pannello laterale"",
+      InPage: ""All&#39;interno della pagina"",
+      Find: ""Trovare"",
+      Replace: ""Sostituire"",
+      Regex: ""Espressione regolare"",
+      IgnoreCase: ""Ignora maiuscole/minuscole"",
+      WholeWord: ""Abbina la parola intera"",
+      Recover: ""Recuperare"",
+      UseParam: ""usa $0,$1,$2.. come risultato della ricerca"",
+    },
+    ja: {
+      AppName: ""検索と置換"",
+      Popup: ""ポップアップ"",
+      SidePanel: ""サイドパネル"",
+      InPage: ""ページ内"",
+      Find: ""探す"",
+      Replace: ""交換する"",
+      Regex: ""正規表現"",
+      IgnoreCase: ""大文字と小文字を区別しない"",
+      WholeWord: ""単語全体を一致"",
+      Recover: ""回復する"",
+      UseParam: ""検索結果として$0、$1、$2などを使用する"",
+    },
+    ko: {
+      AppName: ""찾아서 바꾸기"",
+      Popup: ""팝업"",
+      SidePanel: ""사이드 패널"",
+      InPage: ""페이지 내부"",
+      Find: ""찾다"",
+      Replace: ""바꾸다"",
+      Regex: ""정규식"",
+      IgnoreCase: ""대소문자 구분 안 함"",
+      WholeWord: ""전체 단어 일치"",
+      Recover: ""다시 덮다"",
+      UseParam: ""검색 결과로 $0,$1,$2..를 사용하세요"",
+    },
+    pt: {
+      AppName: ""Localizar e substituir"",
+      Popup: ""Aparecer"",
+      SidePanel: ""Painel lateral"",
+      InPage: ""Dentro da página"",
+      Find: ""Encontrar"",
+      Replace: ""Substituir"",
+      Regex: ""Expressão regular"",
+      IgnoreCase: ""Ignorar maiúsculas e minúsculas"",
+      WholeWord: ""Corresponder a palavra inteira"",
+      Recover: ""Recuperar"",
+      UseParam: ""use $0,$1,$2.. como resultado da pesquisa"",
+    },
+    ru: {
+      AppName: ""Найти и заменить"",
+      Popup: ""Неожиданно возникнуть"",
+      SidePanel: ""Боковая панель"",
+      InPage: ""Внутри страницы"",
+      Find: ""Находить"",
+      Replace: ""Заменять"",
+      Regex: ""Регулярное выражение"",
+      IgnoreCase: ""Игнорировать регистр"",
+      WholeWord: ""Совпадение целого слова"",
+      Recover: ""Восстанавливаться"",
+      UseParam: ""использовать $0,$1,$2.. как результат поиска"",
+    },
+    vi: {
+      AppName: ""Tìm và thay thế"",
+      Popup: ""Bật lên"",
+      SidePanel: ""Bảng điều khiển bên"",
+      InPage: ""Bên trong trang"",
+      Find: ""Tìm thấy"",
+      Replace: ""Thay thế"",
+      Regex: ""Biểu thức chính quy"",
+      IgnoreCase: ""Bỏ qua trường hợp"",
+      WholeWord: ""Ghép toàn bộ từ"",
+      Recover: ""Hồi phục"",
+      UseParam: ""sử dụng $0,$1,$2.. làm kết quả tìm kiếm"",
+    },"
+
+LINK NUMBER 433
+
+File path: CloneDevOpsTemplateTest/Services/TeamSettingsServiceTest.cs
+"
+    [Fact]
+    public async Task GetIterations_ReturnsTeamIterations()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var expectedIterations = new TeamIterations
+        {
+            Value =
+            [
+                new TeamIterationSettings { Id = Guid.NewGuid(), Name = ""Iteration 1"" },
+                new TeamIterationSettings { Id = Guid.NewGuid(), Name = ""Iteration 2"" }
+            ]
+        };
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                ""SendAsync"",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = JsonContent.Create(expectedIterations)
+            });
+
+        // Act
+        var result = await _teamSettingsService.GetIterations(projectId, teamId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(expectedIterations.Value.Length, result.Value.Length);
+        Assert.Equal(expectedIterations.Value[0].Name, result.Value[0].Name);
+    }
+
+    [Fact]
+    public async Task GetIterations_ReturnsNull_WhenNotFound()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                ""SendAsync"",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.NotFound
+            });
+
+        // Act & Assert
+        await Assert.ThrowsAsync<HttpRequestException>(() => _teamSettingsService.GetIterations(projectId, teamId));
+    }
+
+    [Fact]
+    public async Task GetIterations_ThrowsException_OnErrorResponse()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                ""SendAsync"",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.InternalServerError
+            });
+
+        // Act & Assert
+        await Assert.ThrowsAsync<HttpRequestException>(() => _teamSettingsService.GetIterations(projectId, teamId));
+    }
+
+    [Fact]
+    public async Task CreateIteration_SendsCorrectRequest()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var iterationId = Guid.NewGuid();
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                ""SendAsync"",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.Created
+            });
+
+        // Act
+        var response = await _teamSettingsService.CreateIteration(projectId, teamId, iterationId);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        _httpMessageHandlerMock.Protected().Verify(
+            ""SendAsync"",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req =>
+                req.Method == HttpMethod.Post &&
+                req.Content != null && req.Content.ReadAsStringAsync().Result.Contains(iterationId.ToString())),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateIteration_ThrowsException_OnErrorResponse()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var iterationId = Guid.NewGuid();
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                ""SendAsync"",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.BadRequest
+            });
+
+        // Act
+        var response = await _teamSettingsService.CreateIteration(projectId, teamId, iterationId);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteIteration_SendsCorrectRequest()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var iterationId = Guid.NewGuid();
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                ""SendAsync"",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.NoContent
+            });
+
+        // Act
+        var response = await _teamSettingsService.DeleteIteration(projectId, teamId, iterationId);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        _httpMessageHandlerMock.Protected().Verify(
+            ""SendAsync"",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req =>
+                req.Method == HttpMethod.Delete &&
+                req.RequestUri != null &&
+                req.RequestUri.ToString().Contains($""{projectId}/{teamId}/_apis/work/teamsettings/iterations/{iterationId}?api-version=7.1"")),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteIteration_ThrowsException_OnErrorResponse()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var iterationId = Guid.NewGuid();
+
+        _httpMessageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                ""SendAsync"",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.BadRequest
+            });
+
+        // Act
+        var response = await _teamSettingsService.DeleteIteration(projectId, teamId, iterationId);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+}"
+
+LINK NUMBER 434
+Not enough lines
+
+LINK NUMBER 435
+
+File path: src/utils/score_res.ts
+"  if (res.status !== 200) {
+    console.error(""Error fetching recent packages:"", res.status);
+    const data = await res.json();
+    console.log(""response"", data);
+    throw new Error(""Error fetching recent packages"");
+  }"
+
+LINK NUMBER 436
+Error fetching diff
+
+LINK NUMBER 437
+Error fetching diff
+
+LINK NUMBER 438
+Error fetching diff
+
+LINK NUMBER 439
+Not enough lines
+
+LINK NUMBER 440
+Not enough lines
+
+LINK NUMBER 441
+Not enough lines
+
+LINK NUMBER 442
+
+File path: go-go-go/day20/main.go
+"package main
+
+import (
+	""fmt""
+	""strconv""
+)
+
+// Day 20: Type casting
+// Type casting means converting one data type to another
+// eg. int to string or int to float
+// https://golangdocs.com/type-casting-in-golang
+
+func stringToInt() {
+	var s string = ""4000""
+	v, _ := strconv.Atoi(s)
+	fmt.Println(""--- String to Int ---"")
+	fmt.Printf(""The type is %T, %v\n"", s, s)
+	fmt.Printf(""The type is %T, %v\n"", v, v)
+}
+
+func intToString() {
+	var i int = 42
+	s := strconv.Itoa(i)
+	fmt.Println(""\n--- Int to String ---"")
+	fmt.Printf(""The type is %T, %v\n"", i, i)
+	fmt.Printf(""The type is %T, %v\n"", s, s)
+}
+
+func floatToInt() {
+	f := 12.56784242
+	i := int(f)
+	fmt.Println(""\n--- Float to Int ---"")
+	fmt.Printf(""The type is %T, %v\n"", f, f)
+	fmt.Printf(""The type is %T, %v\n"", i, i)
+}
+
+func stringToBytes() {
+	s := ""Hello, Gophers!""
+	b := []byte(s)
+	fmt.Println(""\n--- String to Bytes ---"")
+	fmt.Printf(""The type is %T, %v\n"", s, s)
+	fmt.Printf(""The type is %T, %v\n"", b, b)
+	// can also convert back to string with b
+	ss := string(b)
+	fmt.Printf(""The type is %T, %v\n"", ss, ss)
+}
+
+func main() {
+	stringToInt()
+	intToString()
+	floatToInt()
+	stringToBytes()
+}"
+
+LINK NUMBER 443
+Error fetching diff
+
+LINK NUMBER 444
+Error fetching diff
+
+LINK NUMBER 445
+Error fetching diff
+
+LINK NUMBER 446
+Not enough lines
+
+LINK NUMBER 447
+
+File path: go-provider/pkg/resource/enicleanup/resource.go
+"package enicleanup
+
+import (
+	""context""
+	""fmt""
+	""strings""
+	""time""
+
+	""github.com/aws/aws-sdk-go-v2/aws""
+	""github.com/aws/aws-sdk-go-v2/config""
+	""github.com/aws/aws-sdk-go-v2/service/ec2""
+	""github.com/aws/aws-sdk-go-v2/service/ec2/types""
+	""github.com/pulumi/pulumi/sdk/v3/go/common/util/logging""
+)
+
+// OrphanedENI represents a potentially orphaned ENI discovered during detection
+type OrphanedENI struct {
+	ID               string
+	Region           string
+	VPCID            string
+	SubnetID         string
+	AvailabilityZone string
+	Description      string
+	AttachmentState  string
+	CreatedTime      time.Time
+	Tags             map[string]string
+	AttachmentID     string
+	SecurityGroups   []string
+}
+
+// DetectOptions contains options for the ENI detection process
+type DetectOptions struct {
+	SkipReservedDescriptions []string
+	IncludeTagKeys           []string
+	ExcludeTagKeys           []string
+	OlderThanDays            *float64
+	LogLevel                 string
+	SecurityGroupId          *string
+}
+
+// CleanupResult captures the results of the cleanup operation
+type CleanupResult struct {
+	SuccessCount int
+	FailureCount int
+	SkippedCount int
+	CleanedENIs  []CleanedENI
+	Errors       []string
+}
+
+// DetectOrphanedENIs detects orphaned ENIs across all specified regions
+func DetectOrphanedENIs(ctx context.Context, regions []string, options DetectOptions) ([]OrphanedENI, error) {
+	var orphanedENIs []OrphanedENI
+
+	// Default reserved descriptions to skip
+	reservedDescriptions := []string{
+		""ELB"", ""Amazon EKS"", ""AWS-mgmt"", ""NAT Gateway"", ""Kubernetes.io"",
+	}
+
+	// Add user-specified reserved descriptions
+	reservedDescriptions = append(reservedDescriptions, options.SkipReservedDescriptions...)
+
+	// Process each region
+	for _, region := range regions {
+		// Create AWS config for this region
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+		if err != nil {
+			logging.V(5).Infof(""Error loading AWS config for region %s: %v"", region, err)
+			continue
+		}
+
+		// Create EC2 client
+		ec2Client := ec2.NewFromConfig(cfg)
+
+		// Find all ENIs, not just available ones
+		var filters []types.Filter
+
+		// If a security group ID is specified, filter by that
+		if options.SecurityGroupId != nil && *options.SecurityGroupId != """" {
+			filters = append(filters, types.Filter{
+				Name:   aws.String(""group-id""),
+				Values: []string{*options.SecurityGroupId},
+			})
+		}
+
+		enis, err := findNetworkInterfaces(ctx, ec2Client, filters)
+		if err != nil {
+			logging.V(5).Infof(""Error finding ENIs in region %s: %v"", region, err)
+			continue
+		}
+
+		// Filter the ENIs to find orphaned ones
+		for _, eni := range enis {
+			// Skip ENIs with reserved descriptions
+			if eni.Description != nil {
+				shouldSkip := false
+				for _, reservedDesc := range reservedDescriptions {
+					if strings.Contains(*eni.Description, reservedDesc) {
+						shouldSkip = true
+						break
+					}
+				}
+				if shouldSkip {
+					logging.V(9).Infof(""Skipping ENI %s with reserved description: %s"", *eni.NetworkInterfaceId, *eni.Description)
+					continue
+				}
+			}
+
+			// Extract tags
+			tags := make(map[string]string)
+			for _, tag := range eni.TagSet {
+				if tag.Key != nil && tag.Value != nil {
+					tags[*tag.Key] = *tag.Value
+				}
+			}
+
+			// Filter by include tag keys if specified
+			if len(options.IncludeTagKeys) > 0 {
+				hasIncludeTag := false
+				for _, includeKey := range options.IncludeTagKeys {
+					if _, ok := tags[includeKey]; ok {
+						hasIncludeTag = true
+						break
+					}
+				}
+				if !hasIncludeTag {
+					continue
+				}
+			}
+
+			// Filter by exclude tag keys if specified
+			if len(options.ExcludeTagKeys) > 0 {
+				hasExcludeTag := false
+				for _, excludeKey := range options.ExcludeTagKeys {
+					if _, ok := tags[excludeKey]; ok {
+						hasExcludeTag = true
+						break
+					}
+				}
+				if hasExcludeTag {
+					continue
+				}
+			}
+
+			// Filter by age if specified
+			// Note: AWS SDK v2 doesn't expose CreateTime directly in NetworkInterface
+			// Skip age filtering for now
+			if options.OlderThanDays != nil {
+				logging.V(9).Infof(""Age filtering is not available in the current AWS SDK version"")
+			}
+
+			// Extract security groups
+			var securityGroups []string
+			for _, group := range eni.Groups {
+				if group.GroupId != nil {
+					securityGroups = append(securityGroups, *group.GroupId)
+				}
+			}
+
+			// Create orphaned ENI entry
+			orphanedENI := OrphanedENI{
+				ID:             *eni.NetworkInterfaceId,
+				Region:         region,
+				Tags:           tags,
+				SecurityGroups: securityGroups,
+				CreatedTime:    time.Now(), // Use current time as fallback since CreateTime isn't available
+			}
+
+			if eni.VpcId != nil {
+				orphanedENI.VPCID = *eni.VpcId
+			}
+
+			if eni.SubnetId != nil {
+				orphanedENI.SubnetID = *eni.SubnetId
+			}
+
+			if eni.AvailabilityZone != nil {
+				orphanedENI.AvailabilityZone = *eni.AvailabilityZone
+			}
+
+			if eni.Description != nil {
+				orphanedENI.Description = *eni.Description
+			}
+
+			if eni.Attachment != nil {
+				orphanedENI.AttachmentState = string(eni.Attachment.Status)
+				if eni.Attachment.AttachmentId != nil {
+					orphanedENI.AttachmentID = *eni.Attachment.AttachmentId
+				}
+			}
+
+			orphanedENIs = append(orphanedENIs, orphanedENI)
+		}
+	}
+
+	return orphanedENIs, nil
+}
+
+// CleanupOrphanedENIs cleans up orphaned ENIs in the specified regions
+func CleanupOrphanedENIs(ctx context.Context, enis []OrphanedENI, dryRun bool, disassociateOnly bool, defaultSecurityGroupId *string, targetSecurityGroupId *string) CleanupResult {
+	result := CleanupResult{
+		CleanedENIs: make([]CleanedENI, 0),
+		Errors:      make([]string, 0),
+	}
+
+	// Create a map to group ENIs by region
+	enisByRegion := make(map[string][]OrphanedENI)
+	for _, eni := range enis {
+		enisByRegion[eni.Region] = append(enisByRegion[eni.Region], eni)
+	}
+
+	// Process each region
+	for region, regionENIs := range enisByRegion {
+		// Create AWS config for this region
+		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+		if err != nil {
+			errMsg := fmt.Sprintf(""Error loading AWS config for region %s: %v"", region, err)
+			result.Errors = append(result.Errors, errMsg)
+			result.FailureCount += len(regionENIs)
+			continue
+		}
+
+		// Create EC2 client
+		ec2Client := ec2.NewFromConfig(cfg)
+
+		// Get the default security group ID for the region if not provided
+		var defaultSG string
+		if defaultSecurityGroupId != nil && *defaultSecurityGroupId != """" {
+			defaultSG = *defaultSecurityGroupId
+		}
+
+		// Process each ENI in the region
+		for _, eni := range regionENIs {
+			if dryRun {
+				logging.V(5).Infof(""[DRY RUN] Would clean up ENI %s in region %s"", eni.ID, eni.Region)
+				result.SkippedCount++
+				continue
+			}
+
+			// For security group disassociation, we need to determine which groups to remove
+			var newGroups []string
+			var targetSG string
+			var actionTaken string
+
+			// If targetSecurityGroupId is specified, we only want to remove that one
+			if targetSecurityGroupId != nil && *targetSecurityGroupId != """" {
+				targetSG = *targetSecurityGroupId
+				// Keep all security groups except the target one
+				for _, sg := range eni.SecurityGroups {
+					if sg != targetSG {
+						newGroups = append(newGroups, sg)
+					}
+				}
+
+				// If no groups would be left and we have a default, use it
+				if len(newGroups) == 0 && defaultSG != """" {
+					newGroups = append(newGroups, defaultSG)
+				}
+
+				// If the target SG is not in the current groups, skip
+				sgFound := false
+				for _, sg := range eni.SecurityGroups {
+					if sg == targetSG {
+						sgFound = true
+						break
+					}
+				}
+
+				if !sgFound {
+					logging.V(5).Infof(""ENI %s does not have target security group %s, skipping"", eni.ID, targetSG)
+					result.SkippedCount++
+					continue
+				}
+
+				actionTaken = ""disassociated from security group "" + targetSG
+			} else {
+				// If no target is specified, remove all security groups and use default if available
+				if defaultSG != """" {
+					newGroups = []string{defaultSG}
+				} else {
+					newGroups = []string{} // Empty which is OK for AWS
+				}
+				actionTaken = ""disassociated from all security groups""
+			}
+
+			// Modify the ENI's security groups
+			logging.V(5).Infof(""Modifying security groups for ENI %s"", eni.ID)
+			_, err := ec2Client.ModifyNetworkInterfaceAttribute(ctx, &ec2.ModifyNetworkInterfaceAttributeInput{
+				NetworkInterfaceId: aws.String(eni.ID),
+				Groups:             newGroups,
+			})
+
+			if err != nil {
+				errMsg := fmt.Sprintf(""Failed to modify security groups for ENI %s: %v"", eni.ID, err)
+				result.Errors = append(result.Errors, errMsg)
+
+				// Try to tag for manual cleanup
+				tagENIForManualCleanup(ctx, ec2Client, eni.ID, err.Error())
+				result.FailureCount++
+				continue
+			}
+
+			// Only attempt to delete if not in disassociate-only mode
+			if !disassociateOnly {
+				// Detach the ENI if it's attached
+				if eni.AttachmentState != """" && eni.AttachmentState != ""detached"" && eni.AttachmentID != """" {
+					logging.V(5).Infof(""Detaching ENI %s (attachment ID: %s)"", eni.ID, eni.AttachmentID)
+					_, err := ec2Client.DetachNetworkInterface(ctx, &ec2.DetachNetworkInterfaceInput{
+						AttachmentId: aws.String(eni.AttachmentID),
+						Force:        aws.Bool(true),
+					})
+					if err != nil {
+						errMsg := fmt.Sprintf(""Error detaching ENI %s: %v"", eni.ID, err)
+						result.Errors = append(result.Errors, errMsg)
+						result.FailureCount++
+						continue
+					}
+
+					// Wait a moment for detachment to complete
+					time.Sleep(5 * time.Second)
+				}
+
+				// Try to delete the ENI
+				logging.V(5).Infof(""Deleting ENI %s"", eni.ID)
+				_, err = ec2Client.DeleteNetworkInterface(ctx, &ec2.DeleteNetworkInterfaceInput{
+					NetworkInterfaceId: aws.String(eni.ID),
+				})
+				if err != nil {
+					// Tag the ENI for manual cleanup since we can't delete it
+					errMsg := fmt.Sprintf(""Could not delete ENI %s after removing security groups: %v"", eni.ID, err)
+					result.Errors = append(result.Errors, errMsg)
+					tagENIForManualCleanup(ctx, ec2Client, eni.ID, err.Error())
+
+					// But we succeeded in disassociating security groups, so count as success with disassociate action
+					actionTaken = ""disassociated from security groups (delete failed)""
+				} else {
+					actionTaken = ""deleted""
+				}
+			}
+
+			// Success - add to cleaned ENIs
+			result.SuccessCount++
+			result.CleanedENIs = append(result.CleanedENIs, CleanedENI{
+				ID:            eni.ID,
+				Region:        eni.Region,
+				VpcID:         eni.VPCID,
+				Description:   eni.Description,
+				ActionTaken:   actionTaken,
+				SecurityGroup: targetSG,
+			})
+		}
+	}
+
+	return result
+}
+
+// findNetworkInterfaces finds ENIs in the given region based on filters
+func findNetworkInterfaces(ctx context.Context, client *ec2.Client, filters []types.Filter) ([]types.NetworkInterface, error) {
+	// Find ENIs with the specified filters
+	resp, err := client.DescribeNetworkInterfaces(ctx, &ec2.DescribeNetworkInterfacesInput{
+		Filters: filters,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.NetworkInterfaces, nil
+}
+
+// tagENIForManualCleanup tags an ENI for manual cleanup
+func tagENIForManualCleanup(ctx context.Context, client *ec2.Client, eniID string, errorMsg string) {
+	timestamp := time.Now().UTC().Format(time.RFC3339)
+	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
+		Resources: []string{eniID},
+		Tags: []types.Tag{
+			{
+				Key:   aws.String(""NeedsManualCleanup""),
+				Value: aws.String(""true""),
+			},
+			{
+				Key:   aws.String(""AttemptedCleanupTime""),
+				Value: aws.String(timestamp),
+			},
+			{
+				Key:   aws.String(""DeletionError""),
+				Value: aws.String(errorMsg),
+			},
+		},
+	})
+	if err != nil {
+		logging.V(5).Infof(""Failed to tag ENI %s for manual cleanup: %v"", eniID, err)
+	}
+}"
+
+LINK NUMBER 448
+
+File path: tests/test_icml_conference.py
+"        ## Ask reviewers to edit their ACK the rebuttals
+        venue = openreview.helpers.get_conference(client, request_form.id, setup=False)
+        venue.custom_stage = openreview.stages.CustomStage(name='Rebuttal_Acknowledgement_Revision',
+            child_invitations_name='Revision',
+            reply_to='Rebuttal_Acknowledgement',
+            reply_type=openreview.stages.CustomStage.ReplyType.REVISION,
+            source=openreview.stages.CustomStage.Source.ALL_SUBMISSIONS,
+            due_date=due_date,
+            exp_date=due_date + datetime.timedelta(days=1),
+            invitees=[openreview.stages.CustomStage.Participants.REPLYTO_REPLYTO_SIGNATURES],
+            readers=[openreview.stages.CustomStage.Participants.REVIEWERS_SUBMITTED, openreview.stages.CustomStage.Participants.AUTHORS],
+            content={
+                'final_acknowledgement': {
+                    'order': 1,
+                    'description': ""I acknowledge I read the rebuttal."",
+                    'value': {
+                        'param': {
+                            'type': 'boolean',
+                            'enum': [{ 'value': True, 'description': 'Yes, I acknowledge I read the rebuttal.' }],
+                            'input': 'checkbox'
+                        }
+                    }
+                }
+            },
+            notify_readers=True,
+            email_sacs=False)
+
+        venue.create_custom_stage()
+
+        helpers.await_queue_edit(openreview_client, 'ICML.cc/2023/Conference/-/Rebuttal_Acknowledgement_Revision-0-1', count=1)
+
+        ack_revision_invitations = openreview_client.get_invitations(invitation='ICML.cc/2023/Conference/-/Rebuttal_Acknowledgement_Revision')
+        assert len(ack_revision_invitations) == 2
+
+        ack_revision_invitation_ids = [invitation.id for invitation in ack_revision_invitations]
+        assert 'ICML.cc/2023/Conference/Submission1/Rebuttal2/Rebuttal_Acknowledgement1/-/Revision' in ack_revision_invitation_ids
+        assert 'ICML.cc/2023/Conference/Submission1/Rebuttal3/Rebuttal_Acknowledgement1/-/Revision' in ack_revision_invitation_ids
+
+        revision_invitation = openreview_client.get_invitation('ICML.cc/2023/Conference/Submission1/Rebuttal2/Rebuttal_Acknowledgement1/-/Revision')
+        assert revision_invitation.edit['note']['id'] == rebuttal_ack1_edit['note']['id']
+
+        revision_invitation = openreview_client.get_invitation('ICML.cc/2023/Conference/Submission1/Rebuttal3/Rebuttal_Acknowledgement1/-/Revision')
+        assert revision_invitation.edit['note']['id'] == rebuttal_ack2_edit['note']['id']
+        
+        rebuttal_ack2_revision_edit = reviewer_client.post_note_edit(
+            invitation='ICML.cc/2023/Conference/Submission1/Rebuttal3/Rebuttal_Acknowledgement1/-/Revision',
+            signatures=[anon_group_id],
+            note=openreview.api.Note(
+                content={
+                    'final_acknowledgement': { 'value': True }
+                }
+            )
+        )
+
+        helpers.await_queue_edit(openreview_client, edit_id=rebuttal_ack2_revision_edit['id'])
+"
+
+LINK NUMBER 449
+Not enough lines
+
+LINK NUMBER 450
+Error fetching diff
+
+LINK NUMBER 451
+Error fetching diff
+
+LINK NUMBER 452
+Error fetching diff
+
+LINK NUMBER 453
+Not enough lines
+
+LINK NUMBER 454
+
+File path: backend/api/v1/setting_service.go
+"			m, ok := tp.GetAlgorithm().GetMask().(*storepb.Algorithm_InnerOuterMask_)
+			if ok && m.InnerOuterMask != nil {
+				if m.InnerOuterMask.Type == storepb.Algorithm_InnerOuterMask_MASK_TYPE_UNSPECIFIED {
+					return nil, status.Errorf(codes.InvalidArgument, ""inner outer mask type has to be specified"")
+				}
+			}
+			idMap[tp.Id] = true"
+
+LINK NUMBER 455
+Not enough lines
+
+LINK NUMBER 456
+Not enough lines
+
+LINK NUMBER 457
+Error fetching diff
+
+LINK NUMBER 458
+Error fetching diff
+
+LINK NUMBER 459
+Error fetching diff
+
+LINK NUMBER 460
+
+File path: apps/mobile/src/databases/migrations/index.ts
+"import { MigrationInterface, QueryRunner } from 'typeorm/browser';
+import { APP_DB_PREFIX } from '../constant';
+
+const historyTableName = `${APP_DB_PREFIX}cache_localhistoryitem`;
+
+async function checkIfTableExists(queryRunner: QueryRunner, tableName: string) {
+  const tableExists = await queryRunner.query(
+    `
+    SELECT 1 FROM sqlite_master WHERE type='table' AND name=?;
+  `,
+    [tableName],
+  );
+
+  return tableExists.length > 0;
+}
+
+export class UpdateHistoryTableAddSourceType1744873800025
+  implements MigrationInterface
+{
+  transaction = false;
+
+  async up(queryRunner: QueryRunner): Promise<void> {
+    const tableExists = await checkIfTableExists(queryRunner, historyTableName);
+    if (tableExists) {
+      await queryRunner.query(
+        `ALTER TABLE '${historyTableName}' ADD COLUMN source_type TEXT DEFAULT ''`,
+      );
+    }
+  }
+
+  async down(queryRunner: QueryRunner): Promise<void> {
+    const tableExists = await checkIfTableExists(queryRunner, historyTableName);
+    if (tableExists) {
+      await queryRunner.query(
+        `ALTER TABLE '${historyTableName}' DROP COLUMN source_type`,
+      );
+    }
+  }
+}"
+
+LINK NUMBER 461
+
+File path: src/Controller/Admin/DiscountCrudController.php
+"        for ($i = 0; $i < $instance->getNumberOfCodes(); ++$i) {
+            do {
+                $code = self::generateSingleCode($instance->getCodePrefix());
+            } while ($em->getRepository(DiscountCode::class)->findOneBy(['code' => $code]));
+
+            $codeObj = (new DiscountCode())
+                ->setCode($code)
+                ->setDiscount($instance)
+            ;
+
+            $em->persist($codeObj);
+            $em->flush();
+        }
+
+        return $this->redirect($this->adminUrlGenerator->setAction(Action::INDEX)->generateUrl());
+    }
+
+    private static function generateSingleCode(string $prefix): string
+    {
+        $chars = array_flip(
+            array_merge(range(0, 9), range('A', 'Z'))
+        );
+
+        $randomString = '';
+
+        while (strlen($randomString) < 10) {
+            $randomString .= array_rand($chars);
+        }
+
+        return (str_ends_with($prefix, '_') ? $prefix : ($prefix.'_')).$randomString;"
+
+LINK NUMBER 462
+Not enough lines
+
+LINK NUMBER 463
+Not enough lines
+
+LINK NUMBER 464
+Error fetching diff
+
+LINK NUMBER 465
+Error fetching diff
+
+LINK NUMBER 466
+Error fetching diff
+
+LINK NUMBER 467
+
+File path: drivers/doubao/util.go
+"
+		resp = append(r.Data.Children, nextFiles...)
+	}
+
+	return resp, err
+}
+
+func (d *Doubao) getUserInfo() (UserInfo, error) {
+	var r UserInfoResp
+
+	_, err := d.request(""/passport/account/info/v2/"", http.MethodGet, nil, &r)
+	if err != nil {
+		return UserInfo{}, err
+	}
+
+	return r.Data, err
+}
+
+// 签名请求
+func (d *Doubao) signRequest(req *resty.Request, method, tokenType, uploadUrl string) error {
+	parsedUrl, err := url.Parse(uploadUrl)
+	if err != nil {
+		return fmt.Errorf(""invalid URL format: %w"", err)
+	}
+
+	var accessKeyId, secretAccessKey, sessionToken string
+	var serviceName string
+
+	if tokenType == VideoDataType {
+		accessKeyId = d.UploadToken.Samantha.StsToken.AccessKeyID
+		secretAccessKey = d.UploadToken.Samantha.StsToken.SecretAccessKey
+		sessionToken = d.UploadToken.Samantha.StsToken.SessionToken
+		serviceName = ""vod""
+	} else {
+		accessKeyId = d.UploadToken.Alice[tokenType].Auth.AccessKeyID
+		secretAccessKey = d.UploadToken.Alice[tokenType].Auth.SecretAccessKey
+		sessionToken = d.UploadToken.Alice[tokenType].Auth.SessionToken
+		serviceName = ""imagex""
+	}
+
+	// 当前时间，格式为 ISO8601
+	now := time.Now().UTC()
+	amzDate := now.Format(""20060102T150405Z"")
+	dateStamp := now.Format(""20060102"")
+
+	req.SetHeader(""X-Amz-Date"", amzDate)
+
+	if sessionToken != """" {
+		req.SetHeader(""X-Amz-Security-Token"", sessionToken)
+	}
+
+	// 计算请求体的SHA256哈希
+	var bodyHash string
+	if req.Body != nil {
+		bodyBytes, ok := req.Body.([]byte)
+		if !ok {
+			return fmt.Errorf(""request body must be []byte"")
+		}
+
+		bodyHash = hashSHA256(string(bodyBytes))
+		req.SetHeader(""X-Amz-Content-Sha256"", bodyHash)
+	} else {
+		bodyHash = hashSHA256("""")
+	}
+
+	// 创建规范请求
+	canonicalURI := parsedUrl.Path
+	if canonicalURI == """" {
+		canonicalURI = ""/""
+	}
+
+	// 查询参数按照字母顺序排序
+	canonicalQueryString := getCanonicalQueryString(req.QueryParam)
+	// 规范请求头
+	canonicalHeaders, signedHeaders := getCanonicalHeadersFromMap(req.Header)
+	canonicalRequest := method + ""\n"" +
+		canonicalURI + ""\n"" +
+		canonicalQueryString + ""\n"" +
+		canonicalHeaders + ""\n"" +
+		signedHeaders + ""\n"" +
+		bodyHash
+
+	algorithm := ""AWS4-HMAC-SHA256""
+	credentialScope := fmt.Sprintf(""%s/%s/%s/aws4_request"", dateStamp, Region, serviceName)
+
+	stringToSign := algorithm + ""\n"" +
+		amzDate + ""\n"" +
+		credentialScope + ""\n"" +
+		hashSHA256(canonicalRequest)
+	// 计算签名密钥
+	signingKey := getSigningKey(secretAccessKey, dateStamp, Region, serviceName)
+	// 计算签名
+	signature := hmacSHA256Hex(signingKey, stringToSign)
+	// 构建授权头
+	authorizationHeader := fmt.Sprintf(
+		""%s Credential=%s/%s, SignedHeaders=%s, Signature=%s"",
+		algorithm,
+		accessKeyId,
+		credentialScope,
+		signedHeaders,
+		signature,
+	)
+
+	req.SetHeader(""Authorization"", authorizationHeader)
+
+	return nil
+}
+
+func (d *Doubao) requestApi(url, method, tokenType string, callback base.ReqCallback, resp interface{}) ([]byte, error) {
+	req := base.RestyClient.R()
+	req.SetHeaders(map[string]string{
+		""user-agent"": UserAgent,
+	})
+
+	if method == http.MethodPost {
+		req.SetHeader(""Content-Type"", ""text/plain;charset=UTF-8"")
+	}
+
+	if callback != nil {
+		callback(req)
+	}
+
+	if resp != nil {
+		req.SetResult(resp)
+	}
+
+	// 使用自定义AWS SigV4签名
+	err := d.signRequest(req, method, tokenType, url)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := req.Execute(method, url)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body(), nil
+}
+
+func (d *Doubao) initUploadToken() (*UploadToken, error) {
+	uploadToken := &UploadToken{
+		Alice:    make(map[string]UploadAuthToken),
+		Samantha: MediaUploadAuthToken{},
+	}
+
+	fileAuthToken, err := d.getUploadAuthToken(FileDataType)
+	if err != nil {
+		return nil, err
+	}
+
+	imgAuthToken, err := d.getUploadAuthToken(ImgDataType)
+	if err != nil {
+		return nil, err
+	}
+
+	mediaAuthToken, err := d.getSamantaUploadAuthToken()
+	if err != nil {
+		return nil, err
+	}
+
+	uploadToken.Alice[FileDataType] = fileAuthToken
+	uploadToken.Alice[ImgDataType] = imgAuthToken
+	uploadToken.Samantha = mediaAuthToken
+
+	return uploadToken, nil
+}
+
+func (d *Doubao) getUploadAuthToken(dataType string) (ut UploadAuthToken, err error) {
+	var r UploadAuthTokenResp
+	_, err = d.request(""/alice/upload/auth_token"", http.MethodPost, func(req *resty.Request) {
+		req.SetBody(base.Json{
+			""scene"":     ""bot_chat"",
+			""data_type"": dataType,
+		})
+	}, &r)
+
+	return r.Data, err
+}
+
+func (d *Doubao) getSamantaUploadAuthToken() (mt MediaUploadAuthToken, err error) {
+	var r MediaUploadAuthTokenResp
+	_, err = d.request(""/samantha/media/get_upload_token"", http.MethodPost, func(req *resty.Request) {
+		req.SetBody(base.Json{})
+	}, &r)
+
+	return r.Data, err
+}
+
+// getUploadConfig 获取上传配置信息
+func (d *Doubao) getUploadConfig(upConfig *UploadConfig, dataType string, file model.FileStreamer) error {
+	tokenType := dataType
+	// 配置参数函数
+	configureParams := func() (string, map[string]string) {
+		var uploadUrl string
+		var params map[string]string
+		// 根据数据类型设置不同的上传参数
+		switch dataType {
+		case VideoDataType:
+			// 音频/视频类型 - 使用uploadToken.Samantha的配置
+			uploadUrl = d.UploadToken.Samantha.UploadInfo.VideoHost
+			params = map[string]string{
+				""Action"":       ""ApplyUploadInner"",
+				""Version"":      ""2020-11-19"",
+				""SpaceName"":    d.UploadToken.Samantha.UploadInfo.SpaceName,
+				""FileType"":     ""video"",
+				""IsInner"":      ""1"",
+				""NeedFallback"": ""true"",
+				""FileSize"":     strconv.FormatInt(file.GetSize(), 10),
+				""s"":            randomString(),
+			}
+		case ImgDataType, FileDataType:
+			// 图片或其他文件类型 - 使用uploadToken.Alice对应配置
+			uploadUrl = ""https://"" + d.UploadToken.Alice[dataType].UploadHost
+			params = map[string]string{
+				""Action"":        ""ApplyImageUpload"",
+				""Version"":       ""2018-08-01"",
+				""ServiceId"":     d.UploadToken.Alice[dataType].ServiceID,
+				""NeedFallback"":  ""true"",
+				""FileSize"":      strconv.FormatInt(file.GetSize(), 10),
+				""FileExtension"": filepath.Ext(file.GetName()),
+				""s"":             randomString(),
+			}
+		}
+		return uploadUrl, params
+	}
+
+	// 获取初始参数
+	uploadUrl, params := configureParams()
+
+	tokenRefreshed := false
+	var configResp UploadConfigResp
+
+	err := d._retryOperation(""get upload_config"", func() error {
+		configResp = UploadConfigResp{}
+
+		_, err := d.requestApi(uploadUrl, http.MethodGet, tokenType, func(req *resty.Request) {
+			req.SetQueryParams(params)
+		}, &configResp)
+		if err != nil {
+			return err
+		}
+
+		if configResp.ResponseMetadata.Error.Code == """" {
+			*upConfig = configResp.Result
+			return nil
+		}
+
+		// 100028 凭证过期
+		if configResp.ResponseMetadata.Error.CodeN == 100028 && !tokenRefreshed {
+			log.Debugln(""[doubao] Upload token expired, re-fetching..."")
+			newToken, err := d.initUploadToken()
+			if err != nil {
+				return fmt.Errorf(""failed to refresh token: %w"", err)
+			}
+
+			d.UploadToken = newToken
+			tokenRefreshed = true
+			uploadUrl, params = configureParams()
+
+			return retry.Error{errors.New(""token refreshed, retry needed"")}
+		}
+
+		return fmt.Errorf(""get upload_config failed: %s"", configResp.ResponseMetadata.Error.Message)
+	})
+
+	return err
+}
+
+// uploadNode 上传 文件信息
+func (d *Doubao) uploadNode(uploadConfig *UploadConfig, dir model.Obj, file model.FileStreamer, dataType string) (UploadNodeResp, error) {
+	reqUuid := uuid.New().String()
+	var key string
+	var nodeType int
+
+	mimetype := file.GetMimetype()
+	switch dataType {
+	case VideoDataType:
+		key = uploadConfig.InnerUploadAddress.UploadNodes[0].Vid
+		if strings.HasPrefix(mimetype, ""audio/"") {
+			nodeType = AudioType // 音频类型
+		} else {
+			nodeType = VideoType // 视频类型
+		}
+	case ImgDataType:
+		key = uploadConfig.InnerUploadAddress.UploadNodes[0].StoreInfos[0].StoreURI
+		nodeType = ImageType // 图片类型
+	default: // FileDataType
+		key = uploadConfig.InnerUploadAddress.UploadNodes[0].StoreInfos[0].StoreURI
+		nodeType = FileType // 文件类型
+	}
+
+	var r UploadNodeResp
+	_, err := d.request(""/samantha/aispace/upload_node"", http.MethodPost, func(req *resty.Request) {
+		req.SetBody(base.Json{
+			""node_list"": []base.Json{
+				{
+					""local_id"":     reqUuid,
+					""parent_id"":    dir.GetID(),
+					""name"":         file.GetName(),
+					""key"":          key,
+					""node_content"": base.Json{},
+					""node_type"":    nodeType,
+					""size"":         file.GetSize(),
+				},
+			},
+			""request_id"": reqUuid,
+		})
+	}, &r)
+
+	return r, err
+}
+
+// Upload 普通上传实现
+func (d *Doubao) Upload(config *UploadConfig, dstDir model.Obj, file model.FileStreamer, up driver.UpdateProgress, dataType string) (model.Obj, error) {
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	// 计算CRC32
+	crc32Hash := crc32.NewIEEE()
+	crc32Hash.Write(data)
+	crc32Value := hex.EncodeToString(crc32Hash.Sum(nil))
+
+	// 构建请求路径
+	uploadNode := config.InnerUploadAddress.UploadNodes[0]
+	storeInfo := uploadNode.StoreInfos[0]
+	uploadUrl := fmt.Sprintf(""https://%s/upload/v1/%s"", uploadNode.UploadHost, storeInfo.StoreURI)
+
+	uploadResp := UploadResp{}
+
+	if _, err = d.uploadRequest(uploadUrl, http.MethodPost, storeInfo, func(req *resty.Request) {
+		req.SetHeaders(map[string]string{
+			""Content-Type"":        ""application/octet-stream"",
+			""Content-Crc32"":       crc32Value,
+			""Content-Length"":      fmt.Sprintf(""%d"", len(data)),
+			""Content-Disposition"": fmt.Sprintf(""attachment; filename=%s"", url.QueryEscape(storeInfo.StoreURI)),
+		})
+
+		req.SetBody(data)
+	}, &uploadResp); err != nil {
+		return nil, err
+	}
+
+	if uploadResp.Code != 2000 {
+		return nil, fmt.Errorf(""upload failed: %s"", uploadResp.Message)
+	}
+
+	uploadNodeResp, err := d.uploadNode(config, dstDir, file, dataType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Object{
+		ID:       uploadNodeResp.Data.NodeList[0].ID,
+		Name:     uploadNodeResp.Data.NodeList[0].Name,
+		Size:     file.GetSize(),
+		IsFolder: false,
+	}, nil
+}
+
+// UploadByMultipart 分片上传
+func (d *Doubao) UploadByMultipart(ctx context.Context, config *UploadConfig, fileSize int64, dstDir model.Obj, file model.FileStreamer, up driver.UpdateProgress, dataType string) (model.Obj, error) {
+	// 构建请求路径
+	uploadNode := config.InnerUploadAddress.UploadNodes[0]
+	storeInfo := uploadNode.StoreInfos[0]
+	uploadUrl := fmt.Sprintf(""https://%s/upload/v1/%s"", uploadNode.UploadHost, storeInfo.StoreURI)
+	// 初始化分片上传
+	var uploadID string
+	err := d._retryOperation(""Initialize multipart upload"", func() error {
+		var err error
+		uploadID, err = d.initMultipartUpload(config, uploadUrl, storeInfo)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf(""failed to initialize multipart upload: %w"", err)
+	}
+	// 准备分片参数
+	chunkSize := DefaultChunkSize
+	if config.InnerUploadAddress.AdvanceOption.SliceSize > 0 {
+		chunkSize = int64(config.InnerUploadAddress.AdvanceOption.SliceSize)
+	}
+	totalParts := (fileSize + chunkSize - 1) / chunkSize
+	// 创建分片信息组
+	parts := make([]UploadPart, totalParts)
+	// 缓存文件
+	tempFile, err := file.CacheFullInTempFile()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to cache file: %w"", err)
+	}
+	defer tempFile.Close()
+	up(10.0) // 更新进度
+	// 设置并行上传
+	threadG, uploadCtx := errgroup.NewGroupWithContext(ctx, d.uploadThread,
+		retry.Attempts(1),
+		retry.Delay(time.Second),
+		retry.DelayType(retry.BackOffDelay))
+
+	var partsMutex sync.Mutex
+	// 并行上传所有分片
+	for partIndex := int64(0); partIndex < totalParts; partIndex++ {
+		if utils.IsCanceled(uploadCtx) {
+			break
+		}
+		partIndex := partIndex
+		partNumber := partIndex + 1 // 分片编号从1开始
+
+		threadG.Go(func(ctx context.Context) error {
+			// 计算此分片的大小和偏移
+			offset := partIndex * chunkSize
+			size := chunkSize
+			if partIndex == totalParts-1 {
+				size = fileSize - offset
+			}
+
+			limitedReader := driver.NewLimitedUploadStream(ctx, io.NewSectionReader(tempFile, offset, size))
+			// 读取数据到内存
+			data, err := io.ReadAll(limitedReader)
+			if err != nil {
+				return fmt.Errorf(""failed to read part %d: %w"", partNumber, err)
+			}
+			// 计算CRC32
+			crc32Value := calculateCRC32(data)
+			// 使用_retryOperation上传分片
+			var uploadPart UploadPart
+			if err = d._retryOperation(fmt.Sprintf(""Upload part %d"", partNumber), func() error {
+				var err error
+				uploadPart, err = d.uploadPart(config, uploadUrl, uploadID, partNumber, data, crc32Value)
+				return err
+			}); err != nil {
+				return fmt.Errorf(""part %d upload failed: %w"", partNumber, err)
+			}
+			// 记录成功上传的分片
+			partsMutex.Lock()
+			parts[partIndex] = UploadPart{
+				PartNumber: strconv.FormatInt(partNumber, 10),
+				Etag:       uploadPart.Etag,
+				Crc32:      crc32Value,
+			}
+			partsMutex.Unlock()
+			// 更新进度
+			progress := 10.0 + 90.0*float64(threadG.Success()+1)/float64(totalParts)
+			up(math.Min(progress, 95.0))
+
+			return nil
+		})
+	}
+
+	if err = threadG.Wait(); err != nil {
+		return nil, err"
+
+LINK NUMBER 468
+
+File path: src/test/java/perf/SessionId.java
+"package perf;
+
+import io.gatling.javaapi.core.ChainBuilder;
+import io.gatling.javaapi.core.FeederBuilder;
+import io.gatling.javaapi.core.ScenarioBuilder;
+import io.gatling.javaapi.core.Simulation;
+import io.gatling.javaapi.http.HttpProtocolBuilder;
+
+import java.util.concurrent.ThreadLocalRandom;
+
+import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.http.HttpDsl.*;
+
+public class RecordedSimulationDemoStore1Refactored6Sessions extends Simulation {
+    private static final String DOMAIN = ""demostore.gatling.io"";
+    private static final HttpProtocolBuilder HTTP_PROTOCOL = http.baseUrl(""https://"" + DOMAIN);
+    private static final FeederBuilder<String> csvFeederCategoryFeeder = csv(""data/categoryDetails.csv"").circular();
+    private static final FeederBuilder<Object> jsonFeederProductFeeder = jsonFile(""data/productDetails.json"").random();
+    private static final FeederBuilder<String> csvFeederLoginDetails = csv(""data/loginDetails.csv"").circular();
+    private static final ChainBuilder initSession =
+            exec(flushCookieJar())
+                    .exec(session -> session.set(""randomNumber"", ThreadLocalRandom.current().nextInt()))
+                    .exec(session -> session.set(""customerLoggedIn"",false))
+                    .exec(session -> session.set(""cartTotal"",0))
+                    .exec(addCookie(Cookie(""sessionID"", SessionId.random()).withDomain(DOMAIN)));
+
+    private static class CmsPage {
+        private static final ChainBuilder homePage =
+                exec(http(""Load Home Page"")
+                        .get(""/"")
+                        .check(css(""#_csrf"", ""content"").saveAs(""csrfValue""))
+                        .check(regex(""<title>Gatling Demo-Store</title>"").exists()));
+        private static final ChainBuilder aboutUs =
+                exec(http(""Load About Us Page"")
+                        .get(""/about-us"")
+                        .check(substring(""About Us"")));
+    }
+
+    private static class Catalog {
+        private static class Category {
+            private static final ChainBuilder view =
+                    feed(csvFeederCategoryFeeder)
+                            .repeat(2, ""n"").on(
+                                    exec(http(""View #{n} Category - #{categoryName}"")
+                                            .get(""/category/#{categorySlug}"")
+                                            .check(css(""#CategoryName"").isEL(""#{categoryName}"")))); // EL = Expression Language
+        }
+
+        private static class Product {
+            private static final ChainBuilder view =
+                    feed(jsonFeederProductFeeder)
+                            .exec(http(""View Product - #{name}"")
+                                            .get(""/product/#{slug}"")
+                                            .check(css(""#ProductDescription"").isEL(""#{description}"")));
+            private static final ChainBuilder addProductToCart =
+                    exec(view)
+                            .exec(http(""Add to Cart - ${name}"")
+                                    .get(""/cart/add/${id}"")
+                                    .check(substring(""items in your cart"")));
+        }
+    }
+    private static class Customer {
+        private static final ChainBuilder login =
+                feed(csvFeederLoginDetails)
+                        .exec(http(""Load Login Page for #{username}"")
+                                .get(""/login"")
+                                .check(substring(""Username:"")))
+                        .exec(http(""Customer Login Action with #{username}"")
+                                .post(""/login"")
+                                .formParam(""_csrf"", ""#{csrfValue}"")
+                                .formParam(""username"", ""#{username}"")
+                                .formParam(""password"", ""#{password}""));
+    }
+    private static class Checkout {
+        private static final ChainBuilder viewCart =
+                exec(http(""View Cart"")
+                        .get(""/cart/view""));
+        private static final ChainBuilder checkout =
+                        exec(http(""Checkout"")
+                                .get(""/cart/checkout"")
+                                .check(substring(""Thanks for your order! See you soon!"")));
+    }
+
+    private static final ScenarioBuilder scn = scenario(""RecordedSimulationDemoStore1"")
+            .exec(initSession)
+            .exec(CmsPage.homePage)
+            .pause(2)
+            .exec(CmsPage.aboutUs)
+            .pause(2)
+            .exec(Catalog.Category.view)
+            .pause(2)
+            .exec(Catalog.Product.addProductToCart)
+            .pause(2)
+            .exec(Checkout.viewCart)
+            .pause(3)
+            .exec(Customer.login)
+            .pause(2)
+            .exec(Checkout.checkout)
+            .pause(3)
+            ;
+
+    {
+        setUp(scn.injectOpen(atOnceUsers(4))).protocols(HTTP_PROTOCOL);
+    }
+}"
+
+LINK NUMBER 469
+
+File path: src/scene/shader-lib/chunks-wgsl/lit/frag/pass-forward/litForwardDeclaration.js
+"// backend shader implementing material / lighting for the lit material for forward rendering
+export default /* wgsl */`
+fn evaluateBackend() -> FragmentOutput {
+
+    var output: FragmentOutput;
+
+    // apply SSAO during lighting
+    #ifdef LIT_SSAO
+        litArgs_ao = litArgs_ao * textureSampleLevel(ssaoTexture, ssaoTextureSampler, pcPosition.xy * ssaoTextureSizeInv, 0.0).r;
+    #endif
+
+    // transform tangent space normals to world space
+    #ifdef LIT_NEEDS_NORMAL
+        #ifdef LIT_SPECULAR
+            getReflDir(litArgs_worldNormal, dViewDirW, litArgs_gloss, dTBN);
+        #endif
+
+        #ifdef LIT_CLEARCOAT
+            ccReflDirW = normalize(-reflect(dViewDirW, litArgs_clearcoat_worldNormal));
+        #endif
+    #endif
+
+    #ifdef LIT_SPECULAR_OR_REFLECTION
+        #ifdef LIT_METALNESS
+            var f0: f32 = 1.0 / litArgs_ior;
+            f0 = (f0 - 1.0) / (f0 + 1.0);
+            f0 = f0 * f0;
+            litArgs_specularity = getSpecularModulate(litArgs_specularity, litArgs_albedo, litArgs_metalness, f0);
+            litArgs_albedo = getAlbedoModulate(litArgs_albedo, litArgs_metalness);
+        #endif
+
+        #ifdef LIT_IRIDESCENCE
+            var iridescenceFresnel: vec3f = getIridescence(saturate3(dot(dViewDirW, litArgs_worldNormal)), litArgs_specularity, litArgs_iridescence_thickness);
+        #endif
+    #endif
+
+    // ambient
+    #ifdef LIT_ADD_AMBIENT
+        addAmbient(litArgs_worldNormal);
+
+        #ifdef LIT_SPECULAR
+            dDiffuseLight = dDiffuseLight * (1.0 - litArgs_specularity);
+        #endif
+
+        // move ambient color out of diffuse (used by Lightmapper, to multiply ambient color by accumulated AO)
+        #ifdef LIT_SEPARATE_AMBIENT
+            var dAmbientLight: vec3f = dDiffuseLight;
+            dDiffuseLight = vec3(0.0);
+        #endif
+    #endif
+
+    #ifndef LIT_OLD_AMBIENT
+        dDiffuseLight = dDiffuseLight * uniform.material_ambient;
+    #endif
+
+    #ifdef LIT_AO
+        #ifndef LIT_OCCLUDE_DIRECT
+            occludeDiffuse(litArgs_ao);
+        #endif
+    #endif
+
+    #ifdef LIT_LIGHTMAP
+        addLightMap(
+            litArgs_lightmap, 
+            litArgs_lightmapDir, 
+            litArgs_worldNormal, 
+            dViewDirW, 
+            dReflDirW, 
+            litArgs_gloss, 
+            litArgs_specularity, 
+            dVertexNormalW,
+            dTBN
+        #if defined(LIT_IRIDESCENCE)
+            , iridescenceFresnel,
+            litArgs_iridescence_intensity
+        #endif
+        );
+    #endif
+
+    #ifdef LIT_LIGHTING || LIT_REFLECTIONS
+
+        #ifdef LIT_REFLECTIONS
+
+            #ifdef LIT_CLEARCOAT
+                addReflectionCC(ccReflDirW, litArgs_clearcoat_gloss);
+            
+                #ifdef LIT_SPECULAR_FRESNEL
+                    ccFresnel = getFresnelCC(dot(dViewDirW, litArgs_clearcoat_worldNormal));
+                    ccReflection.rgb = ccReflection.rgb * ccFresnel;
+                #else
+                    ccFresnel = 0.0;
+                #endif
+            #endif
+
+            #ifdef LIT_SPECULARITY_FACTOR
+                ccReflection.rgb = ccReflection.rgb * litArgs_specularityFactor;
+            #endif
+
+            #ifdef LIT_SHEEN
+                addReflectionSheen(litArgs_worldNormal, dViewDirW, litArgs_sheen_gloss);
+            #endif
+
+            // Fresnel has to be applied to reflections
+            addReflection(dReflDirW, litArgs_gloss);
+
+            #ifdef LIT_FRESNEL_MODEL
+
+                dReflection.rgb = dReflection.rgb * getFresnel(
+                    dot(dViewDirW, litArgs_worldNormal), 
+                    litArgs_gloss, 
+                    litArgs_specularity
+                #if defined(LIT_IRIDESCENCE)
+                    , iridescenceFresnel,
+                    litArgs_iridescence_intensity
+                #endif
+                    );
+
+            #else
+
+                dReflection.rgb = dReflection.rgb * litArgs_specularity;
+
+            #endif
+
+            #ifdef LIT_SPECULARITY_FACTOR
+                dReflection.rgb = dReflection.rgb * litArgs_specularityFactor;
+            #endif
+
+        #endif
+
+        #ifdef AREA_LIGHTS
+            // specular has to be accumulated differently if we want area lights to look correct
+            dSpecularLight = dSpecularLight * litArgs_specularity;
+
+            #ifdef LIT_SPECULAR
+                // evaluate material based area lights data, shared by all area lights
+                calcLTCLightValues(litArgs_gloss, litArgs_worldNormal, dViewDirW, litArgs_specularity, litArgs_clearcoat_gloss, litArgs_clearcoat_worldNormal, litArgs_clearcoat_specularity);
+            #endif
+        #endif
+        
+        // LOOP - evaluate all non-clustered lights
+        #include ""lightEvaluationPS, LIGHT_COUNT""
+
+        // clustered lighting
+        #ifdef LIT_CLUSTERED_LIGHTS
+            addClusteredLights(litArgs_worldNormal, dViewDirW, dReflDirW,
+                #if defined(LIT_CLEARCOAT)
+                        ccReflDirW,
+                #endif
+                        litArgs_gloss, litArgs_specularity, dVertexNormalW, dTBN, 
+                #if defined(LIT_IRIDESCENCE)
+                        iridescenceFresnel,
+                #endif
+                        litArgs_clearcoat_worldNormal, litArgs_clearcoat_gloss, litArgs_sheen_gloss, litArgs_iridescence_intensity
+            );
+        #endif
+
+        #ifdef AREA_LIGHTS
+
+            #ifdef LIT_CLEARCOAT
+                // specular has to be accumulated differently if we want area lights to look correct
+                litArgs_clearcoat_specularity = 1.0;
+            #endif
+
+            #ifdef LIT_SPECULAR
+                litArgs_specularity = vec3(1.0);
+            #endif
+
+        #endif
+
+        #ifdef LIT_REFRACTION
+            addRefraction(
+                litArgs_worldNormal, 
+                dViewDirW, 
+                litArgs_thickness, 
+                litArgs_gloss, 
+                litArgs_specularity, 
+                litArgs_albedo, 
+                litArgs_transmission,
+                litArgs_ior,
+                litArgs_dispersion
+                #if defined(LIT_IRIDESCENCE)
+                    , iridescenceFresnel, 
+                    litArgs_iridescence_intensity
+                #endif
+            );
+        #endif
+    #endif
+
+    // apply ambient occlusion
+    #ifdef LIT_AO
+        #ifdef LIT_OCCLUDE_DIRECT
+            occludeDiffuse(litArgs_ao);
+        #endif
+
+        #if LIT_OCCLUDE_SPECULAR != NONE
+            occludeSpecular(litArgs_gloss, litArgs_ao, litArgs_worldNormal, dViewDirW);
+        #endif
+    #endif
+
+    #ifdef LIT_SPECULARITY_FACTOR
+        dSpecularLight = dSpecularLight * litArgs_specularityFactor;
+    #endif
+
+    #if !defined(LIT_OPACITY_FADES_SPECULAR)
+
+        #if LIT_BLEND_TYPE == NORMAL || LIT_BLEND_TYPE == PREMULTIPLIED
+
+            var specLum: f32 = dot((dSpecularLight + dReflection.rgb * dReflection.a), vec3f( 0.2126, 0.7152, 0.0722 ));
+            #ifdef LIT_CLEARCOAT
+                specLum = specLum + dot(ccSpecularLight * litArgs_clearcoat_specularity + ccReflection.rgb * litArgs_clearcoat_specularity, vec3f( 0.2126, 0.7152, 0.0722 ));
+            #endif
+            litArgs_opacity = clamp(litArgs_opacity + gammaCorrectInput(specLum), 0.0, 1.0);
+
+        #endif
+
+        litArgs_opacity = litArgs_opacity * material_alphaFade;
+
+    #endif
+
+    #include ""endPS""
+    #include ""outputAlphaPS""
+
+    #ifdef LIT_MSDF
+        output.color = applyMsdf(gl_FragColor);
+    #endif
+
+    #include ""outputPS""
+    #include ""debugOutputPS""
+
+    #ifdef LIT_SHADOW_CATCHER
+        // output when the shadow catcher is enabled - accumulated shadows
+        output.color = vec4f(dShadowCatcher, output.color.a);
+    #endif
+
+    return output;
+}
+`;"
+
+LINK NUMBER 470
+Not enough lines
+
+LINK NUMBER 471
+Error fetching diff
+
+LINK NUMBER 472
+Error fetching diff
+
+LINK NUMBER 473
+Error fetching diff
+
+LINK NUMBER 474
+Not enough lines
+
+LINK NUMBER 475
+
+File path: pkg/github/tools.go
+"package github
+
+import (
+	""context""
+	""encoding/json""
+	""net/http""
+	""testing""
+
+	""github.com/github/github-mcp-server/pkg/translations""
+	""github.com/google/go-github/v69/github""
+	""github.com/migueleliasweb/go-github-mock/src/mock""
+	""github.com/stretchr/testify/assert""
+	""github.com/stretchr/testify/require""
+)
+
+func Test_GetSecretScanningAlert(t *testing.T) {
+	mockClient := github.NewClient(nil)
+	tool, _ := GetSecretScanningAlert(stubGetClientFn(mockClient), translations.NullTranslationHelper)
+
+	assert.Equal(t, ""get_secret_scanning_alert"", tool.Name)
+	assert.NotEmpty(t, tool.Description)
+	assert.Contains(t, tool.InputSchema.Properties, ""owner"")
+	assert.Contains(t, tool.InputSchema.Properties, ""repo"")
+	assert.Contains(t, tool.InputSchema.Properties, ""alertNumber"")
+	assert.ElementsMatch(t, tool.InputSchema.Required, []string{""owner"", ""repo"", ""alertNumber""})
+
+	// Setup mock alert for success case
+	mockAlert := &github.SecretScanningAlert{
+		Number:  github.Ptr(42),
+		State:   github.Ptr(""open""),
+		HTMLURL: github.Ptr(""https://github.com/owner/private-repo/security/secret-scanning/42""),
+	}
+
+	tests := []struct {
+		name           string
+		mockedClient   *http.Client
+		requestArgs    map[string]interface{}
+		expectError    bool
+		expectedAlert  *github.SecretScanningAlert
+		expectedErrMsg string
+	}{
+		{
+			name: ""successful alert fetch"",
+			mockedClient: mock.NewMockedHTTPClient(
+				mock.WithRequestMatch(
+					mock.GetReposSecretScanningAlertsByOwnerByRepoByAlertNumber,
+					mockAlert,
+				),
+			),
+			requestArgs: map[string]interface{}{
+				""owner"":       ""owner"",
+				""repo"":        ""repo"",
+				""alertNumber"": float64(42),
+			},
+			expectError:   false,
+			expectedAlert: mockAlert,
+		},
+		{
+			name: ""alert fetch fails"",
+			mockedClient: mock.NewMockedHTTPClient(
+				mock.WithRequestMatchHandler(
+					mock.GetReposSecretScanningAlertsByOwnerByRepoByAlertNumber,
+					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+						w.WriteHeader(http.StatusNotFound)
+						_, _ = w.Write([]byte(`{""message"": ""Not Found""}`))
+					}),
+				),
+			),
+			requestArgs: map[string]interface{}{
+				""owner"":       ""owner"",
+				""repo"":        ""repo"",
+				""alertNumber"": float64(9999),
+			},
+			expectError:    true,
+			expectedErrMsg: ""failed to get alert"",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup client with mock
+			client := github.NewClient(tc.mockedClient)
+			_, handler := GetSecretScanningAlert(stubGetClientFn(client), translations.NullTranslationHelper)
+
+			// Create call request
+			request := createMCPRequest(tc.requestArgs)
+
+			// Call handler
+			result, err := handler(context.Background(), request)
+
+			// Verify results
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedErrMsg)
+				return
+			}
+
+			require.NoError(t, err)
+
+			// Parse the result and get the text content if no error
+			textContent := getTextResult(t, result)
+
+			// Unmarshal and verify the result
+			var returnedAlert github.Alert
+			err = json.Unmarshal([]byte(textContent.Text), &returnedAlert)
+			assert.NoError(t, err)
+			assert.Equal(t, *tc.expectedAlert.Number, *returnedAlert.Number)
+			assert.Equal(t, *tc.expectedAlert.State, *returnedAlert.State)
+			assert.Equal(t, *tc.expectedAlert.HTMLURL, *returnedAlert.HTMLURL)
+
+		})
+	}
+}
+
+func Test_ListSecretScanningAlerts(t *testing.T) {
+	// Verify tool definition once
+	mockClient := github.NewClient(nil)
+	tool, _ := ListSecretScanningAlerts(stubGetClientFn(mockClient), translations.NullTranslationHelper)
+
+	assert.Equal(t, ""list_secret_scanning_alerts"", tool.Name)
+	assert.NotEmpty(t, tool.Description)
+	assert.Contains(t, tool.InputSchema.Properties, ""owner"")
+	assert.Contains(t, tool.InputSchema.Properties, ""repo"")
+	assert.Contains(t, tool.InputSchema.Properties, ""state"")
+	assert.Contains(t, tool.InputSchema.Properties, ""secret_type"")
+	assert.Contains(t, tool.InputSchema.Properties, ""resolution"")
+	assert.ElementsMatch(t, tool.InputSchema.Required, []string{""owner"", ""repo""})
+
+	// Setup mock alerts for success case
+	resolvedAlert := github.SecretScanningAlert{
+		Number:     github.Ptr(2),
+		HTMLURL:    github.Ptr(""https://github.com/owner/private-repo/security/secret-scanning/2""),
+		State:      github.Ptr(""resolved""),
+		Resolution: github.Ptr(""false_positive""),
+		SecretType: github.Ptr(""adafruit_io_key""),
+	}
+	openAlert := github.SecretScanningAlert{
+		Number:     github.Ptr(2),
+		HTMLURL:    github.Ptr(""https://github.com/owner/private-repo/security/secret-scanning/3""),
+		State:      github.Ptr(""open""),
+		Resolution: github.Ptr(""false_positive""),
+		SecretType: github.Ptr(""adafruit_io_key""),
+	}
+
+	tests := []struct {
+		name           string
+		mockedClient   *http.Client
+		requestArgs    map[string]interface{}
+		expectError    bool
+		expectedAlerts []*github.SecretScanningAlert
+		expectedErrMsg string
+	}{
+		{
+			name: ""successful resolved alerts listing"",
+			mockedClient: mock.NewMockedHTTPClient(
+				mock.WithRequestMatchHandler(
+					mock.GetReposSecretScanningAlertsByOwnerByRepo,
+					expectQueryParams(t, map[string]string{
+						""state"": ""resolved"",
+					}).andThen(
+						mockResponse(t, http.StatusOK, []*github.SecretScanningAlert{&resolvedAlert}),
+					),
+				),
+			),
+			requestArgs: map[string]interface{}{
+				""owner"": ""owner"",
+				""repo"":  ""repo"",
+				""state"": ""resolved"",
+			},
+			expectError:    false,
+			expectedAlerts: []*github.SecretScanningAlert{&resolvedAlert},
+		},
+		{
+			name: ""successful alerts listing"",
+			mockedClient: mock.NewMockedHTTPClient(
+				mock.WithRequestMatchHandler(
+					mock.GetReposSecretScanningAlertsByOwnerByRepo,
+					expectQueryParams(t, map[string]string{}).andThen(
+						mockResponse(t, http.StatusOK, []*github.SecretScanningAlert{&resolvedAlert, &openAlert}),
+					),
+				),
+			),
+			requestArgs: map[string]interface{}{
+				""owner"": ""owner"",
+				""repo"":  ""repo"",
+			},
+			expectError:    false,
+			expectedAlerts: []*github.SecretScanningAlert{&resolvedAlert, &openAlert},
+		},
+		{
+			name: ""alerts listing fails"",
+			mockedClient: mock.NewMockedHTTPClient(
+				mock.WithRequestMatchHandler(
+					mock.GetReposSecretScanningAlertsByOwnerByRepo,
+					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+						w.WriteHeader(http.StatusUnauthorized)
+						_, _ = w.Write([]byte(`{""message"": ""Unauthorized access""}`))
+					}),
+				),
+			),
+			requestArgs: map[string]interface{}{
+				""owner"": ""owner"",
+				""repo"":  ""repo"",
+			},
+			expectError:    true,
+			expectedErrMsg: ""failed to list alerts"",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := github.NewClient(tc.mockedClient)
+			_, handler := ListSecretScanningAlerts(stubGetClientFn(client), translations.NullTranslationHelper)
+
+			request := createMCPRequest(tc.requestArgs)
+
+			result, err := handler(context.Background(), request)
+
+			if tc.expectError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.expectedErrMsg)
+				return
+			}
+
+			require.NoError(t, err)
+
+			textContent := getTextResult(t, result)
+
+			// Unmarshal and verify the result
+			var returnedAlerts []*github.SecretScanningAlert
+			err = json.Unmarshal([]byte(textContent.Text), &returnedAlerts)
+			assert.NoError(t, err)
+			assert.Len(t, returnedAlerts, len(tc.expectedAlerts))
+			for i, alert := range returnedAlerts {
+				assert.Equal(t, *tc.expectedAlerts[i].Number, *alert.Number)
+				assert.Equal(t, *tc.expectedAlerts[i].HTMLURL, *alert.HTMLURL)
+				assert.Equal(t, *tc.expectedAlerts[i].State, *alert.State)
+				assert.Equal(t, *tc.expectedAlerts[i].Resolution, *alert.Resolution)
+				assert.Equal(t, *tc.expectedAlerts[i].SecretType, *alert.SecretType)
+			}
+		})
+	}
+}"
+
+LINK NUMBER 476
+
+File path: dataset.py
+"import torch
+
+from torch.utils.data import Dataset
+
+from constants import SOS_TOKEN, EOS_TOKEN, PAD_TOKEN
+
+
+class BilingualDataset(Dataset):
+    def __init__(self, ds, tokenizer_src, tokenizer_tgt, src_lang, tgt_lang, seq_len):
+        super().__init__()
+
+        self.ds = ds
+        self.tokenizer_src = tokenizer_src
+        self.tokenizer_tgt = tokenizer_tgt
+        self.src_lang = src_lang
+        self.tgt_lang = tgt_lang
+        self.seq_len = seq_len
+
+        self.sos_token = torch.Tensor([tokenizer_src.token_to_id(SOS_TOKEN)], dtype=torch.int64)
+        self.eos_token = torch.Tensor([tokenizer_src.token_to_id(EOS_TOKEN)], dtype=torch.int64)
+        self.pad_token = torch.Tensor([tokenizer_src.token_to_id(PAD_TOKEN)], dtype=torch.int64)
+
+    def __len__(self):
+        return len(self.ds)
+
+    def __getitem__(self, index):
+        src_target_pair = self.ds[index]
+        src_text = src_target_pair['translation'][self.src_lang]
+        tgt_text = src_target_pair['translation'][self.tgt_lang]
+
+        enc_input_tokens = self.tokenizer_src.encode(src_text).ids
+        dec_input_tokens = self.tokenizer_tgt.encode(tgt_text).ids
+
+        enc_num_padding_tokens = self.seq_len - len(enc_input_tokens) - 2
+        dec_num_padding_tokens = self.seq_len - len(dec_input_tokens) - 1
+
+        if enc_num_padding_tokens < 0 or dec_num_padding_tokens < 0:
+            raise ValueError(f'Sentence is too long for seq_len = {self.seq_len}')
+
+        # Add SOS, EOS and PAD tokens to the encoder input
+        encoder_input = torch.cat(
+            [
+                self.sos_token,
+                torch.tensor(enc_input_tokens, dtype=torch.int64),
+                self.eos_token,
+                torch.tensor([self.pad_token] * enc_num_padding_tokens, dtype=torch.int64)
+            ]
+        )
+
+        # Add SOS and PAD tokens to the decoder input
+        decoder_input = torch.cat(
+            [
+                self.sos_token,
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
+                torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64)
+            ]
+        )
+
+        # Expected decoder output
+        label = torch.cat(
+            [
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
+                self.eos_token,
+                torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64)
+            ]
+        )
+
+        assert encoder_input.size(0) == self.seq_len
+        assert decoder_input.size(0) == self.seq_len
+        assert label.size(0) == self.seq_len
+
+        return {
+            ""encoder_input"": encoder_input,
+            ""decoder_input"": decoder_input,
+            ""encode_mask"": (encoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int(), # (1, 1, seq_len)
+            ""decoder_mask"": (decoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int() & causal_mask(decoder_input.size(0)), # (1, 1, seq_len)
+            ""label"": label,
+            ""src_text"": src_text,
+            ""tgt_text"": tgt_text
+        }
+
+
+def causal_mask(size: int):
+    """"""
+    Create a mask for the decoder input.
+    """"""
+    mask = torch.triu(torch.ones((1, size, size)), diagonal=1).type(torch.int)
+    return mask"
+
+LINK NUMBER 477
+
+File path: CurrencyWalletSystem.Tests/Infrastructure/Strategies/AddFundsStrategyTests.cs
+"﻿using CurrencyWalletSystem.Infrastructure.Data;
+using CurrencyWalletSystem.Infrastructure.Enums;
+using CurrencyWalletSystem.Infrastructure.Factories;
+using CurrencyWalletSystem.Infrastructure.Interfaces;
+using CurrencyWalletSystem.Infrastructure.Models;
+using CurrencyWalletSystem.Infrastructure.Services;
+using CurrencyWalletSystem.Infrastructure.Strategies;
+using Microsoft.EntityFrameworkCore;
+using Moq;
+using System.Reflection;
+
+namespace CurrencyWalletSystem.Tests.Infrastructure.Services
+{
+    public class WalletServiceTests
+    {
+        private readonly DbContextOptions<AppDbContext> _dbOptions;
+
+        public WalletServiceTests()
+        {
+            _dbOptions = new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()) // unique per test
+                .Options;
+        }
+
+        [Fact]
+        public async Task CreateWalletAsync_ShouldCreateWalletWithUpperCurrency()
+        {
+            // Arrange
+            using var dbContext = new AppDbContext(_dbOptions);
+            var strategyFactoryMock = new Mock<IWalletStrategyFactory>();
+            var rateCacheMock = new Mock<ICurrencyRateCache>();
+            var service = new WalletService(dbContext, strategyFactoryMock.Object, rateCacheMock.Object);
+
+            // Act
+            var wallet = await service.CreateWalletAsync(""usd"");
+
+            // Assert
+            Assert.Equal(""USD"", wallet.Currency);
+            Assert.Equal(0, wallet.Balance);
+            Assert.True(wallet.Id > 0);
+        }
+
+        [Fact]
+        public async Task GetWalletBalanceAsync_ShouldReturnSameCurrencyBalance()
+        {
+            using var dbContext = new AppDbContext(_dbOptions);
+            var wallet = new Wallet { Currency = ""USD"", Balance = 100 };
+            dbContext.Wallets.Add(wallet);
+            await dbContext.SaveChangesAsync();
+
+            var service = new WalletService(dbContext, Mock.Of<IWalletStrategyFactory>(), Mock.Of<ICurrencyRateCache>());
+
+            var balance = await service.GetWalletBalanceAsync(wallet.Id, ""USD"");
+
+            Assert.Equal(100, balance);
+        }
+
+        [Fact]
+        public async Task GetWalletBalanceAsync_ShouldConvertToTargetCurrency()
+        {
+            using var dbContext = new AppDbContext(_dbOptions);
+            var wallet = new Wallet { Currency = ""USD"", Balance = 100 };
+            dbContext.Wallets.Add(wallet);
+            await dbContext.SaveChangesAsync();
+
+            var rateCacheMock = new Mock<ICurrencyRateCache>();
+            rateCacheMock.Setup(r => r.GetRate(""EUR"")).Returns(new CurrencyRate { Currency = ""EUR"", Rate = 2m });
+
+            var service = new WalletService(dbContext, Mock.Of<IWalletStrategyFactory>(), rateCacheMock.Object);
+
+            var balance = await service.GetWalletBalanceAsync(wallet.Id, ""EUR"");
+
+            Assert.Equal(200, balance);
+        }
+
+        [Fact]
+        public async Task GetBaseCurrencyAsync_ShouldReturnCurrency()
+        {
+            using var dbContext = new AppDbContext(_dbOptions);
+            var wallet = new Wallet { Currency = ""JPY"", Balance = 50 };
+            dbContext.Wallets.Add(wallet);
+            await dbContext.SaveChangesAsync();
+
+            var service = new WalletService(dbContext, Mock.Of<IWalletStrategyFactory>(), Mock.Of<ICurrencyRateCache>());
+
+            var currency = await service.GetBaseCurrencyAsync(wallet.Id);
+
+            Assert.Equal(""JPY"", currency);
+        }
+
+        [Fact]
+        public async Task AdjustWalletBalanceAsync_ShouldApplyStrategyAndSave()
+        {
+            using var dbContext = new AppDbContext(_dbOptions);
+            var wallet = new Wallet { Currency = ""USD"", Balance = 100 };
+            dbContext.Wallets.Add(wallet);
+            await dbContext.SaveChangesAsync();
+
+            var strategyMock = new Mock<IWalletBalanceStrategy>();
+            strategyMock.Setup(s => s.Execute(100, 50)).Returns(150);
+
+            var strategyFactoryMock = new Mock<IWalletStrategyFactory>();
+            strategyFactoryMock.Setup(f => f.GetStrategy(WalletStrategyType.AddFunds)).Returns(strategyMock.Object);
+
+            var rateCacheMock = new Mock<ICurrencyRateCache>();
+            rateCacheMock.Setup(r => r.GetRate(""USD"")).Returns(new CurrencyRate { Currency = ""USD"", Rate = 1m });
+
+            var service = new WalletService(dbContext, strategyFactoryMock.Object, rateCacheMock.Object);
+
+            await service.AdjustWalletBalanceAsync(wallet.Id, 50, ""USD"", WalletStrategyType.AddFunds);
+
+            var updatedWallet = await dbContext.Wallets.FindAsync(wallet.Id);
+            Assert.Equal(150, updatedWallet!.Balance);
+        }
+
+        [Fact]
+        public async Task AdjustWalletBalanceAsync_ShouldThrow_WhenAmountIsZeroOrNegative()
+        {
+            using var dbContext = new AppDbContext(_dbOptions);
+            var wallet = new Wallet { Currency = ""USD"", Balance = 100 };
+            dbContext.Wallets.Add(wallet);
+            await dbContext.SaveChangesAsync();
+
+            var service = new WalletService(dbContext, Mock.Of<IWalletStrategyFactory>(), Mock.Of<ICurrencyRateCache>());
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                service.AdjustWalletBalanceAsync(wallet.Id, 0, ""USD"", WalletStrategyType.AddFunds));
+        }
+
+        [Fact]
+        public async Task GetWalletByIdAsync_ShouldThrow_WhenWalletNotFound()
+        {
+            using var dbContext = new AppDbContext(_dbOptions);
+            var service = new WalletService(dbContext, Mock.Of<IWalletStrategyFactory>(), Mock.Of<ICurrencyRateCache>());
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                service.GetWalletBalanceAsync(999));
+        }
+
+        [Fact]
+        public async Task AdjustWalletBalanceAsync_ShouldConvertCurrencyBeforeApplyingStrategy()
+        {
+            using var dbContext = new AppDbContext(_dbOptions);
+            var wallet = new Wallet { Currency = ""USD"", Balance = 100 };
+            dbContext.Wallets.Add(wallet);
+            await dbContext.SaveChangesAsync();
+
+            var rateCacheMock = new Mock<ICurrencyRateCache>();
+            rateCacheMock.Setup(r => r.GetRate(""EUR"")).Returns(new CurrencyRate { Currency = ""EUR"", Rate = 2 });
+            rateCacheMock.Setup(r => r.GetRate(""USD"")).Returns(new CurrencyRate { Currency = ""USD"", Rate = 1 });
+
+            var strategyMock = new Mock<IWalletBalanceStrategy>();
+            strategyMock.Setup(s => s.Execute(It.IsAny<decimal>(), It.Is<decimal>(v => Math.Abs(v - 25) < 0.01m))).Returns(125);
+
+            var strategyFactoryMock = new Mock<IWalletStrategyFactory>();
+            strategyFactoryMock.Setup(f => f.GetStrategy(WalletStrategyType.AddFunds)).Returns(strategyMock.Object);
+
+            var service = new WalletService(dbContext, strategyFactoryMock.Object, rateCacheMock.Object);
+
+            await service.AdjustWalletBalanceAsync(wallet.Id, 50, ""EUR"", WalletStrategyType.AddFunds);
+
+            var updated = await dbContext.Wallets.FindAsync(wallet.Id);
+            Assert.Equal(125, updated!.Balance);
+        }
+    }
+}"
+
+LINK NUMBER 478
+Error fetching diff
+
+LINK NUMBER 479
+Error fetching diff
+
+LINK NUMBER 480
+
+File path: main.go
+"services:
+  whatever-origin:
+    image: ghcr.io/reynaldichernando/whatever-origin:latest
+    ports:
+      - 80:8080
+    restart: always"
+
+LINK NUMBER 481
+Not enough lines
+
+LINK NUMBER 482
+
+File path: src/commands/installAnalysisCLI.ts
+"const CLI_FILE_NAME = 'cli.sh'
+const CLI_FOLDER_NAME = '.codacy'
+const CLI_COMMAND = `${CLI_FOLDER_NAME}/${CLI_FILE_NAME}`
+
+// Set a larger buffer size (10MB)
+const MAX_BUFFER_SIZE = 1024 * 1024 * 10
+
+const execAsync = (command: string) => {
+  const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || ''
+
+  return new Promise((resolve, reject) => {
+    exec(
+      `CODACY_CLI_V2_VERSION=1.0.0-main.232.a6a6368 ${command}`,
+      {
+        cwd: workspacePath,
+        maxBuffer: MAX_BUFFER_SIZE, // To solve: stdout maxBuffer exceeded
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(error)
+          return
+        }
+
+        if (stderr && (!stdout || /error|fail|exception/i.test(stderr))) {
+          reject(new Error(stderr))
+          return
+        }
+
+        resolve({ stdout, stderr })
+      }
+    )
+  })
+}"
+
+LINK NUMBER 483
+
+File path: web/app/components/base/mermaid/utils.ts
+"
+/**
+ * Preprocesses mermaid code to fix common syntax issues
+ */
+export function preprocessMermaidCode(code: string): string {
+  if (!code || typeof code !== 'string')
+    return ''
+
+  // First check if this is a gantt chart
+  if (code.trim().startsWith('gantt')) {
+    // For gantt charts, we need to ensure each task is on its own line
+    // Split the code into lines and process each line separately
+    const lines = code.split('\n').map(line => line.trim())
+    return lines.join('\n')
+  }
+
+  return code
+    // Replace English colons with Chinese colons in section nodes to avoid parsing issues
+    .replace(/section\s+([^:]+):/g, (match, sectionName) => `section ${sectionName}：`)
+    // Fix common syntax issues
+    .replace(/fifopacket/g, 'rect')
+    // Ensure graph has direction
+    .replace(/^graph\s+((?:TB|BT|RL|LR)*)/, (match, direction) => {
+      return direction ? match : 'graph TD'
+    })
+    // Clean up empty lines and extra spaces
+    .trim()
+}
+
+/**
+ * Prepares mermaid code based on selected style
+ */
+export function prepareMermaidCode(code: string, style: 'classic' | 'handDrawn'): string {
+  let finalCode = preprocessMermaidCode(code)
+
+  // Special handling for gantt charts
+  if (finalCode.trim().startsWith('gantt')) {
+    // For gantt charts, preserve the structure exactly as is
+    return finalCode
+  }
+
+  if (style === 'handDrawn') {
+    finalCode = finalCode
+      // Remove style definitions that interfere with hand-drawn style
+      .replace(/style\s+[^\n]+/g, '')
+      .replace(/linkStyle\s+[^\n]+/g, '')
+      .replace(/^flowchart/, 'graph')
+      // Remove any styles that might interfere with hand-drawn style
+      .replace(/class=""[^""]*""/g, '')
+      .replace(/fill=""[^""]*""/g, '')
+      .replace(/stroke=""[^""]*""/g, '')
+
+    // Ensure hand-drawn style charts always start with graph
+    if (!finalCode.startsWith('graph') && !finalCode.startsWith('flowchart'))
+      finalCode = `graph TD\n${finalCode}`
+  }
+
+  return finalCode
+}
+
+/**
+ * Converts SVG to base64 string for image rendering
+ */
+export function svgToBase64(svgGraph: string): Promise<string> {
+  if (!svgGraph)
+    return Promise.resolve('')
+
+  try {
+    // Ensure SVG has correct XML declaration
+    if (!svgGraph.includes('<?xml'))
+      svgGraph = `<?xml version=""1.0"" encoding=""UTF-8""?>${svgGraph}`
+
+    const blob = new Blob([new TextEncoder().encode(svgGraph)], { type: 'image/svg+xml;charset=utf-8' })
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+  catch (error) {
+    console.error('Error converting SVG to base64:', error)
+    return Promise.resolve('')
+  }
+}
+
+/**
+ * Processes SVG for theme styling
+ */
+export function processSvgForTheme(
+  svg: string,
+  isDark: boolean,
+  isHandDrawn: boolean,
+  themes: {
+    light: any
+    dark: any
+  },
+): string {
+  let processedSvg = svg
+
+  if (isDark) {
+    processedSvg = processedSvg
+      .replace(/style=""fill: ?#000000""/g, 'style=""fill: #e2e8f0""')
+      .replace(/style=""stroke: ?#000000""/g, 'style=""stroke: #94a3b8""')
+      .replace(/<rect [^>]*fill=""#ffffff""/g, '<rect $& fill=""#1e293b""')
+
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.dark.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.dark.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      let i = 0
+      themes.dark.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.dark.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.dark.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.dark.connectionColor}"" stroke-width=""1.5""`)
+    }
+  }
+  else {
+    if (isHandDrawn) {
+      processedSvg = processedSvg
+        .replace(/fill=""#[a-fA-F0-9]{6}""/g, `fill=""${themes.light.nodeColors[0].bg}""`)
+        .replace(/stroke=""#[a-fA-F0-9]{6}""/g, `stroke=""${themes.light.connectionColor}""`)
+        .replace(/stroke-width=""1""/g, 'stroke-width=""1.5""')
+    }
+    else {
+      themes.light.nodeColors.forEach(() => {
+        const regex = /fill=""#[a-fA-F0-9]{6}""[^>]*class=""node-[^""]*""/g
+        let i = 0
+        processedSvg = processedSvg.replace(regex, (match: string) => {
+          const colorIndex = i % themes.light.nodeColors.length
+          i++
+          return match.replace(/fill=""#[a-fA-F0-9]{6}""/, `fill=""${themes.light.nodeColors[colorIndex].bg}""`)
+        })
+      })
+
+      processedSvg = processedSvg
+        .replace(/<path [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<path stroke=""${themes.light.connectionColor}""`)
+        .replace(/<(line|polyline) [^>]*stroke=""#[a-fA-F0-9]{6}""/g,
+          `<$1 stroke=""${themes.light.connectionColor}""`)
+    }
+  }
+
+  return processedSvg
+}
+
+/**
+ * Checks if mermaid code is complete and valid
+ */
+export function isMermaidCodeComplete(code: string): boolean {
+  if (!code || code.trim().length === 0)
+    return false
+
+  try {
+    const trimmedCode = code.trim()
+
+    // Special handling for gantt charts
+    if (trimmedCode.startsWith('gantt')) {
+      // For gantt charts, check if it has at least a title and one task
+      const lines = trimmedCode.split('\n').filter(line => line.trim().length > 0)
+      return lines.length >= 3
+    }
+
+    // Check for basic syntax structure
+    const hasValidStart = /^(graph|flowchart|sequenceDiagram|classDiagram|classDef|class|stateDiagram|gantt|pie|er|journey|requirementDiagram)/.test(trimmedCode)
+
+    // Check for balanced brackets and parentheses
+    const isBalanced = (() => {
+      const stack = []
+      const pairs = { '{': '}', '[': ']', '(': ')' }
+
+      for (const char of trimmedCode) {
+        if (char in pairs) {
+          stack.push(char)
+        }
+        else if (Object.values(pairs).includes(char)) {
+          const last = stack.pop()
+          if (pairs[last as keyof typeof pairs] !== char)
+            return false
+        }
+      }
+
+      return stack.length === 0
+    })()
+
+    // Check for common syntax errors
+    const hasNoSyntaxErrors = !trimmedCode.includes('undefined')
+                           && !trimmedCode.includes('[object Object]')
+                           && trimmedCode.split('\n').every(line =>
+                             !(line.includes('-->') && !line.match(/\S+\s*-->\s*\S+/)))
+
+    return hasValidStart && isBalanced && hasNoSyntaxErrors
+  }
+  catch (error) {
+    console.debug('Mermaid code validation error:', error)
+    return false
+  }
+}
+
+/**
+ * Helper to wait for DOM element with retry mechanism
+ */
+export function waitForDOMElement(callback: () => Promise<any>, maxAttempts = 3, delay = 100): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let attempts = 0
+    const tryRender = async () => {
+      try {
+        resolve(await callback())
+      }
+      catch (error) {
+        attempts++
+        if (attempts < maxAttempts)
+          setTimeout(tryRender, delay)
+        else
+          reject(error)
+      }
+    }
+    tryRender()
+  })
+}"
+
+LINK NUMBER 484
+Error fetching diff
+
+LINK NUMBER 485
+Error fetching diff
+
+LINK NUMBER 486
+Error fetching diff
+
+LINK NUMBER 487
+Not enough lines
+
+LINK NUMBER 488
+Not enough lines
+
+LINK NUMBER 489
+
+File path: Src/HALAL/HALAL.cpp
+"
+#ifdef HAL_IWDG_MODULE_ENABLED
+    Watchdog::check_reset_flag();
+    Watchdog::start();
+#endif"
+
+LINK NUMBER 490
+
+File path: services/cli/main.ts
+"      // Add current earners to LUT
+      for (const pid of [PROGRAM_ID, EXT_PROGRAM_ID]) {
+        const auth = await EarnAuthority.load(connection, evmClient, new Graph(''), pid);
+        const earners = await auth.getAllEarners();
+
+        for (const earner of earners) {
+          addressesForTable.push(earner.pubkey, earner.data.userTokenAccount);
+
+          // Check if there is an earn manager
+          if (
+            earner.data.earnManager &&
+            !addressesForTable.find((a) => a.equals(earner.data.earnManager))
+          ) {
+            addressesForTable.push(earner.data.earnManager);
+          }
+        }
+      }
+"
+
+LINK NUMBER 491
+Error fetching diff
+
+LINK NUMBER 492
+Error fetching diff
+
+LINK NUMBER 493
+Error fetching diff
+
+LINK NUMBER 494
+
+File path: tests/unit/yieldbot.test.ts
+"    [
+      (body: any) =>
+        body.method === 'getAccountInfo' && body.params?.[0] === 'GQBavw2gpCdbZkkSWk9PkzNTDdBwCHUGNpeuuQ7mV9GA', // wM global
+      {
+        context,
+        value: {
+          data: [
+            'nT0aSBDxU4yz3HtcE1xihhozJWJpdvNsPnG5FAKFUFeJ7wZJIrxP9rPce1wTXGKGGjMlYml282w+cbkUAoVQV4nvBkkivE/2C4a+ZrwfmLR9IKO+YVpJBagluCaGTioPTJSEZ9M+5wkLhr5mv860wdfpJ7zE0BS+Dyhjq534X9phCFG2Tb0K5eRoMAbaMvJBTyQcLMmsnaDkH0FwZa+QwkrYCQghj/MVxrIB0uoAAAB3Ng9oAAAAAP/+/A==',
+            'base64',
+          ],
+          executable: false,
+          lamports: 2192400,
+          owner: 'wMXX1K1nca5W4pZr1piETe78gcAVVrEFi9f4g46uXko',
+          rentEpoch: 18446744073709551615,
+          space: 187,
+        },
+      },
+    ],"
+
+LINK NUMBER 495
+
+File path: tests/test_e2e.py
+"
+
+def test_function_with_namespace():
+    res = query(""RETURN string.join(null, ',') AS result"")
+    assert res.result_set == [[None]]
+
+    res = query(""RETURN string.join([], 'foo') AS result"")
+    assert res.result_set == [[""""]]
+
+    res = query(""RETURN string.join(['a', 'b'], ', ') AS result"")
+    assert res.result_set == [['a, b']]
+
+    res = query(""RETURN string.join(['a', 'b']) AS result"")
+    assert res.result_set == [['ab']]
+
+    try:
+        query(f""RETURN string.join(['a', 'b'], ', ', ', ') AS result"")
+        assert False, ""Expected an error""
+    except ResponseError as e:
+        assert ""Received 3 arguments to function 'string.join', expected at most 2"" in str(e)
+
+    try:
+        query(f""RETURN string.join(1, 2) AS result"")
+        assert False, ""Expected an error""
+    except ResponseError as e:
+        assert ""Type mismatch: expected List or Null but was Integer"" in str(e)
+
+    for value, name in [(1.0, 'Float'), (True, 'Boolean'), ({}, 'Map'), ([], 'List'), (""null"", 'Null')]:
+        try:
+            query(f""RETURN string.join(['a', {value}], ',') AS result"")
+            assert False, ""Expected an error""
+        except ResponseError as e:
+            assert f""Type mismatch: expected String but was {name}"" in str(e)"
+
+LINK NUMBER 496
+Too many lines
+
+LINK NUMBER 497
+Not enough lines
+
+LINK NUMBER 498
+Error fetching diff
+
+LINK NUMBER 499
+Error fetching diff
+
+LINK NUMBER 500
+Error fetching diff
+
+LINK NUMBER 501
+Not enough lines
+
+LINK NUMBER 502
+Not enough lines
+
+LINK NUMBER 503
+Not enough lines
+
+LINK NUMBER 504
+
+File path: src/mandelbrot.cpp
+"#include <cudaviz/kernels.hpp>
+
+#include <vector>
+#include <string>
+#include <stdexcept>
+
+#include <cuda_runtime.h>
+
+namespace cudaviz
+{
+    std::vector<std::vector<int>> mandelbrot(int max_iter = 1000, int N = 10)
+    {
+        std::size_t sz = N * N * sizeof(int);
+        std::vector<int> grid = std::vector<int>(N * N, 0);
+
+        int *deviceGrid;
+
+        cudaError_t error =  cudaMalloc(&deviceGrid, sz);
+        if (error != cudaSuccess)
+        {
+            throw std::runtime_error(""Error allocating device memory: "" + std::string(cudaGetErrorString(error)));
+        }
+        cudaMemcpy(deviceGrid, grid.data(), sz, cudaMemcpyHostToDevice);
+
+        cudaviz::mandelbrotIteration(deviceGrid, N, max_iter);
+
+        cudaMemcpy(grid.data(), deviceGrid, sz, cudaMemcpyDeviceToHost);
+        cudaFree(deviceGrid);
+
+        std::vector<std::vector<int>> grid2D(N, std::vector<int>(N));
+        for (int i = 0; i < N; ++i)
+        {
+            for (int j = 0; j < N; ++j)
+            {
+                grid2D[i][j] = grid[i * N + j];
+            }
+        }
+
+        return grid2D;
+    }
+}"
+
+LINK NUMBER 505
+Error fetching diff
+
+LINK NUMBER 506
+Error fetching diff
+
+LINK NUMBER 507
+Error fetching diff
+
+LINK NUMBER 508
+Not enough lines
+
+LINK NUMBER 509
+Not enough lines
+
+LINK NUMBER 510
+Not enough lines
+
+LINK NUMBER 511
+
+File path: workshops/MSBuild2025/openvino_genai/chat_sample/chat_sample.py
+"# OpenVINO Chat Sample
+
+Follow instructions here to prepare the environment:
+https://github.com/raymondlo84Fork/MSBuild2025/blob/main/openvino_genai/README.md
+
+```
+#Make sure you activate the environment after restarting the terminal
+./openvino_venv/Script/bin
+```
+
+## How to use a LLM model from HuggingFace
+
+To download a pre-compressed model (for CPU/GPU only) and experiment with the latest Phi-4-mini-instruct model:
+```
+huggingface-cli download OpenVINO/Phi-4-mini-instruct-int4-ov --local-dir Phi-4-mini-instruct-int4-ov
+```
+
+To download and compress a model (CPU/GPU/NPU):
+```
+ optimum-cli export openvino -m microsoft/Phi-3-mini-4k-instruct  --trust-remote-code --weight-format int4 --sym --ratio 1.0 --group-size 128 Phi-3-mini-4k-instruct-npu
+```
+For NPU usage, please make sure the flags `--weight-format int4`, `--sym` and `--group-size 128` are set.
+
+To test run NPU without a huge download, you can try TinyLlama:
+```
+optimum-cli export openvino -m TinyLlama/TinyLlama-1.1B-Chat-v1.0 --weight-format int4 --sym --ratio 1.0 --group-size 128 TinyLlama-1.1B-Chat-v1.0
+```
+
+To obtain a meta llama demo, please first get a access token from this link [Access Security Tokens](https://huggingface.co/docs/hub/en/security-tokens), then login with the command line. Additionally, you have to accept to the agreement and wait for the approval (https://huggingface.co/meta-llama). Often this only take a few minutes to an hour.
+
+```
+huggingface-cli login
+```
+Then, you can execute this command to convert the model to be compatible with the NPU.
+```
+optimum-cli export openvino --model meta-llama/Llama-3.2-3B-Instruct  --trust-remote-code --task text-generation-with-past --weight-format int4 --group-size -1 --sym --ratio 1.0 llama-3.2-3b-instruct-INT4-npu
+```
+
+## How to Run
+
+```
+python chat_sample.py Phi-4-mini-instruct-int4-ov
+```
+or replace the model with `Phi-3-mini-4k-instruct-int4-npu` or `Llama-3.2-3B-Instruct-npu`.
+
+By default, we enabled CPU in `chat_sample.py`. You can deploy the LLMs on GPU or NPU by simply replacing the device name as `GPU` or `NPU` in the code.
+```
+    device = 'CPU'  # GPU or NPU can be used as well
+    pipe = openvino_genai.LLMPipeline(args.model_dir, device)
+```
+
+Llama 3.2 3B example output:
+![Screenshot 2025-04-28 133741](https://github.com/user-attachments/assets/532f6d66-2cc4-4a29-b71c-9c15f3716e7e)
+
+## References:
+NPU with OpenVINO GenAI: https://docs.openvino.ai/2025/openvino-workflow-generative/inference-with-genai/inference-with-genai-on-npu.html
+
+"
+
+LINK NUMBER 512
+Error fetching diff
+
+LINK NUMBER 513
+Error fetching diff
+
+LINK NUMBER 514
+Error fetching diff
+
+LINK NUMBER 515
+Not enough lines
+
+LINK NUMBER 516
+Not enough lines
+
+LINK NUMBER 517
+
+File path: lib/workload/stateless/stacks/data-sharing-manager/scripts/data-sharing-tool.py
+"### Presigning packages
+
+Not all data receivers will have an S3 bucket or ICAV2 project for us to dump data in.  
+
+Therefore we also support the old-school presigned url method.  
+
+We can use the following command to generate presigned urls in a script for the package
+
+```bash
+data-sharing-tool presign-package \
+  --package-id pkg.12345678910
+```
+
+This will return a presigned url for a shell script that can be used to download the package."
+
+LINK NUMBER 518
+
+File path: src/framework/components/screen/component.js
+" * A ScreenComponent defines a rectangular area where user interfaces can be constructed. Screens
+ * can either be 2D (screen space) or 3D (world space) - see {@link screenSpace}. It is possible to
+ * create an {@link Entity} hierarchy underneath an Entity with a ScreenComponent to create complex
+ * user interfaces using the following components:
+ *
+ * - {@link ButtonComponent}
+ * - {@link ElementComponent}
+ * - {@link LayoutChildComponent}
+ * - {@link LayoutGroupComponent}
+ * - {@link ScrollbarComponent}
+ * - {@link ScrollViewComponent}
+ *
+ * You should never need to use the ScreenComponent constructor directly. To add a ScreenComponent
+ * to an {@link Entity}, use {@link Entity#addComponent}:
+ *
+ * ```javascript
+ * const entity = new pc.Entity();
+ * entity.addComponent('screen', {
+ *     referenceResolution: new pc.Vec2(1280, 720),
+ *     screenSpace: false
+ * });
+ * ```
+ *
+ * Once the ScreenComponent is added to the entity, you can access it via the {@link Entity#screen}
+ * property:
+ *
+ * ```javascript
+ * entity.screen.scaleBlend = 0.6; // Set the screen's scale blend to 0.6
+ *
+ * console.log(entity.screen.scaleBlend); // Get the screen's scale blend and print it
+ * ```
+ *
+ * Relevant Engine API examples:
+ *
+ * - [Screen Space Screen](https://playcanvas.github.io/#/user-interface/text)
+ * - [World Space Screen](https://playcanvas.github.io/#/user-interface/world-ui)"
+
+LINK NUMBER 519
+Error fetching diff
+
+LINK NUMBER 520
+Error fetching diff
+
+LINK NUMBER 521
+Error fetching diff
+
+LINK NUMBER 522
+Too many lines
+
+LINK NUMBER 523
+
+File path: train.py
+"import warnings
+import torch.nn as nn
+import torch
+
+from pathlib import Path
+from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
+
+from config import get_weights_file_path, get_config
+from model import build_transformer
+from tokenizer import get_ds
+
+
+def get_model(model_config, vocab_src_len, vocab_tgt_len):
+    """"""
+    Build the model
+    """"""
+    model  = build_transformer(vocab_src_len, vocab_tgt_len, model_config['seq_len'], model_config['seq_len'], model_config['d_model'])
+    return model
+
+
+def train_model(model_config):
+    # Define the device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device {device}')
+
+    Path(model_config[""model_folder""]).mkdir(parents=True, exist_ok=True)
+
+    train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(model_config)
+    model = get_model(model_config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
+
+    # Tensorboard
+    writer = SummaryWriter(model_config[""experiment_name""])
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=model_config['lr'], eps=1e-9)
+
+    initial_epoch = 0
+    global_step = 0
+    if model_config['preload']:
+        model_filename = get_weights_file_path(model_config, model_config['preload'])
+        print(f'Preloading model from {model_filename}')
+        state = torch.load(model_filename)
+        initial_epoch = state['epoch'] + 1
+        optimizer.load_state_dict(state['optimizer_state_dict'])
+        global_step = state['global_step']
+
+    loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device)
+
+    for epoch in range(initial_epoch, model_config['num_epochs']):
+        model.train()
+        batch_iterator = tqdm(train_dataloader, desc=f'Processing epoch {epoch:02d}')
+        for batch in batch_iterator:
+
+            encoder_input = batch['encoder_input'].to(device) # (Batch, seq_len)
+            decoder_input = batch['decoder_input'].to(device) # (Batch, seq_len)
+            encoder_mask = batch['encoder_mask'].to(device) # (batch, 1, 1, seq_len)
+            decoder_mask = batch['decoder_mask'].to(device) # (batch, 1, seq_len, seq_len)
+
+            # Run the tensors through the transformer
+            encoder_output = model.encode(encoder_input, encoder_mask) # (batch, seq_len, d_model)
+            decoder_output = model.decode(encoder_output, encoder_mask, decoder_input, decoder_mask) # (batch, seq_len, d_model)
+            proj_output = model.project(decoder_output) # (batch, seq_len, tgt_vocab_size)
+
+            label = batch['label'].to(device) # (batch, seq_len)
+
+            # (batch, seq_len, tgt_vocab_size) --> (batch * seq_len, tgt_vocab_size)
+            loss = loss_fn(proj_output.view(-1, tokenizer_tgt.get_vocab_size()), label.view(-1))
+            batch_iterator.set_postfix({f'loss': f'{loss.item():6.3f}'})
+
+            # Log the loss
+            writer.add_scalar('train loss', loss.item(), global_step)
+            writer.flush()
+
+            # Backpropagation
+            loss.backward()
+
+            # Update the weights
+            optimizer.step()
+            optimizer.zero_grad()
+
+            global_step += 1
+
+        # Save the model
+        model_filename = get_weights_file_path(model_config, f'{epoch:02d}')
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'global_step': global_step,
+        }, model_filename)
+
+
+if __name__ == '__main__':
+    warnings.filterwarnings('ignore')
+    config = get_config()
+    train_model(config)"
+
+LINK NUMBER 524
+Not enough lines
+
+LINK NUMBER 525
+Not enough lines
+
+LINK NUMBER 526
+Error fetching diff
+
+LINK NUMBER 527
+Error fetching diff
+
+LINK NUMBER 528
+Error fetching diff
+
+LINK NUMBER 529
+
+File path: samples/python/rag/text_embeddings.py
+"# Retrieval Augmented Generation Sample
+
+This example showcases inference of Text Embedding Models. The application limited configuration configuration options to encourage the reader to explore and modify the source code. For example, change the device for inference to GPU. The sample features `openvino_genai.TextEmbeddingPipeline` and uses text as an input source.
+
+## Download and Convert the Model and Tokenizers
+
+The `--upgrade-strategy eager` option is needed to ensure `optimum-intel` is upgraded to the latest version.
+
+Install [../../export-requirements.txt](../../export-requirements.txt) to convert a model.
+
+```sh
+pip install --upgrade-strategy eager -r ../../export-requirements.txt
+optimum-cli export openvino --trust-remote-code --model BAAI/bge-small-en-v1.5 BAAI/bge-small-en-v1.5
+```
+
+## Run
+
+Install [deployment-requirements.txt](../../deployment-requirements.txt) via `pip install -r ../../deployment-requirements.txt` and then, run a sample:
+
+`python text_embeddings.py BAAI/bge-small-en-v1.5 ""Document 1"" ""Document 2""`
+
+See [SUPPORTED_MODELS.md](../../../SUPPORTED_MODELS.md#text-embeddings-models) for the list of supported models.
+
+# Text Embedding Pipeline Usage
+
+```python
+import argparse
+import openvino_genai
+
+pipeline = openvino_genai.TextEmbeddingPipeline(model_dir, ""CPU"")
+
+embeddings = pipeline.embed_documents([""document1"", ""document2""])
+```"
+
+LINK NUMBER 530
+Not enough lines
+
+LINK NUMBER 531
+Not enough lines
+
+LINK NUMBER 532
+
+File path: packages/python-packages/apiview-copilot/src/_models.py
+"{
+  ""status"": ""Error"",
+  ""violations"": [
+    {
+      ""rule_ids"": [""python_design.html#python-client-connection-string""],
+      ""line_no"": 10,
+      ""bad_code"": ""connection_string: Optional[str] = None,"",
+      ""suggestion"": ""Remove the connection_string parameter from the constructor and implement a separate factory method (e.g. from_connection_string) to create the client using a connection string."",
+      ""comment"": ""The constructor must not accept a connection string; using a factory method for connection string support is required by the guidelines.""
+    },
+    {
+      ""rule_ids"": [
+        ""python_design.html#python-client-optional-arguments-keyword-only""
+      ],
+      ""line_no"": 30,
+      ""bad_code"": ""def analyze_from_url("",
+      ""suggestion"": ""Insert a '*' after the required positional parameters so that all optional parameters are keyword-only. For example:\n\n  def analyze_from_url(self, image_url: str, visual_features: List[VisualFeatures], *, gender_neutral_caption: Optional[bool] = ..., language: Optional[str] = ..., model_version: Optional[str] = ..., smart_crops_aspect_ratios: Optional[List[float]] = ..., **kwargs: Any) -> ImageAnalysisResult"",
+      ""comment"": ""Optional operation\u2010specific parameters must be keyword-only.""
+    },
+    {
+      ""rule_ids"": [""python_design.html#python-client-same-name-sync-async""],
+      ""line_no"": 53,
+      ""bad_code"": ""class azure.ai.vision.imageanalysis.aio.AsyncImageAnalysisClient(ImageAnalysisClient): implements AsyncContextManager"",
+      ""suggestion"": ""Rename the async client to ImageAnalysisClient (i.e. without the 'Async' prefix) and keep it under the 'azure.ai.vision.imageanalysis.aio' namespace so that both sync and async clients share the same client name."",
+      ""comment"": ""Async and sync clients must share the same client name; adding an 'Async' prefix violates this guideline.""
+    },
+    {
+      ""rule_ids"": [
+        ""python_design.html#python-client-constructor-api-version-argument-1""
+      ],
+      ""line_no"": 54,
+      ""bad_code"": ""def __init__(\n        self, \n        endpoint: str, \n        credential: Union[AzureKeyCredential, AsyncTokenCredential], \n    ) -> None"",
+      ""suggestion"": ""Add an optional keyword-only api_version parameter to the async client __init__ signature, for example: \n    def __init__(self, endpoint: str, credential: Union[AzureKeyCredential, AsyncTokenCredential], *, api_version: str = ..., **kwargs: Any) -> None"",
+      ""comment"": ""The async client constructor is missing the optional api_version parameter required by the guidelines.""
+    },
+    {
+      ""rule_ids"": [
+        ""python_implementation.html#python-codestyle-static-methods""
+      ],
+      ""line_no"": 88,
+      ""bad_code"": ""@staticmethod"",
+      ""suggestion"": ""Remove the staticmethod decorator and refactor send_request as an instance method or a module-level function."",
+      ""comment"": ""Static methods are discouraged; module-level functions or instance methods should be used instead.""
+    },
+    {
+      ""rule_ids"": [""python_implementation.html#python-codestyle-type-naming""],
+      ""line_no"": 209,
+      ""bad_code"": ""class azure.ai.vision.imageanalysis.models.detectedPerson(MutableMapping[str, Any]):"",
+      ""suggestion"": ""Rename the class to DetectedPerson (using PascalCase) to adhere to type naming conventions."",
+      ""comment"": ""Type names should be in PascalCase; 'detectedPerson' violates this guideline.""
+    },
+    {
+      ""rule_ids"": [""python_implementation.html#python-codestyle-properties""],
+      ""line_no"": 411,
+      ""bad_code"": ""def get_result(self) -> ObjectsResult"",
+      ""suggestion"": ""Replace the get_result/set_result methods with a property (with a getter and setter) to expose the result, for example, using @property and @result.setter."",
+      ""comment"": ""Simple getter and setter functions are discouraged; properties should be used instead.""
+    },
+    {
+      ""rule_ids"": [""python_implementation.html#python-codestyle-properties""],
+      ""line_no"": 413,
+      ""bad_code"": ""def set_result(self, obj) -> None"",
+      ""suggestion"": ""Replace the set_result method with a property setter (e.g., @result.setter def result(self, value): ...)."",
+      ""comment"": ""Simple setter methods should be implemented as property setters.""
+    },
+    {
+      ""rule_ids"": [""python_design.html#python-models-async""],
+      ""line_no"": 432,
+      ""bad_code"": ""class azure.ai.vision.imageanalysis.models.aio.PeopleResult(MutableMapping[str, Any]):"",
+      ""suggestion"": ""Move PeopleResult to the common models namespace (azure.ai.vision.imageanalysis.models) instead of duplicating it in the aio sub-namespace."",
+      ""comment"": ""Models should not be duplicated between the root and aio namespaces.""
+    },
+    {
+      ""rule_ids"": [""python_design.html#python-models-enum-name-uppercase""],
+      ""line_no"": 517,
+      ""bad_code"": ""tags = \""tags\"""",
+      ""suggestion"": ""Rename the enum member to use UPPERCASE (e.g., TAGS = \""tags\"") in accordance with the guidelines."",
+      ""comment"": ""Enum member names must be in UPPERCASE to comply with naming conventions.""
+    }
+  ]
+}"
+
+LINK NUMBER 533
+Error fetching diff
+
+LINK NUMBER 534
+Error fetching diff
+
+LINK NUMBER 535
+Error fetching diff
+
+LINK NUMBER 536
+Not enough lines
+
+LINK NUMBER 537
+
+File path: ultraplot/tests/test_format.py
+"
+
+def test_scaler():
+    # Test a ultraplot scaler and a matplotlib native scaler; should not race errors
+    fig, ax = uplt.subplots(ncols=2, share=0)
+    ax[0].set_yscale(""mercator"")
+    ax[1].set_yscale(""asinh"")
+    return fig"
+
+LINK NUMBER 538
+Not enough lines
+
+LINK NUMBER 539
+Not enough lines
+
+LINK NUMBER 540
+Error fetching diff
+
+LINK NUMBER 541
+Error fetching diff
+
+LINK NUMBER 542
+Error fetching diff
+
+LINK NUMBER 543
+Not enough lines
+
+LINK NUMBER 544
+
+File path: src/test/java/simulation/SimulationDemoStore4UserJourneysParallelRun.java
+"package simulation;
+
+import base.SessionId;
+import io.gatling.javaapi.core.*;
+import io.gatling.javaapi.http.HttpProtocolBuilder;
+
+import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.http.HttpDsl.*;
+
+public class SimulationDemoStore4UserJourneys extends Simulation {
+    private static final String DOMAIN = ""demostore.gatling.io"";
+    private static final HttpProtocolBuilder HTTP_PROTOCOL = http.baseUrl(""https://"" + DOMAIN);
+    private static final int USER_COUNT = Integer.parseInt(System.getProperty(""USERS"", ""5""));
+    private static final Duration RAMP_DURATION = Duration.ofSeconds(Integer.parseInt(System.getProperty(""RAMP_DURATION"", ""10"")));
+    private static final Duration TEST_DURATION = Duration.ofSeconds(Integer.parseInt(System.getProperty(""TEST_DURATION"", ""60"")));
+    private static final FeederBuilder<String> csvFeederCategoryFeeder = csv(""data/categoryDetails.csv"").circular();
+    private static final FeederBuilder<Object> jsonFeederProductFeeder = jsonFile(""data/productDetails.json"").random();
+    private static final FeederBuilder<String> csvFeederLoginDetails = csv(""data/loginDetails.csv"").circular();
+    private static final ChainBuilder initSession =
+            exec(flushCookieJar())
+                    .exec(session -> session.set(""randomNumber"", ThreadLocalRandom.current().nextInt()))
+                    .exec(session -> session.set(""customerLoggedIn"", false))
+                    .exec(session -> session.set(""cartTotal"", 0))
+                    .exec(addCookie(Cookie(""sessionID"", SessionId.random()).withDomain(DOMAIN)));
+
+    private static class CmsPage {
+        private static final ChainBuilder homePage =
+                exec(http(""Load Home Page"")
+                        .get(""/"")
+                        .check(css(""#_csrf"", ""content"").saveAs(""csrfValue""))
+                        .check(regex(""<title>Gatling Demo-Store</title>"").exists()));
+        private static final ChainBuilder aboutUs =
+                exec(http(""Load About Us Page"")
+                        .get(""/about-us"")
+                        .check(substring(""About Us"")));
+    }
+
+    private static class Catalog {
+        private static class Category {
+            private static final ChainBuilder view =
+                    feed(csvFeederCategoryFeeder)
+                            .repeat(2, ""n"").on(
+                                    exec(http(""View #{n} Category - #{categoryName}"")
+                                            .get(""/category/#{categorySlug}"")
+                                            .check(css(""#CategoryName"").isEL(""#{categoryName}"")))); // EL = Expression Language
+        }
+
+        private static class Product {
+            private static final ChainBuilder view =
+                    feed(jsonFeederProductFeeder)
+                            .exec(http(""View Product - #{name}"")
+                                    .get(""/product/#{slug}"")
+                                    .check(css(""#ProductDescription"").isEL(""#{description}"")));
+            private static final ChainBuilder addProductToCart =
+                    exec(view)
+                            .exec(http(""Add to Cart - ${name}"")
+                                    .get(""/cart/add/${id}"")
+                                    .check(substring(""items in your cart"")))
+                            .exec(session -> {
+                                double currentCartTotal = session.getDouble(""cartTotal"");
+                                double itemPrice = session.getDouble(""price"");
+                                return session.set(""cartTotal"", currentCartTotal + itemPrice);
+                            })
+                            .exec(
+                                    session -> {
+                                        System.out.println(""Cart Total : "" + session.get(""cartTotal"").toString());
+                                        return session;
+                                    }
+                            );
+            ;
+        }
+    }
+
+    private static class Customer {
+        private static final ChainBuilder login =
+                feed(csvFeederLoginDetails)
+                        .exec(http(""Load Login Page for #{username}"")
+                                .get(""/login"")
+                                .check(substring(""Username:"")))
+                        .exec(
+                                session -> {
+                                    System.out.println(""Customer logged in: "" + session.get(""customerLoggedIn"").toString());
+                                    return session;
+                                }
+                        )
+                        .exec(http(""Customer Login Action with #{username}"")
+                                .post(""/login"")
+                                .formParam(""_csrf"", ""#{csrfValue}"")
+                                .formParam(""username"", ""#{username}"")
+                                .formParam(""password"", ""#{password}""))
+                        .exec(session -> session.set(""customerLoggedIn"", true))
+                        .exec(
+                                session -> {
+                                    System.out.println(""Customer logged in: "" + session.get(""customerLoggedIn"").toString());
+                                    return session;
+                                }
+                        );
+    }
+
+    private static class Checkout {
+        private static final ChainBuilder viewCart =
+                doIf(session -> !session.getBoolean(""customerLoggedIn""))
+                        .then(exec(Customer.login))
+                        .exec(http(""View Cart"")
+                                .get(""/cart/view"")
+//                                .check(css(""#grandTotal"").isEL(""$#{cartTotal}""))
+                        );
+        private static final ChainBuilder checkout =
+                exec(http(""Checkout"")
+                        .get(""/cart/checkout"")
+                        .check(substring(""Thanks for your order! See you soon!"")));
+    }
+
+    private static final ScenarioBuilder scn = scenario(""RecordedSimulationDemoStore1"")
+            .exec(initSession)
+            .exec(CmsPage.homePage)
+            .pause(2)
+            .exec(CmsPage.aboutUs)
+            .pause(2)
+            .exec(Catalog.Category.view)
+            .pause(2)
+            .exec(Catalog.Product.addProductToCart)
+            .pause(2)
+            .exec(Checkout.viewCart)
+            .pause(3)
+            .exec(Checkout.checkout)
+            .pause(3);
+    private static class UserJourneys {
+        private static final Duration MIN_PAUSE = Duration.ofMillis(100);
+        private static final Duration MAX_PAUSE = Duration.ofMillis(500);
+        private static final ChainBuilder browseStore =
+                exec(initSession)
+                        .exec(CmsPage.homePage)
+                        .pause(MAX_PAUSE)
+                        .exec(CmsPage.aboutUs)
+                        .pause(MIN_PAUSE,MAX_PAUSE)
+                        .repeat(5)
+                        .on(
+                                exec(Catalog.Category.view)
+                                        .pause(MIN_PAUSE,MAX_PAUSE)
+                                        .exec(Catalog.Product.view)
+                        );
+        private static final ChainBuilder abandonCart =
+                initSession
+                        .exec(CmsPage.homePage)
+                        .pause(MAX_PAUSE)
+                        .exec(Catalog.Category.view)
+                        .pause(MIN_PAUSE,MAX_PAUSE)
+                        .exec(Catalog.Product.view)
+                        .pause(MIN_PAUSE,MAX_PAUSE)
+                        .exec(Catalog.Product.addProductToCart);
+        private static final ChainBuilder completePurchase =
+                initSession
+                        .exec(CmsPage.homePage)
+                        .pause(MAX_PAUSE)
+                        .exec(Catalog.Category.view)
+                        .pause(MIN_PAUSE,MAX_PAUSE)
+                        .exec(Catalog.Product.view)
+                        .pause(MIN_PAUSE,MAX_PAUSE)
+                        .exec(Catalog.Product.addProductToCart)
+                        .pause(MIN_PAUSE,MAX_PAUSE)
+                        .exec(Checkout.viewCart)
+                        .pause(MIN_PAUSE,MAX_PAUSE)
+                        .exec(Checkout.checkout);
+    }
+    private static class Scenarios {
+        private static final ScenarioBuilder defaultPurchase =
+                scenario(""Default Load Test"")
+                        .during(TEST_DURATION)
+                        .on(
+                                randomSwitch().on(
+                                        Choice.withWeight(75.0,exec(UserJourneys.browseStore)),
+                                        Choice.withWeight(15.0,exec(UserJourneys.abandonCart)),
+                                        Choice.withWeight(10.0,exec(UserJourneys.completePurchase))
+                                )
+                        );
+        private static final ScenarioBuilder highPurchase =
+                scenario(""High Purchase Load Test"")
+                        .during(Duration.ofSeconds(60))
+                        .on(
+                                randomSwitch().on(
+                                        Choice.withWeight(25.0,exec(UserJourneys.browseStore)),
+                                        Choice.withWeight(25.0,exec(UserJourneys.abandonCart)),
+                                        Choice.withWeight(50.0,exec(UserJourneys.completePurchase))
+                                )
+                        );
+    }
+
+    {
+        setUp(
+                Scenarios.defaultPurchase.injectOpen(
+                        rampUsers(USER_COUNT).during(RAMP_DURATION))
+                        .protocols(HTTP_PROTOCOL)
+                );
+    }
+}"
+
+LINK NUMBER 545
+Not enough lines
+
+LINK NUMBER 546
+Not enough lines
+
+LINK NUMBER 547
+Error fetching diff
+
+LINK NUMBER 548
+Error fetching diff
+
+LINK NUMBER 549
+Error fetching diff
+
+LINK NUMBER 550
+Not enough lines
+
+LINK NUMBER 551
+Not enough lines
+
+LINK NUMBER 552
+Not enough lines
+
+LINK NUMBER 553
+Not enough lines
+
+LINK NUMBER 554
+Error fetching diff
+
+LINK NUMBER 555
+Error fetching diff
+
+LINK NUMBER 556
+Error fetching diff
+
+LINK NUMBER 557
+
+File path: src/lib/enums.ts
+"<script lang=""ts"">
+  import type { ChatMessage } from '$lib/server/db/schema';
+  import { ChatMessageFeedback } from '$lib/enums';
+
+  const { 
+    message, 
+    updateChatMessage 
+  } = $props<{
+    message: ChatMessage;
+    updateChatMessage: (changes: Partial<ChatMessage>) => void;
+  }>();
+
+  // State
+  let feedback = $state<ChatMessageFeedback | null>(message.feedback || null);
+  let isFeedbackSubmitted = $state(!!message.feedback);
+
+  const onSaveFeedback = async (selectedFeedback: ChatMessageFeedback) => {
+    if (!selectedFeedback) {
+      console.log('MessageFeedback.onSaveFeedback: No feedback provided.');
+      return;
+    }
+
+    feedback = selectedFeedback;
+
+    const changes: Partial<ChatMessage> = {
+      id: message.id,
+      feedback,
+    };
+    await updateChatMessage(changes);
+    isFeedbackSubmitted = true;
+  };
+</script>
+
+<div class=""message-feedback"">
+  {#if isFeedbackSubmitted}
+    <div class=""feedback-submitted"">
+      <span>Thanks! Feedback: <span class=""feedback-value"">{feedback}</span></span>
+    </div>
+  {:else}
+    <div class=""feedback-buttons"">
+      <button
+        class=""feedback-button""
+        onclick={() => onSaveFeedback(ChatMessageFeedback.helpful)}
+        title=""This response was helpful""
+      >
+        <svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round"">
+          <path d=""M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3""></path>
+        </svg>
+        Helpful
+      </button>
+      <button
+        class=""feedback-button""
+        onclick={() => onSaveFeedback(ChatMessageFeedback.unhelpful)}
+        title=""This response was not helpful""
+      >
+        <svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round"">
+          <path d=""M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17""></path>
+        </svg>
+        Not Helpful
+      </button>
+      <button
+        class=""feedback-button""
+        onclick={() => onSaveFeedback(ChatMessageFeedback.wrong)}
+        title=""This response contains incorrect information""
+      >
+        <svg xmlns=""http://www.w3.org/2000/svg"" width=""16"" height=""16"" viewBox=""0 0 24 24"" fill=""none"" stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round"">
+          <circle cx=""12"" cy=""12"" r=""10""></circle>
+          <line x1=""15"" y1=""9"" x2=""9"" y2=""15""></line>
+          <line x1=""9"" y1=""9"" x2=""15"" y2=""15""></line>
+        </svg>
+        Wrong
+      </button>
+    </div>
+  {/if}
+</div>
+
+<style>
+  /* Feedback UI styles */
+  .message-feedback {
+    margin-top: 0.3rem;
+    padding-top: 0.2rem;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 0.85rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .feedback-buttons {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+  }
+
+  .feedback-button {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    color: #555;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .feedback-button:hover {
+    background-color: #e9e9e9;
+    border-color: #ccc;
+  }
+
+  .feedback-button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .feedback-submitted {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: #666;
+    font-size: 0.75rem;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .feedback-value {
+    font-weight: 500;
+    color: #68859b;
+    text-transform: capitalize;
+  }
+</style>"
+
+LINK NUMBER 558
+
+File path: src/resolver.test-d.ts
+"
+import type { ArgValues, ExtractOptionValue, FilterArgs, ResolveArgValues } from './resolver.ts'
+
+test('ExtractOptionValue', () => {
+  // string type
+  expectTypeOf<
+    ExtractOptionValue<{
+      type: 'string'
+      short: 's'
+    }>
+  >().toEqualTypeOf<string>()
+
+  // boolean type
+  expectTypeOf<
+    ExtractOptionValue<{
+      type: 'boolean'
+      short: 's'
+    }>
+  >().toEqualTypeOf<boolean>()
+
+  // number type
+  expectTypeOf<
+    ExtractOptionValue<{
+      type: 'number'
+      short: 's'
+    }>
+  >().toEqualTypeOf<number>()
+
+  // enum type
+  expectTypeOf<
+    ExtractOptionValue<{
+      type: 'enum'
+      short: 's'
+      choices: ['a', 'b', 'c']
+    }>
+  >().toEqualTypeOf<'a' | 'b' | 'c'>()
+  expectTypeOf<
+    ExtractOptionValue<{
+      type: 'enum'
+      short: 's'
+    }>
+  >().toEqualTypeOf<never>()
+})
+
+test('FilterArgs', () => {
+  expectTypeOf<
+    FilterArgs<
+      {
+        help: {
+          type: 'boolean'
+          short: 'h'
+        }
+      },
+      { help: true },
+      'type'
+    >
+  >().toEqualTypeOf<{ help: true }>()
+  expectTypeOf<
+    FilterArgs<
+      {
+        help: {
+          type: 'boolean'
+          short: 'h'
+        }
+      },
+      { help: true },
+      'short'
+    >
+  >().toEqualTypeOf<{ help: true }>()
+
+  expectTypeOf<
+    FilterArgs<
+      {
+        help: {
+          type: 'boolean'
+          short: 'h'
+        }
+      },
+      { help: true },
+      'required'
+    >
+  >().toEqualTypeOf<{}>()
+})
+
+test('ResolveArgValues', () => {
+  // basic
+  expectTypeOf<
+    ResolveArgValues<
+      {
+        help: {
+          type: 'boolean'
+          short: 'h'
+        }
+      },
+      { help: true }
+    >
+  >().toEqualTypeOf<{ help?: true | undefined }>()
+
+  // required
+  expectTypeOf<
+    ResolveArgValues<
+      {
+        help: {
+          type: 'boolean'
+          short: 'h'
+          required: true
+        }
+      },
+      { help: true }
+    >
+  >().toEqualTypeOf<{ help: true }>()
+
+  // default
+  expectTypeOf<
+    ResolveArgValues<
+      {
+        help: {
+          type: 'boolean'
+          short: 'h'
+          default: false
+        }
+      },
+      { help: false }
+    >
+  >().toEqualTypeOf<{ help: false }>()
+
+  // enum & choices
+  expectTypeOf<
+    ResolveArgValues<
+      {
+        log: {
+          type: 'enum'
+          short: 'l'
+          choices: ['debug', 'info', 'warn', 'error']
+        }
+      },
+      { log: 'debug' }
+    >
+  >().toEqualTypeOf<{ log?: 'debug' | undefined }>()
+})"
+
+LINK NUMBER 559
+Not enough lines
+
+LINK NUMBER 560
+Too many lines
+
+LINK NUMBER 561
+Error fetching diff
+
+LINK NUMBER 562
+Error fetching diff
+
+LINK NUMBER 563
+Error fetching diff
+
+LINK NUMBER 564
+
+File path: models/agent.py
+"            (Query().simulation_id == self.simulation_id)
+            & (Query().x_1 <= location[0])
+            & (Query().x_2 >= location[0])
+            & (Query().y_1 <= location[1])
+            & (Query().y_2 >= location[1])"
+
+LINK NUMBER 565
+
+File path: config/backup.php
+"    /**
+     * The upload chunk size
+     */
+    'chunk_size' => 2 * 1024 * 1024,
+"
+
+LINK NUMBER 566
+Not enough lines
+
+LINK NUMBER 567
+
+File path: test/chowdsp_convolution_test.cpp
+"    if (mono_ir)
+    {
+        chowdsp::convolution::create_ir (&conv_config,
+                                         &conv_ir,
+                                         ir.data(),
+                                         ir_length_samples,
+                                         fft_scratch);
+    }
+    else
+    {
+        chowdsp::convolution::create_multichannel_ir (&conv_config,
+                                                      &conv_ir,
+                                                      multi_channel_ir.data(),
+                                                      ir_length_samples,
+                                                      num_channels,
+                                                      fft_scratch);
+    }"
+
+LINK NUMBER 568
+Error fetching diff
+
+LINK NUMBER 569
+Error fetching diff
+
+LINK NUMBER 570
+Error fetching diff
+
+LINK NUMBER 571
+Not enough lines
+
+LINK NUMBER 572
+Not enough lines
+
+LINK NUMBER 573
+
+File path: src/config/widgetConfig.ts
+"        components: {
+          MuiAvatar: {
+            styleOverrides: {
+              root: {
+                '.widget-wrapper &': {
+                  backgroundColor: themeCustomized.palette.common.white,
+                  ...themeCustomized.applyStyles('light', {
+                    backgroundColor: 'transparent',
+                  }),
+                },
+              }
+            },
+          }
+        }"
+
+LINK NUMBER 574
+Not enough lines
+
+LINK NUMBER 575
+Error fetching diff
+
+LINK NUMBER 576
+Error fetching diff
+
+LINK NUMBER 577
+Error fetching diff
+
+LINK NUMBER 578
+Not enough lines
+
+LINK NUMBER 579
+Not enough lines
+
+LINK NUMBER 580
+Not enough lines
+
+LINK NUMBER 581
+Not enough lines
+
+LINK NUMBER 582
+Error fetching diff
+
+LINK NUMBER 583
+Error fetching diff
+
+LINK NUMBER 584
+Error fetching diff
+
+LINK NUMBER 585
+Not enough lines
+
+LINK NUMBER 586
+Not enough lines
+
+LINK NUMBER 587
+
+File path: tests/aequilibrae/project/test_network_simplifier.py
+"import pytest
+
+from aequilibrae.utils.create_example import create_example
+from aequilibrae.project.tools.network_simplifier import NetworkSimplifier
+
+
+@pytest.fixture
+def project_with_graph(create_path):
+    project = create_example(create_path, ""nauru"")
+    remaining_links = [899, 900, 901, 902, 903, 1042, 1043, 1159, 1160]
+    remaining_links += list(range(171, 222))
+
+    with project.db_connection as conn:
+        qry = f""DELETE FROM links WHERE link_id NOT IN {tuple(remaining_links)};""
+        conn.execute(qry)
+        conn.commit()
+
+        # Let's create a centroid to build a graph
+        arbitrary_node = conn.execute(""select node_id from nodes limit 1"").fetchone()[0]
+        nodes = project.network.nodes
+        nd = nodes.get(arbitrary_node)
+        nd.is_centroid = 1
+        nd.save()
+
+    mode = ""c""
+
+    network = project.network
+    network.build_graphs(modes=[mode])
+    graph = network.graphs[mode]
+    graph.set_graph(""distance"")
+    graph.set_skimming(""distance"")
+    graph.set_blocked_centroid_flows(False)
+
+    yield graph
+    project.close()
+
+
+def test_simplify(project_with_graph):
+    net = NetworkSimplifier()
+
+    links_before = net.link_layer.shape[0]
+    nodes_before = net.network.nodes.data.shape[0]
+
+    net.simplify(project_with_graph)
+    net.rebuild_network()
+
+    assert links_before > net.network.links.data.shape[0]
+    assert nodes_before > net.network.nodes.data.shape[0]
+
+
+def test_collapse_links_into_nodes(project_with_graph):
+    net = NetworkSimplifier()
+
+    links_before = net.link_layer.shape[0]
+    nodes_before = net.network.nodes.data.shape[0]
+
+    net.collapse_links_into_nodes([903])
+    net.rebuild_network()
+
+    assert links_before > net.link_layer.shape[0]
+    assert nodes_before > net.network.nodes.data.shape[0]"
+
+LINK NUMBER 588
+Not enough lines
+
+LINK NUMBER 589
+Error fetching diff
+
+LINK NUMBER 590
+Error fetching diff
+
+LINK NUMBER 591
+Error fetching diff
+
+LINK NUMBER 592
+
+File path: tests/gdb-tests/tests/test_misc.py
+"from __future__ import annotations
+
+import gdb
+
+import pwndbg
+
+
+def test_consistent_help():
+    """"""
+    Tests that the help printed by gdb (via `help cmd`) is
+    the exact same as the help printed by argparse (via `cmd -h`).
+    """"""
+
+    for cmd in pwndbg.commands.commands:
+        name = cmd.command_name
+        gdb_out = gdb.execute(f""help {name}"", to_string=True)
+        argparse_out = gdb.execute(f""{name} -h"", to_string=True)
+
+        # I would rather not strip, but gdb is inconsistent between versions.
+        assert gdb_out.rstrip() == argparse_out.rstrip()"
+
+LINK NUMBER 593
+
+File path: tests/modules/application/test_application_service.py
+"
+    def test_duplicate_cron_not_scheduled(self) -> None:
+        monkeypatch = MonkeyPatch()
+
+        log_messages = []
+
+        def fake_info(message: str) -> None:
+            log_messages.append(message)
+
+        monkeypatch.setattr(Logger, ""info"", fake_info)
+
+        cron_schedule = ""*/1 * * * *""
+        worker_id_first = ApplicationService.schedule_worker_as_cron(
+            cls=HealthCheckWorker, cron_schedule=cron_schedule
+        )
+        assert worker_id_first
+
+        worker_details = ApplicationService.get_worker_by_id(worker_id=worker_id_first)
+        assert worker_details.id == worker_id_first
+        assert worker_details.status == WorkflowExecutionStatus.RUNNING
+
+        worker_id_duplicate = ApplicationService.schedule_worker_as_cron(
+            cls=HealthCheckWorker, cron_schedule=cron_schedule
+        )
+        assert worker_id_first == worker_id_duplicate
+
+        duplicate_log = (
+            f""Worker {worker_id_first} already running, skipping starting new instance""
+        )
+        assert any(
+            duplicate_log in log for log in log_messages
+        ), ""Expected duplicate log message not found""
+
+        ApplicationService.terminate_worker(worker_id=worker_id_first)
+        time.sleep(1)
+        terminated_worker_details = ApplicationService.get_worker_by_id(
+            worker_id=worker_id_first
+        )
+        assert terminated_worker_details.status == WorkflowExecutionStatus.TERMINATED"
+
+LINK NUMBER 594
+Too many lines
+
+LINK NUMBER 595
+
+File path: drivers/doubao/util.go
+"
+		resp = append(r.Data.Children, nextFiles...)
+	}
+
+	return resp, err
+}
+
+func (d *Doubao) getUserInfo() (UserInfo, error) {
+	var r UserInfoResp
+
+	_, err := d.request(""/passport/account/info/v2/"", http.MethodGet, nil, &r)
+	if err != nil {
+		return UserInfo{}, err
+	}
+
+	return r.Data, err
+}
+
+// 签名请求
+func (d *Doubao) signRequest(req *resty.Request, method, tokenType, uploadUrl string) error {
+	parsedUrl, err := url.Parse(uploadUrl)
+	if err != nil {
+		return fmt.Errorf(""invalid URL format: %w"", err)
+	}
+
+	var accessKeyId, secretAccessKey, sessionToken string
+	var serviceName string
+
+	if tokenType == VideoDataType {
+		accessKeyId = d.UploadToken.Samantha.StsToken.AccessKeyID
+		secretAccessKey = d.UploadToken.Samantha.StsToken.SecretAccessKey
+		sessionToken = d.UploadToken.Samantha.StsToken.SessionToken
+		serviceName = ""vod""
+	} else {
+		accessKeyId = d.UploadToken.Alice[tokenType].Auth.AccessKeyID
+		secretAccessKey = d.UploadToken.Alice[tokenType].Auth.SecretAccessKey
+		sessionToken = d.UploadToken.Alice[tokenType].Auth.SessionToken
+		serviceName = ""imagex""
+	}
+
+	// 当前时间，格式为 ISO8601
+	now := time.Now().UTC()
+	amzDate := now.Format(""20060102T150405Z"")
+	dateStamp := now.Format(""20060102"")
+
+	req.SetHeader(""X-Amz-Date"", amzDate)
+
+	if sessionToken != """" {
+		req.SetHeader(""X-Amz-Security-Token"", sessionToken)
+	}
+
+	// 计算请求体的SHA256哈希
+	var bodyHash string
+	if req.Body != nil {
+		bodyBytes, ok := req.Body.([]byte)
+		if !ok {
+			return fmt.Errorf(""request body must be []byte"")
+		}
+
+		bodyHash = hashSHA256(string(bodyBytes))
+		req.SetHeader(""X-Amz-Content-Sha256"", bodyHash)
+	} else {
+		bodyHash = hashSHA256("""")
+	}
+
+	// 创建规范请求
+	canonicalURI := parsedUrl.Path
+	if canonicalURI == """" {
+		canonicalURI = ""/""
+	}
+
+	// 查询参数按照字母顺序排序
+	canonicalQueryString := getCanonicalQueryString(req.QueryParam)
+	// 规范请求头
+	canonicalHeaders, signedHeaders := getCanonicalHeadersFromMap(req.Header)
+	canonicalRequest := method + ""\n"" +
+		canonicalURI + ""\n"" +
+		canonicalQueryString + ""\n"" +
+		canonicalHeaders + ""\n"" +
+		signedHeaders + ""\n"" +
+		bodyHash
+
+	algorithm := ""AWS4-HMAC-SHA256""
+	credentialScope := fmt.Sprintf(""%s/%s/%s/aws4_request"", dateStamp, Region, serviceName)
+
+	stringToSign := algorithm + ""\n"" +
+		amzDate + ""\n"" +
+		credentialScope + ""\n"" +
+		hashSHA256(canonicalRequest)
+	// 计算签名密钥
+	signingKey := getSigningKey(secretAccessKey, dateStamp, Region, serviceName)
+	// 计算签名
+	signature := hmacSHA256Hex(signingKey, stringToSign)
+	// 构建授权头
+	authorizationHeader := fmt.Sprintf(
+		""%s Credential=%s/%s, SignedHeaders=%s, Signature=%s"",
+		algorithm,
+		accessKeyId,
+		credentialScope,
+		signedHeaders,
+		signature,
+	)
+
+	req.SetHeader(""Authorization"", authorizationHeader)
+
+	return nil
+}
+
+func (d *Doubao) requestApi(url, method, tokenType string, callback base.ReqCallback, resp interface{}) ([]byte, error) {
+	req := base.RestyClient.R()
+	req.SetHeaders(map[string]string{
+		""user-agent"": UserAgent,
+	})
+
+	if method == http.MethodPost {
+		req.SetHeader(""Content-Type"", ""text/plain;charset=UTF-8"")
+	}
+
+	if callback != nil {
+		callback(req)
+	}
+
+	if resp != nil {
+		req.SetResult(resp)
+	}
+
+	// 使用自定义AWS SigV4签名
+	err := d.signRequest(req, method, tokenType, url)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := req.Execute(method, url)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body(), nil
+}
+
+func (d *Doubao) initUploadToken() (*UploadToken, error) {
+	uploadToken := &UploadToken{
+		Alice:    make(map[string]UploadAuthToken),
+		Samantha: MediaUploadAuthToken{},
+	}
+
+	fileAuthToken, err := d.getUploadAuthToken(FileDataType)
+	if err != nil {
+		return nil, err
+	}
+
+	imgAuthToken, err := d.getUploadAuthToken(ImgDataType)
+	if err != nil {
+		return nil, err
+	}
+
+	mediaAuthToken, err := d.getSamantaUploadAuthToken()
+	if err != nil {
+		return nil, err
+	}
+
+	uploadToken.Alice[FileDataType] = fileAuthToken
+	uploadToken.Alice[ImgDataType] = imgAuthToken
+	uploadToken.Samantha = mediaAuthToken
+
+	return uploadToken, nil
+}
+
+func (d *Doubao) getUploadAuthToken(dataType string) (ut UploadAuthToken, err error) {
+	var r UploadAuthTokenResp
+	_, err = d.request(""/alice/upload/auth_token"", http.MethodPost, func(req *resty.Request) {
+		req.SetBody(base.Json{
+			""scene"":     ""bot_chat"",
+			""data_type"": dataType,
+		})
+	}, &r)
+
+	return r.Data, err
+}
+
+func (d *Doubao) getSamantaUploadAuthToken() (mt MediaUploadAuthToken, err error) {
+	var r MediaUploadAuthTokenResp
+	_, err = d.request(""/samantha/media/get_upload_token"", http.MethodPost, func(req *resty.Request) {
+		req.SetBody(base.Json{})
+	}, &r)
+
+	return r.Data, err
+}
+
+// getUploadConfig 获取上传配置信息
+func (d *Doubao) getUploadConfig(upConfig *UploadConfig, dataType string, file model.FileStreamer) error {
+	tokenType := dataType
+	// 配置参数函数
+	configureParams := func() (string, map[string]string) {
+		var uploadUrl string
+		var params map[string]string
+		// 根据数据类型设置不同的上传参数
+		switch dataType {
+		case VideoDataType:
+			// 音频/视频类型 - 使用uploadToken.Samantha的配置
+			uploadUrl = d.UploadToken.Samantha.UploadInfo.VideoHost
+			params = map[string]string{
+				""Action"":       ""ApplyUploadInner"",
+				""Version"":      ""2020-11-19"",
+				""SpaceName"":    d.UploadToken.Samantha.UploadInfo.SpaceName,
+				""FileType"":     ""video"",
+				""IsInner"":      ""1"",
+				""NeedFallback"": ""true"",
+				""FileSize"":     strconv.FormatInt(file.GetSize(), 10),
+				""s"":            randomString(),
+			}
+		case ImgDataType, FileDataType:
+			// 图片或其他文件类型 - 使用uploadToken.Alice对应配置
+			uploadUrl = ""https://"" + d.UploadToken.Alice[dataType].UploadHost
+			params = map[string]string{
+				""Action"":        ""ApplyImageUpload"",
+				""Version"":       ""2018-08-01"",
+				""ServiceId"":     d.UploadToken.Alice[dataType].ServiceID,
+				""NeedFallback"":  ""true"",
+				""FileSize"":      strconv.FormatInt(file.GetSize(), 10),
+				""FileExtension"": filepath.Ext(file.GetName()),
+				""s"":             randomString(),
+			}
+		}
+		return uploadUrl, params
+	}
+
+	// 获取初始参数
+	uploadUrl, params := configureParams()
+
+	tokenRefreshed := false
+	var configResp UploadConfigResp
+
+	err := d._retryOperation(""get upload_config"", func() error {
+		configResp = UploadConfigResp{}
+
+		_, err := d.requestApi(uploadUrl, http.MethodGet, tokenType, func(req *resty.Request) {
+			req.SetQueryParams(params)
+		}, &configResp)
+		if err != nil {
+			return err
+		}
+
+		if configResp.ResponseMetadata.Error.Code == """" {
+			*upConfig = configResp.Result
+			return nil
+		}
+
+		// 100028 凭证过期
+		if configResp.ResponseMetadata.Error.CodeN == 100028 && !tokenRefreshed {
+			log.Debugln(""[doubao] Upload token expired, re-fetching..."")
+			newToken, err := d.initUploadToken()
+			if err != nil {
+				return fmt.Errorf(""failed to refresh token: %w"", err)
+			}
+
+			d.UploadToken = newToken
+			tokenRefreshed = true
+			uploadUrl, params = configureParams()
+
+			return retry.Error{errors.New(""token refreshed, retry needed"")}
+		}
+
+		return fmt.Errorf(""get upload_config failed: %s"", configResp.ResponseMetadata.Error.Message)
+	})
+
+	return err
+}
+
+// uploadNode 上传 文件信息
+func (d *Doubao) uploadNode(uploadConfig *UploadConfig, dir model.Obj, file model.FileStreamer, dataType string) (UploadNodeResp, error) {
+	reqUuid := uuid.New().String()
+	var key string
+	var nodeType int
+
+	mimetype := file.GetMimetype()
+	switch dataType {
+	case VideoDataType:
+		key = uploadConfig.InnerUploadAddress.UploadNodes[0].Vid
+		if strings.HasPrefix(mimetype, ""audio/"") {
+			nodeType = AudioType // 音频类型
+		} else {
+			nodeType = VideoType // 视频类型
+		}
+	case ImgDataType:
+		key = uploadConfig.InnerUploadAddress.UploadNodes[0].StoreInfos[0].StoreURI
+		nodeType = ImageType // 图片类型
+	default: // FileDataType
+		key = uploadConfig.InnerUploadAddress.UploadNodes[0].StoreInfos[0].StoreURI
+		nodeType = FileType // 文件类型
+	}
+
+	var r UploadNodeResp
+	_, err := d.request(""/samantha/aispace/upload_node"", http.MethodPost, func(req *resty.Request) {
+		req.SetBody(base.Json{
+			""node_list"": []base.Json{
+				{
+					""local_id"":     reqUuid,
+					""parent_id"":    dir.GetID(),
+					""name"":         file.GetName(),
+					""key"":          key,
+					""node_content"": base.Json{},
+					""node_type"":    nodeType,
+					""size"":         file.GetSize(),
+				},
+			},
+			""request_id"": reqUuid,
+		})
+	}, &r)
+
+	return r, err
+}
+
+// Upload 普通上传实现
+func (d *Doubao) Upload(config *UploadConfig, dstDir model.Obj, file model.FileStreamer, up driver.UpdateProgress, dataType string) (model.Obj, error) {
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	// 计算CRC32
+	crc32Hash := crc32.NewIEEE()
+	crc32Hash.Write(data)
+	crc32Value := hex.EncodeToString(crc32Hash.Sum(nil))
+
+	// 构建请求路径
+	uploadNode := config.InnerUploadAddress.UploadNodes[0]
+	storeInfo := uploadNode.StoreInfos[0]
+	uploadUrl := fmt.Sprintf(""https://%s/upload/v1/%s"", uploadNode.UploadHost, storeInfo.StoreURI)
+
+	uploadResp := UploadResp{}
+
+	if _, err = d.uploadRequest(uploadUrl, http.MethodPost, storeInfo, func(req *resty.Request) {
+		req.SetHeaders(map[string]string{
+			""Content-Type"":        ""application/octet-stream"",
+			""Content-Crc32"":       crc32Value,
+			""Content-Length"":      fmt.Sprintf(""%d"", len(data)),
+			""Content-Disposition"": fmt.Sprintf(""attachment; filename=%s"", url.QueryEscape(storeInfo.StoreURI)),
+		})
+
+		req.SetBody(data)
+	}, &uploadResp); err != nil {
+		return nil, err
+	}
+
+	if uploadResp.Code != 2000 {
+		return nil, fmt.Errorf(""upload failed: %s"", uploadResp.Message)
+	}
+
+	uploadNodeResp, err := d.uploadNode(config, dstDir, file, dataType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Object{
+		ID:       uploadNodeResp.Data.NodeList[0].ID,
+		Name:     uploadNodeResp.Data.NodeList[0].Name,
+		Size:     file.GetSize(),
+		IsFolder: false,
+	}, nil
+}
+
+// UploadByMultipart 分片上传
+func (d *Doubao) UploadByMultipart(ctx context.Context, config *UploadConfig, fileSize int64, dstDir model.Obj, file model.FileStreamer, up driver.UpdateProgress, dataType string) (model.Obj, error) {
+	// 构建请求路径
+	uploadNode := config.InnerUploadAddress.UploadNodes[0]
+	storeInfo := uploadNode.StoreInfos[0]
+	uploadUrl := fmt.Sprintf(""https://%s/upload/v1/%s"", uploadNode.UploadHost, storeInfo.StoreURI)
+	// 初始化分片上传
+	var uploadID string
+	err := d._retryOperation(""Initialize multipart upload"", func() error {
+		var err error
+		uploadID, err = d.initMultipartUpload(config, uploadUrl, storeInfo)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf(""failed to initialize multipart upload: %w"", err)
+	}
+	// 准备分片参数
+	chunkSize := DefaultChunkSize
+	if config.InnerUploadAddress.AdvanceOption.SliceSize > 0 {
+		chunkSize = int64(config.InnerUploadAddress.AdvanceOption.SliceSize)
+	}
+	totalParts := (fileSize + chunkSize - 1) / chunkSize
+	// 创建分片信息组
+	parts := make([]UploadPart, totalParts)
+	// 缓存文件
+	tempFile, err := file.CacheFullInTempFile()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to cache file: %w"", err)
+	}
+	defer tempFile.Close()
+	up(10.0) // 更新进度
+	// 设置并行上传
+	threadG, uploadCtx := errgroup.NewGroupWithContext(ctx, d.uploadThread,
+		retry.Attempts(1),
+		retry.Delay(time.Second),
+		retry.DelayType(retry.BackOffDelay))
+
+	var partsMutex sync.Mutex
+	// 并行上传所有分片
+	for partIndex := int64(0); partIndex < totalParts; partIndex++ {
+		if utils.IsCanceled(uploadCtx) {
+			break
+		}
+		partIndex := partIndex
+		partNumber := partIndex + 1 // 分片编号从1开始
+
+		threadG.Go(func(ctx context.Context) error {
+			// 计算此分片的大小和偏移
+			offset := partIndex * chunkSize
+			size := chunkSize
+			if partIndex == totalParts-1 {
+				size = fileSize - offset
+			}
+
+			limitedReader := driver.NewLimitedUploadStream(ctx, io.NewSectionReader(tempFile, offset, size))
+			// 读取数据到内存
+			data, err := io.ReadAll(limitedReader)
+			if err != nil {
+				return fmt.Errorf(""failed to read part %d: %w"", partNumber, err)
+			}
+			// 计算CRC32
+			crc32Value := calculateCRC32(data)
+			// 使用_retryOperation上传分片
+			var uploadPart UploadPart
+			if err = d._retryOperation(fmt.Sprintf(""Upload part %d"", partNumber), func() error {
+				var err error
+				uploadPart, err = d.uploadPart(config, uploadUrl, uploadID, partNumber, data, crc32Value)
+				return err
+			}); err != nil {
+				return fmt.Errorf(""part %d upload failed: %w"", partNumber, err)
+			}
+			// 记录成功上传的分片
+			partsMutex.Lock()
+			parts[partIndex] = UploadPart{
+				PartNumber: strconv.FormatInt(partNumber, 10),
+				Etag:       uploadPart.Etag,
+				Crc32:      crc32Value,
+			}
+			partsMutex.Unlock()
+			// 更新进度
+			progress := 10.0 + 90.0*float64(threadG.Success()+1)/float64(totalParts)
+			up(math.Min(progress, 95.0))
+
+			return nil
+		})
+	}
+
+	if err = threadG.Wait(); err != nil {
+		return nil, err"
+
+LINK NUMBER 596
+Error fetching diff
+
+LINK NUMBER 597
+Error fetching diff
+
+LINK NUMBER 598
+Error fetching diff
+
+LINK NUMBER 599
+Not enough lines
+
+LINK NUMBER 600
+Not enough lines
+
+LINK NUMBER 601
+
+File path: pkg/config/loader/loader.go
+"
+func (tc *OLAPControllerImpl) sample(workflowRunID string) bool {
+	if tc.samplingHashThreshold == nil {
+		return true
+	}
+
+	bucket := hashToBucket(workflowRunID, 100)
+
+	return int64(bucket) < *tc.samplingHashThreshold
+}
+
+func hashToBucket(workflowRunID string, buckets int) int {
+	hasher := fnv.New32a()
+	idBytes := []byte(workflowRunID)
+	hasher.Write(idBytes)
+	return int(hasher.Sum32()) % buckets
+}"
+
+LINK NUMBER 602
+Not enough lines
+
+LINK NUMBER 603
+Error fetching diff
+
+LINK NUMBER 604
+Error fetching diff
+
+LINK NUMBER 605
+Error fetching diff
+
+LINK NUMBER 606
+Not enough lines
+
+LINK NUMBER 607
+Not enough lines
+
+LINK NUMBER 608
+Not enough lines
+
+LINK NUMBER 609
+
+File path: Content.Shared/_Goobstation/Vehicles/SharedVehicleSystem.cs
+"    // Frontier
+    private void OnMapInit(EntityUid uid, VehicleComponent component, MapInitEvent args)
+    {
+        bool actionsUpdated = false;
+        if (component.HornSound != null)
+        {
+            _actionContainer.EnsureAction(uid, ref component.HornAction, HornActionId);
+            actionsUpdated = true;
+        }
+
+        if (component.SirenSound != null)
+        {
+            _actionContainer.EnsureAction(uid, ref component.SirenAction, SirenActionId);
+            actionsUpdated = true;
+        }
+
+        if (actionsUpdated)
+            Dirty(uid, component);
+    }
+    // End Frontier
+"
+
+LINK NUMBER 610
+Error fetching diff
+
+LINK NUMBER 611
+Error fetching diff
+
+LINK NUMBER 612
+Error fetching diff
+
+LINK NUMBER 613
+Too many lines
+
+LINK NUMBER 614
+Not enough lines
+
+LINK NUMBER 615
+
+File path: backend/api/v1/plan_service_plan_check.go
+"	if project.Setting.GetCiSamplingSize() > 0 {
+		var updatedRuns []*store.PlanCheckRunMessage
+		countMap := make(map[string]int32)
+		for _, run := range planCheckRuns {
+			key := fmt.Sprintf(""%s/%s/%s/%d"", run.Type, run.Config.GetInstanceId(), run.Config.GetDatabaseName(), run.Config.GetSheetUid())
+			if countMap[key] >= project.Setting.GetCiSamplingSize() {
+				continue
+			}
+			updatedRuns = append(updatedRuns, run)
+			countMap[key]++
+		}
+		planCheckRuns = updatedRuns
+	}"
+
+LINK NUMBER 616
+Not enough lines
+
+LINK NUMBER 617
+Error fetching diff
+
+LINK NUMBER 618
+Error fetching diff
+
+LINK NUMBER 619
+Error fetching diff
+
+LINK NUMBER 620
+
+File path: runtime/drivers/druid/druid.go
+"func (d driver) checkVersion(dsn string) error {
+	parsedURL, err := url.Parse(dsn)
+	if err != nil {
+		return err
+	}
+	parsedURL.Path = ""/status""
+	statusURL := parsedURL.String()
+
+	req, err := http.NewRequest(http.MethodGet, statusURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf(""druid version check failed with status code: %d"", resp.StatusCode)
+	}
+
+	var statusResponse struct {
+		Version string `json:""version""`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&statusResponse); err != nil {
+		return fmt.Errorf(""failed to decode Druid status response: %w"", err)
+	}
+
+	if statusResponse.Version != """" {
+		majorVersion := strings.Split(statusResponse.Version, ""."")[0]
+		if ver, err := strconv.Atoi(majorVersion); err == nil {
+			if ver < 28 {
+				return fmt.Errorf(""druid version %s is not supported, please use 28.0.0 or higher"", statusResponse.Version)
+			}
+		} else {
+			return fmt.Errorf(""failed to parse Druid version: %w"", err)
+		}
+	} else {
+		return fmt.Errorf(""druid version information not found in the response"")
+	}
+
+	return nil
+}
+"
+
+LINK NUMBER 621
+Not enough lines
+
+LINK NUMBER 622
+
+File path: menu/src/render/renderer.cpp
+"    try {
+      ShutdownImGui();
+    } catch (const std::exception& e) {
+      LOG_CRITICAL(""Failed to shutdown ImGui: {}"", e.what());
+    } catch (...) {
+      LOG_CRITICAL(""Failed to shutdown ImGui due to an unknown error"");
+    }"
+
+LINK NUMBER 623
+
+File path: src/utils/actions.ts
+"import { HassEntity } from ""home-assistant-js-websocket"";
+
+export type MediaPlayerState =
+  | ""playing""
+  | ""paused""
+  | ""idle""
+  | ""off""
+  | ""on""
+  | ""standby""
+  | ""buffering""
+  | ""unavailable""
+  | string; // Just to make things a bit easier type-wise
+export type MediaPlayerRepeatMode = ""off"" | ""all"" | ""one"";
+
+export type MediaPlayerSupportedFeatures = number;
+
+export type MediaContentType =
+  | ""music""
+  | ""tvshow""
+  | ""movie""
+  | ""video""
+  | ""episode""
+  | ""channel""
+  | ""playlist""
+  | ""image""
+  | ""game""
+  | ""app""
+  | string;
+
+export type MediaPlayerDeviceClass = ""tv"" | ""speaker"" | ""receiver"";
+
+export interface MediaPlayerEntityAttributes {
+  media_duration?: number;
+  media_position?: number;
+  media_position_updated_at?: string; // ISO date string
+  media_title?: string;
+  media_artist?: string;
+  media_album_name?: string;
+  icon?: string;
+  friendly_name?: string;
+  entity_picture?: string;
+  volume_level?: number; // 0.0 to 1.0
+  is_volume_muted?: boolean;
+  shuffle?: boolean;
+  repeat?: MediaPlayerRepeatMode;
+  supported_features?: MediaPlayerSupportedFeatures;
+  group_members?: string[]; // Array of entity_ids
+  source?: string;
+  source_list?: string[];
+  device_class?: MediaPlayerDeviceClass;
+  media_content_id?: string;
+  media_content_type?: MediaContentType;
+}
+
+export interface MediaPlayerEntity extends HassEntity {
+  attributes: MediaPlayerEntityAttributes;
+  state: MediaPlayerState;
+}"
+
+LINK NUMBER 624
+Error fetching diff
+
+LINK NUMBER 625
+Error fetching diff
+
+LINK NUMBER 626
+Error fetching diff
+
+LINK NUMBER 627
+Not enough lines
+
+LINK NUMBER 628
+
+File path: src/pyglaze/scanning/scanner.py
+"    def get_serial_number(self: LeScanner) -> str:
+        """"""Get the serial number of the connected device.
+
+        Returns:
+            str: The serial number of the connected device.
+        """"""
+        if self._ampcom is None:
+            msg = ""Scanner not connected""
+            raise ScanError(msg)
+        return self._ampcom.get_serial_number()
+
+    def get_firmware_version(self: LeScanner) -> str:
+        """"""Get the firmware version of the connected device.
+
+        Returns:
+            str: The firmware version of the connected device.
+        """"""
+        if self._ampcom is None:
+            msg = ""Scanner not connected""
+            raise ScanError(msg)
+        return self._ampcom.get_firmware_version()
+"
+
+LINK NUMBER 629
+
+File path: src/external-services/mailjet/mailjet.utils.ts
+"'use strict';
+
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    await queryInterface.addColumn('User_Profiles', 'optInNewsletter', {
+      allowNull: false,
+      type: Sequelize.BOOLEAN,
+      defaultValue: false,
+    });
+  },
+
+  async down(queryInterface, Sequelize) {
+    await queryInterface.removeColumn('User_Profiles', 'optInNewsletter');
+  },
+};"
+
+LINK NUMBER 630
+
+File path: fibsem/milling/patterning/patterns2.py
+"
+        # add fillet to the corners
+        if fillet > 0:            
+            left_x_pos = point.x - width / 2
+            right_x_pos = point.x + width / 2
+
+            fillet_offset = 1.5
+            lower_y_pos = centre_lower_y + lower_trench_height / 2 - fillet * fillet_offset
+            top_y_pos = centre_upper_y - upper_trench_height / 2 + fillet * fillet_offset
+
+            lower_left_fillet = FibsemCircleSettings(
+                radius=fillet,
+                depth=depth/2,
+                centre_x=point.x - width / 2,
+                centre_y=lower_y_pos,
+            )
+            lower_right_fillet = FibsemCircleSettings(
+                radius=fillet,
+                depth=depth/2,
+                centre_x=point.x + width / 2,
+                centre_y=lower_y_pos,
+            )
+
+            # fill the remaining space with rectangles
+            lower_left_fill = FibsemRectangleSettings(
+                width=fillet,
+                height=lower_trench_height - fillet,
+                depth=depth,
+                centre_x=left_x_pos - fillet / 2,
+                centre_y=centre_lower_y - fillet / 2,
+                cross_section = cross_section,
+                scan_direction=""BottomToTop"",
+
+            )
+            lower_right_fill = FibsemRectangleSettings(
+                width=fillet,
+                height=lower_trench_height - fillet,
+                depth=depth,
+                centre_x=right_x_pos + fillet / 2,
+                centre_y=centre_lower_y - fillet / 2,
+                cross_section = cross_section,
+                scan_direction=""BottomToTop"",
+            )
+
+            top_left_fillet = FibsemCircleSettings(
+                radius=fillet,
+                depth=depth,
+                centre_x=point.x - width / 2,
+                centre_y=top_y_pos,
+            )
+            top_right_fillet = FibsemCircleSettings(
+                radius=fillet,
+                depth=depth,
+                centre_x=point.x + width / 2,
+                centre_y=top_y_pos,
+            )
+
+            top_left_fill = FibsemRectangleSettings(
+                width=fillet,
+                height=upper_trench_height - fillet,
+                depth=depth,
+                centre_x=left_x_pos - fillet / 2,
+                centre_y=centre_upper_y + fillet / 2,
+                cross_section = cross_section,
+                scan_direction=""TopToBottom"",
+            )
+            top_right_fill = FibsemRectangleSettings(
+                width=fillet,
+                height=upper_trench_height - fillet,
+                depth=depth,
+                centre_x=right_x_pos + fillet / 2,
+                centre_y=centre_upper_y + fillet / 2,
+                cross_section = cross_section,
+                scan_direction=""TopToBottom"",
+            )
+
+            self.shapes.extend([lower_left_fill, lower_right_fill, 
+                                top_left_fill, top_right_fill, 
+                                lower_left_fillet, lower_right_fillet, 
+                                top_left_fillet, top_right_fillet])
+"
+
+LINK NUMBER 631
+Error fetching diff
+
+LINK NUMBER 632
+Error fetching diff
+
+LINK NUMBER 633
+Error fetching diff
+
+LINK NUMBER 634
+
+File path: internal/services/rest/api_rest.go
+"kind: fixed
+body: Replaced panic with proper error handling in ExecuteApiRequest function
+time: 2025-04-30T06:46:42.197147475Z
+custom:
+    Issue: ""704"""
+
+LINK NUMBER 635
+Not enough lines
+
+LINK NUMBER 636
+Not enough lines
+
+LINK NUMBER 637
+Not enough lines
+
+LINK NUMBER 638
+Error fetching diff
+
+LINK NUMBER 639
+Error fetching diff
+
+LINK NUMBER 640
+Error fetching diff
+
+LINK NUMBER 641
+Not enough lines
+
+LINK NUMBER 642
+Not enough lines
+
+LINK NUMBER 643
+Not enough lines
+
+LINK NUMBER 644
+Not enough lines
+
+LINK NUMBER 645
+Error fetching diff
+
+LINK NUMBER 646
+Error fetching diff
+
+LINK NUMBER 647
+Error fetching diff
+
+LINK NUMBER 648
+Not enough lines
+
+LINK NUMBER 649
+Not enough lines
+
+LINK NUMBER 650
+
+File path: src/Accounts/Accounts/Token/GetAzureRmAccessToken.cs
+"            catch (Exception e)
+            {
+                WriteDebug(""Exception occurred while checking environment variable AZUREPS_OUTPUT_PLAINTEXT_AZACCESSTOKEN: "" + e.ToString());
+                //Throw exception when the caller doesn't have permission.
+                //Use SecureString only when AZUREPS_OUTPUT_PLAINTEXT_AZACCESSTOKEN is successfully set.
+            }
+            if (usePlainText)"
+
+LINK NUMBER 651
+Not enough lines
+
+LINK NUMBER 652
+Error fetching diff
+
+LINK NUMBER 653
+Error fetching diff
+
+LINK NUMBER 654
+Error fetching diff
+
+LINK NUMBER 655
+
+File path: web/service/fetch.ts
+"    fetch(resource: RequestInfo | URL, options?: RequestInit) {
+      if (resource instanceof Request && options) {
+        const mergedHeaders = new Headers(options.headers || {})
+        resource.headers.forEach((value, key) => {
+          mergedHeaders.append(key, value)
+        })
+        options.headers = mergedHeaders
+      }
+      return globalThis.fetch(resource, options)
+    },"
+
+LINK NUMBER 656
+Not enough lines
+
+LINK NUMBER 657
+Not enough lines
+
+LINK NUMBER 658
+
+File path: src/client/api-repository-interface.ts
+"
+  async getMatchLogs(matchId: String): Promise<MatchStateDto> {
+    const url = urlcat('/game/admin/:matchId/logs', {
+      matchId,
+    });
+    let result;
+    try {
+      result = await ApiAxios.instance().get(url);
+    } catch (e: any) {
+      const err = makeAxiosError(e);
+      console.error(err.message)
+      // here we can set message according to status (or data)
+      throw new Error('Váratlan hiba történt');
+    }
+    return result.data;
+  }"
+
+LINK NUMBER 659
+Error fetching diff
+
+LINK NUMBER 660
+Error fetching diff
+
+LINK NUMBER 661
+Error fetching diff
+
+LINK NUMBER 662
+Not enough lines
+
+LINK NUMBER 663
+Not enough lines
+
+LINK NUMBER 664
+Not enough lines
+
+LINK NUMBER 665
+Not enough lines
+
+LINK NUMBER 666
+Error fetching diff
+
+LINK NUMBER 667
+Error fetching diff
+
+LINK NUMBER 668
+Error fetching diff
+
+LINK NUMBER 669
+Not enough lines
+
+LINK NUMBER 670
+Not enough lines
+
+LINK NUMBER 671
+
+File path: mariaDB4j-core/src/main/java/ch/vorburger/mariadb4j/DBConfigurationBuilder.java
+"        if (dataDir == null || tmpDir == null) {
+            String p = SystemUtils.JAVA_IO_TMPDIR + path();
+
+            this.baseDir = p + ""/base"";
+            this.dataDir = p + DEFAULT_DATA_DIR;
+            this.tmpDir = p + DEFAULT_TMP_DIR;
+        }
+"
+
+LINK NUMBER 672
+
+File path: score/cloud_logging/setup.py
+"
+    if production:
+        logHandler.addFilter(GoogleCloudLogFilter(project=""openteams-score""))
+        formatter = JsonFormatter()
+        logHandler.setFormatter(formatter)
+"
+
+LINK NUMBER 673
+Error fetching diff
+
+LINK NUMBER 674
+Error fetching diff
+
+LINK NUMBER 675
+Error fetching diff
+
+LINK NUMBER 676
+Not enough lines
+
+LINK NUMBER 677
+
+File path: pkg/server/server.go
+"	s.listObjectsCheckResolver, s.listObjectsCheckResolverCloser, err = graph.NewOrderedCheckResolvers([]graph.CheckResolverOrderedBuilderOpt{
+		graph.WithLocalCheckerOpts([]graph.LocalCheckerOption{
+			graph.WithResolveNodeBreadthLimit(s.resolveNodeBreadthLimit),
+			graph.WithOptimizations(s.IsExperimentallyEnabled(ExperimentalListObjectsOptimizations)),
+			graph.WithMaxResolutionDepth(s.resolveNodeLimit),
+		}...),
+		graph.WithLocalShadowCheckerOpts([]graph.LocalCheckerOption{
+			graph.WithResolveNodeBreadthLimit(s.resolveNodeBreadthLimit),
+			graph.WithOptimizations(true),
+			graph.WithMaxResolutionDepth(s.resolveNodeLimit),
+		}...),
+		graph.WithShadowResolverEnabled(s.shadowListObjectsCheckResolverEnabled),
+		graph.WithShadowResolverOpts([]graph.ShadowResolverOpt{
+			graph.ShadowResolverWithName(""list-objects""),
+			graph.ShadowResolverWithLogger(s.logger),
+			graph.ShadowResolverWithSamplePercentage(s.shadowListObjectsCheckResolverSamplePercentage),
+			graph.ShadowResolverWithTimeout(s.shadowListObjectsCheckResolverTimeout),
+		}...),
+		graph.WithCachedCheckResolverOpts(s.cacheSettings.ShouldCacheCheckQueries(), checkCacheOptions...),
+		graph.WithDispatchThrottlingCheckResolverOpts(s.checkDispatchThrottlingEnabled, checkDispatchThrottlingOptions...),
+	}...).Build()
+	if err != nil {
+		return nil, err
+	}
+"
+
+LINK NUMBER 678
+Not enough lines
+
+LINK NUMBER 679
+Not enough lines
+
+LINK NUMBER 680
+Error fetching diff
+
+LINK NUMBER 681
+Error fetching diff
+
+LINK NUMBER 682
+Error fetching diff
+
+LINK NUMBER 683
+
+File path: src/test/java/io/jenkins/plugins/opentelemetry/jenkins/HttpAuthHeaderFactoryTest.java
+"/*
+ * Copyright The Original Author or Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package io.jenkins.plugins.opentelemetry.jenkins;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.apache.hc.core5.http.Header;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+
+import com.cloudbees.plugins.credentials.BaseCredentials;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.domains.Domain;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+
+import hudson.model.Descriptor.FormException;
+import hudson.util.Secret;
+
+@WithJenkins
+public class HttpAuthHeaderFactoryTest {
+
+    protected JenkinsRule j;
+    private static String USERNAME = ""testuser"";
+    private static String PASSWORD = ""testpassword"";
+    private static String TOKEN = ""testtoken"";
+
+    @BeforeEach
+    void beforeEach(JenkinsRule j) {
+        this.j = j;
+        this.j.timeout = 0;
+    }
+
+    private String createUsernamePasswordCredentials() {
+        String credentialsId = UUID.randomUUID().toString();
+        try {
+            Credentials credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialsId,
+                    ""test"", USERNAME, PASSWORD);
+            Map<Domain, List<Credentials>> domainCredentialsMap = SystemCredentialsProvider.getInstance()
+                    .getDomainCredentialsMap();
+            domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
+        } catch (FormException e) {
+            assertNull(e, ""FormException should not be thrown"");
+        }
+        return credentialsId;
+    }
+
+    private String createSecretStringCredentials() {
+        String credentialsId = UUID.randomUUID().toString();
+        Credentials credentials = new StringCredentialsImpl(CredentialsScope.GLOBAL, credentialsId, ""test"",
+                Secret.fromString(TOKEN));
+        Map<Domain, List<Credentials>> domainCredentialsMap = SystemCredentialsProvider.getInstance()
+                .getDomainCredentialsMap();
+        domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
+        return credentialsId;
+    }
+
+    private String createBaseCredentials() {
+        String credentialsId = UUID.randomUUID().toString();
+        Credentials credentials = new BaseCredentials(CredentialsScope.GLOBAL);
+        Map<Domain, List<Credentials>> domainCredentialsMap = SystemCredentialsProvider.getInstance()
+                .getDomainCredentialsMap();
+        domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
+        return credentialsId;
+    }
+
+    private String base64Digest(){
+        return java.util.Base64.getEncoder().encodeToString((USERNAME + "":"" + PASSWORD).getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testCreateAuthHeader_UsernamePasswordCredentials() {
+        String credentialsId = createUsernamePasswordCredentials();
+        HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentialsId);
+        Header header = factory.createAuthHeader();
+
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        String expectedValue = ""Basic "" + base64Digest();
+        assertEquals(expectedValue, header.getValue());
+    }
+
+    @Test
+    public void testCreateAuthHeader_StringCredentials_ApiKey() {
+        String credentialsId = createSecretStringCredentials();
+        HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentialsId);
+        Header header = factory.createAuthHeader();
+
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        assertEquals(""ApiKey "" + TOKEN, header.getValue());
+    }
+
+    @Test
+    public void testCreateAuthHeader_StringCredentials_BearerToken() {
+        String credentialsId = createSecretStringCredentials();
+        HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentialsId, true);
+        Header header = factory.createAuthHeader();
+
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        assertEquals(""Bearer "" + TOKEN, header.getValue());
+    }
+
+    @Test
+    public void testCreateAuthHeader_CredentialsNotFound() {
+        String credentialsId = ""nonexistent-credentials"";
+        assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory(credentialsId));
+    }
+
+    @Test
+    public void testCreateAuthHeader_NoCredentialsId() {
+        assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory((String) null));
+    }
+
+    @Test
+    public void testCreateAuthHeader_EmptyCredentialsId() {
+        assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory(""""));
+    }
+
+    @Test
+    public void testCreateAuthHeader_IncorrectCredentialsType() {
+        String credentialsId = createBaseCredentials();
+        assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory(credentialsId));
+    }
+
+    @Test
+    public void testCreateFactory_ValidCredentialsId() {
+        String credentialsId = createUsernamePasswordCredentials();
+
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory(credentialsId);
+        assertTrue(factory.isPresent());
+        assertNotNull(factory.get().createAuthHeader());
+    }
+
+    @Test
+    public void testCreateFactory_NullCredentialsId() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory((String) null);
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactory_EmptyCredentialsId() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory("""");
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactory_Optional_ValidCredentialsId() {
+        String credentialsId = createUsernamePasswordCredentials();
+
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory(Optional.of(credentialsId));
+        assertTrue(factory.isPresent());
+        assertNotNull(factory.get().createAuthHeader());
+    }
+
+    @Test
+    public void testCreateFactory_Optional_EmptyCredentialsId() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory(Optional.empty());
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryUsernamePassword_ValidCredentials() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(USERNAME,
+                PASSWORD);
+        assertTrue(factory.isPresent());
+        Header header = factory.get().createAuthHeader();
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        String expectedValue = ""Basic "" + base64Digest();
+        assertEquals(expectedValue, header.getValue());
+    }
+
+    @Test
+    public void testCreateFactoryUsernamePassword_NullUsername() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(null,
+                PASSWORD);
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryUsernamePassword_EmptyUsername() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword("""",
+                PASSWORD);
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryUsernamePassword_NullPassword() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(""testuser"", null);
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryUsernamePassword_EmptyPassword() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(""testuser"", """");
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryApikey_ValidApiKey() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryApikey(TOKEN);
+        assertTrue(factory.isPresent());
+        Header header = factory.get().createAuthHeader();
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        assertEquals(""ApiKey "" + TOKEN, header.getValue());
+    }
+
+    @Test
+    public void testCreateFactoryApikey_NullApiKey() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryApikey(null);
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryApikey_EmptyApiKey() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryApikey("""");
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryBearer_ValidBearerToken() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryBearer(TOKEN);
+        assertTrue(factory.isPresent());
+        Header header = factory.get().createAuthHeader();
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        assertEquals(""Bearer "" + TOKEN, header.getValue());
+    }
+
+    @Test
+    public void testCreateFactoryBearer_NullBearerToken() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryBearer(null);
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testCreateFactoryBearer_EmptyBearerToken() {
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryBearer("""");
+        assertFalse(factory.isPresent());
+    }
+
+    @Test
+    public void testConstructor_CredentialsObject_ApiKey() {
+        StringCredentials credentials = new StringCredentialsImpl(CredentialsScope.GLOBAL, UUID.randomUUID().toString(),
+                ""test"", Secret.fromString(TOKEN));
+        HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
+        Header header = factory.createAuthHeader();
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        assertEquals(""ApiKey "" + TOKEN, header.getValue());
+    }
+
+    @Test
+    public void testConstructor_CredentialsObject_BearerToken() {
+        StringCredentials credentials = new StringCredentialsImpl(CredentialsScope.GLOBAL, UUID.randomUUID().toString(),
+                ""test"", Secret.fromString(TOKEN));
+        HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials, true);
+        Header header = factory.createAuthHeader();
+        assertNotNull(header);
+        assertEquals(""Authorization"", header.getName());
+        assertEquals(""Bearer "" + TOKEN, header.getValue());
+    }
+
+    @Test
+    public void testConstructor_CredentialsObject_UsernamePassword() {
+        UsernamePasswordCredentialsImpl credentials;
+        try {
+            credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
+                    UUID.randomUUID().toString(), ""test"", USERNAME, PASSWORD);
+            HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
+            Header header = factory.createAuthHeader();
+            assertNotNull(header);
+            assertEquals(""Authorization"", header.getName());
+            String expectedValue = ""Basic "" + base64Digest();
+            assertEquals(expectedValue, header.getValue());
+        } catch (FormException e) {
+            assertNull(e, ""FormException should not be thrown"");
+        }
+    }
+
+    @Test
+    public void testConstructor_CredentialsObject_IncorrectCredentialsType() {
+        Credentials credentials = new BaseCredentials(CredentialsScope.GLOBAL);
+        HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
+        assertThrowsExactly(CredentialsNotFoundException.class, () -> factory.createAuthHeader());
+    }
+}"
+
+LINK NUMBER 684
+
+File path: src/server/persistence/user/UserRepositoryImpl.java
+"  public UserDTO resultToDTO(ResultSet resultSet) throws SQLException {
+    String dbsUsername = resultSet.getString(""username"");
+    String dbsEmail = resultSet.getString(""email"");
+    String dbsPassword = resultSet.getString(""password_hash"");
+    boolean dbsIsAdmin = (resultSet.getByte(""isAdmin"")) == 1;
+    int balance = resultSet.getInt(""balance"");
+
+    return new UserDTO(dbsUsername, dbsEmail, dbsPassword, dbsIsAdmin, balance);
+  }
+
+  public User resultToUser(ResultSet resultSet) throws SQLException {
+    String dbsUsername = resultSet.getString(""username"");
+    String dbsEmail = resultSet.getString(""email"");
+    String dbsPassword = resultSet.getString(""password_hash"");
+    boolean dbsIsAdmin = resultSet.getBoolean(""isAdmin"");
+    int balance = resultSet.getInt(""balance"");"
+
+LINK NUMBER 685
+Not enough lines
+
+LINK NUMBER 686
+Not enough lines
+
+LINK NUMBER 687
+Error fetching diff
+
+LINK NUMBER 688
+Error fetching diff
+
+LINK NUMBER 689
+Error fetching diff
+
+LINK NUMBER 690
+Not enough lines
+
+LINK NUMBER 691
+
+File path: ffmpeg-flow-editor/src/utils/nodeMapping.ts
+"  // Helper function to generate random filename
+  private generateRandomFilename(type: 'input' | 'output'): string {
+    const randomId = Math.random().toString(36).substring(2, 8);
+    return `${type}-${randomId}.mp4`;
+  }
+"
+
+LINK NUMBER 692
+
+File path: brutal_translator/brutal_translator.py
+"import string
+
+
+class BrutalTranslator:
+    def __init__(self, dictionary_path=""english_polish.txt""):
+        # Dictionary to hold our translations
+        self.translation_dict = {}
+
+        # Special case words that shouldn't appear as Polish translations
+        self.english_words_to_check = [""from"", ""about"", ""to"", ""the"", ""a"", ""an""]
+
+        # Load translations from txt file
+        self.load_dictionary(dictionary_path)
+
+        # Fix problematic translations
+        self.fix_translations()
+
+    def load_dictionary(self, dictionary_path):
+        """"""Load translations from the txt file""""""
+        try:
+            with open(dictionary_path, 'r', encoding='utf-8') as file:
+                lines = file.readlines()
+
+                for line in lines:
+                    if '\t' in line:
+                        # Split by tab character
+                        parts = line.strip().split('\t')
+                        if len(parts) >= 2:
+                            english = parts[0].strip().lower()
+                            polish = parts[1].strip()
+
+                            # Store in dictionary
+                            if english not in self.translation_dict:
+                                self.translation_dict[english] = []
+
+                            self.translation_dict[english].append(polish)
+
+                print(f""Loaded {len(self.translation_dict)} unique English words"")
+
+                # Print some statistics
+                total_translations = sum(len(translations) for translations in self.translation_dict.values())
+                print(f""Total translations: {total_translations}"")
+                print(f""Average translations per word: {total_translations / len(self.translation_dict):.2f}"")
+
+        except FileNotFoundError:
+            print(f""Error: Dictionary file '{dictionary_path}' not found"")
+        except Exception as e:
+            print(f""Error loading dictionary: {e}"")
+
+    def fix_translations(self):
+        """"""Fix problematic translations and add missing common words""""""
+        # Check for English words that appear as Polish translations and remove them
+        for eng, pol_list in list(self.translation_dict.items()):
+            fixed_list = []
+            for pol in pol_list:
+                if pol.lower() != eng.lower() and pol.lower() not in self.english_words_to_check:
+                    fixed_list.append(pol)
+                # else:
+                #     print(f""Removed problematic translation: {eng} -> {pol}"")
+
+            # If we have valid translations left, update the list
+            if fixed_list:
+                self.translation_dict[eng] = fixed_list
+
+        # Add translations for common words that might be missing
+        common_translations = {
+            ""the"": """",
+            ""a"": """",
+            ""an"": """",
+            ""to"": ""do"",
+            ""about"": ""o"",
+            ""of"": ""z"",
+            ""in"": ""w"",
+            ""on"": ""na"",
+            ""at"": ""przy"",
+            ""by"": ""przez"",
+            ""is"": ""jest"",
+            ""are"": ""są"",
+            ""am"": ""jestem"",
+            ""was"": ""był"",
+            ""were"": ""były"",
+            ""from"": ""z"",
+            ""with"": ""z"",
+            ""i"": ""ja"",
+            ""my"": ""mój"",
+        }
+
+        # Add these translations if they're not already present
+        for eng, pol in common_translations.items():
+            if eng not in self.translation_dict:
+                self.translation_dict[eng] = [pol]
+            elif pol and pol not in self.translation_dict[eng]:
+                self.translation_dict[eng].append(pol)
+
+    def translate_word(self, word):
+        """"""Translate a single word preserving case and punctuation""""""
+        # Handle empty words
+        if not word:
+            return word
+
+        # Extract punctuation
+        prefix_punct = """"
+        word_only = """"
+        suffix_punct = """"
+
+        # Extract leading punctuation
+        i = 0
+        while i < len(word) and word[i] in string.punctuation:
+            prefix_punct += word[i]
+            i += 1
+
+        # Extract trailing punctuation
+        j = len(word) - 1
+        while j >= i and word[j] in string.punctuation:
+            suffix_punct = word[j] + suffix_punct
+            j -= 1
+
+        # Extract the word itself
+        if i <= j:
+            word_only = word[i:j + 1]
+
+        # Skip translation for empty words
+        if not word_only:
+            return word
+
+        # Check for translation
+        clean_word = word_only.lower()
+
+        if clean_word in self.translation_dict and self.translation_dict[clean_word]:
+            # Always pick the first translation for consistency
+            translated = self.translation_dict[clean_word][0]
+
+            # Skip empty translations for articles
+            if not translated:
+                return prefix_punct + suffix_punct
+
+            # Preserve original capitalization
+            if word_only[0].isupper():
+                translated = translated[0].upper() + translated[1:] if translated else """"
+
+            return prefix_punct + translated + suffix_punct
+        else:
+            # If no translation found, return the original word
+            return word
+
+    def translate(self, english_text):
+        """"""Translate English text to Polish word by word""""""
+        if not english_text:
+            return """"
+
+        # Split text into words
+        words = english_text.split()
+        translated_words = []
+
+        # Translate each word individually
+        for word in words:
+            translated = self.translate_word(word)
+            # Don't add empty translations to the result
+            if translated:
+                translated_words.append(translated)
+
+        # Join words back into text
+        return "" "".join(translated_words)
+
+
+if __name__ == ""__main__"":
+    # Path to dictionary file
+    dictionary_path = ""data/MUSEMultilingualEmbeddings.txt""
+
+    # Create translator
+    translator = BrutalTranslator(dictionary_path)
+
+    # Test sentences
+    test_sentences = [
+        ""This page also has new articles that were not for you."",
+        ""First, they had one article which was talking about his utc page."",
+        ""You are from the new page but they were not."",
+        ""Who was the first to talk about this article?"",
+        ""They also had a new page and were not the first one.""
+    ]
+
+    print(""\n=== BRUTAL ENGLISH TO POLISH TRANSLATOR ===\n"")
+    for sentence in test_sentences:
+        print(f""English: {sentence}"")
+        print(f""Polish:  {translator.translate(sentence)}"")
+        print()
+
+    print(""Enter your own sentences (type 'exit' to quit):"")
+    while True:
+        user_input = input(""> "")
+        if user_input.lower() == 'exit':
+            break
+        print(f""Polish: {translator.translate(user_input)}"")"
+
+LINK NUMBER 693
+Not enough lines
+
+LINK NUMBER 694
+Error fetching diff
+
+LINK NUMBER 695
+Error fetching diff
+
+LINK NUMBER 696
+Error fetching diff
+
+LINK NUMBER 697
+Not enough lines
+
+LINK NUMBER 698
+Not enough lines
+
+LINK NUMBER 699
+Not enough lines
+
+LINK NUMBER 700
+Not enough lines
+
+LINK NUMBER 701
+Error fetching diff
+
+LINK NUMBER 702
+Error fetching diff
+
+LINK NUMBER 703
+Error fetching diff
+
+LINK NUMBER 704
+
+File path: packages/ui/api/ai-assistant/types/function-definition.ts
+"import type {
+  AllLanguagesContractsOptions,
+  LanguageContractsNames,
+  LanguageContractsOptions,
+  SupportedLanguage,
+} from './languages.ts';"
+
+LINK NUMBER 705
+
+File path: api/routers/books.py
+"from typing import Annotated, List
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlmodel import select, Session
+
+from api.db import get_session
+from api.models import *
+
+routers = APIRouter()
+SessionDep = Annotated[Session, Depends(get_session)]
+
+@routers.get(""/books/"", response_model=List[BookPublic], tags=[""books""])
+async def get_books(session: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100):
+    """"""
+    Fetch list of books from the database with optional pagination.
+    Args:
+        session (SessionDep): The database session dependency used to execute queries.
+        offset (int, optional): The number of records to skip before starting to fetch. Defaults to 0.
+        limit (int, optional): The maximum number of records to fetch. Must be less than or equal to 100. Defaults to 100.
+    Returns:
+        List[Book]: A list of Book objects retrieved from the database.
+    """"""
+    heroes = session.exec(select(Book).offset(offset).limit(limit)).all()
+    return heroes
+
+
+@routers.post(""/books/"", response_model=BookPublic, tags=[""books""])
+def create_book(book: BookCreate, session: SessionDep) -> Book:
+    """"""
+    Creates a new book record in the database.
+    Args:
+        book (BookCreate): The data required to create a new book, validated against the BookCreate schema.
+    Returns:
+        Book: The newly created book record after being added to the database.
+    """"""
+    try:
+        db_books = Book.model_validate(book)
+        session.add(db_books)
+        session.commit()
+        session.refresh(db_books)
+        return db_books
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f""Error creating book: {str(e)}"")
+
+
+@routers.get(""/books/{book_id}"", response_model=BookPublic, tags=[""books""])
+def get_book_by_id(book_id: int, session: SessionDep) -> Book:
+    """"""
+    Retrieve a book from the database by its ID.
+    Args:
+        book_id (int): The unique identifier of the book to retrieve.
+    Returns:
+        Book: The book object corresponding to the given ID.
+    Raises:
+        HTTPException: If no book with the given ID is found, raises a 404 error with the message ""Book not found"".
+    """"""
+    db_book = session.get(Book, book_id)
+    if not db_book:
+        raise HTTPException(status_code=404, detail=""Book not found"")
+    return db_book
+
+
+@routers.put(""/books/{book_id}"", response_model=BookPublic, tags=[""books""])
+def update_book(book_id: int, book: BookCreate, session: SessionDep) -> Book:
+    """"""
+    Update an existing book in the database.
+    Args:
+        book_id (int): The ID of the book to update.
+        book (BookCreate): An object containing the updated book data.
+    Returns:
+        Book: The updated book object.
+    Raises:
+        HTTPException: If the book with the given ID is not found (404).
+    """"""
+    db_book = session.get(Book, book_id)
+    if not db_book:
+        raise HTTPException(status_code=404, detail=""Book not found"")
+    
+    # Update only the fields provided in the request
+    book_data = book.model_dump(exclude_unset=True)
+    for key, value in book_data.items():
+        setattr(db_book, key, value)
+    
+    session.commit()
+    session.refresh(db_book)
+    return db_book
+
+
+@routers.delete(""/books/{book_id}"", response_model=str, tags=[""books""])
+def delete_book(book_id: int, session: SessionDep) -> str:
+    """"""
+    Deletes a book from the database based on the provided book ID.
+    Args:
+        book_id (int): The ID of the book to be deleted.
+    Returns:
+        str: A success message indicating the book has been deleted.
+    Raises:
+        HTTPException: If the book with the given ID is not found, raises a 404 error.
+    """"""
+
+    db_book = session.get(Book, book_id)
+    if not db_book:
+        raise HTTPException(status_code=404, detail=""Book not found"")
+    
+    session.delete(db_book)
+    session.commit()
+    return f""Book with ID {book_id} has been deleted successfully.""
+
+# endpoints for books - End"
+
+LINK NUMBER 706
+Not enough lines
+
+LINK NUMBER 707
+Not enough lines
+
+LINK NUMBER 708
+Error fetching diff
+
+LINK NUMBER 709
+Error fetching diff
+
+LINK NUMBER 710
+Error fetching diff
+
+LINK NUMBER 711
+Not enough lines
+
+LINK NUMBER 712
+Not enough lines
+
+LINK NUMBER 713
+Not enough lines
+
+LINK NUMBER 714
+Not enough lines
+
+LINK NUMBER 715
+Error fetching diff
+
+LINK NUMBER 716
+Error fetching diff
+
+LINK NUMBER 717
+Error fetching diff
+
+LINK NUMBER 718
+Not enough lines
+
+LINK NUMBER 719
+
+File path: src/Core/Config/Restriction/FilterEntityRestriction.php
+"<?php
+
+namespace AppTank\Horus\Core\Config\Restriction;
+
+use AppTank\Horus\Core\Config\Restriction\valueObject\ParameterFilter;
+
+/**
+ * Class FilterEntityRestriction
+ *
+ * This class implements the EntityRestriction interface and is used to filter entities based on specific parameters.
+ * It contains the entity name and an array of ParameterFilter objects that define the filtering criteria.
+ *
+ * @package AppTank\Horus\Core\Config\Restriction
+ */
+readonly class FilterEntityRestriction implements EntityRestriction
+{
+    /**
+     * FilterEntityRestriction constructor.
+     *
+     * @param string $entityName The name of the entity to be filtered.
+     * @param ParameterFilter[] $parametersFilter The parameters to filter the entity.
+     */
+    public function __construct(
+        public string $entityName,
+        public array  $parametersFilter,
+    )
+    {
+
+    }
+
+    function getEntityName(): string
+    {
+        return $this->entityName;
+    }
+}"
+
+LINK NUMBER 720
+Not enough lines
+
+LINK NUMBER 721
+Not enough lines
+
+LINK NUMBER 722
+Error fetching diff
+
+LINK NUMBER 723
+Error fetching diff
+
+LINK NUMBER 724
+Error fetching diff
+
+LINK NUMBER 725
+
+File path: xHWT/xHWT.py
+"    xHWT_log(""The plugin has been "" + (""enabled"" if checked else ""disabled""))
+
+# Called every 500ms
+def event_loop():
+    # Only process items if plugin is enabled
+    if not pluginEnabled:
+        return
+
+    # get list of items around available for pickup
+    items = get_drops()
+    # loop through the dictionary items (key-value pairs)
+    for item_id, item_data in items.items():
+        # check if the item id is in the target item ids list
+        current_item_name = item_data['name']
+        if current_item_name in target_item_names:
+            # pickup the item
+            xHWT_log(f""Picking up item: {current_item_name}"")
+            pickup_item(item_id)
+            # Break the loop after picking up the first item
+            break
+
+# pickup the item
+def pickup_item(item_id):
+    # Pack item ID as little-endian unsigned int
+    id_bytes = struct.pack('<I', item_id)
+    # Create packet: header + first 3 bytes of item_id + trailer
+    data = bytearray(b'\x01\x02\x01') + id_bytes[:3] + bytearray(b'\x00')
+    inject_joymax(0x7074, data, True)"
+
+LINK NUMBER 726
+Not enough lines
+
+LINK NUMBER 727
+Not enough lines
+
+LINK NUMBER 728
+Not enough lines
+
+LINK NUMBER 729
+Error fetching diff
+
+LINK NUMBER 730
+Error fetching diff
+
+LINK NUMBER 731
+Error fetching diff
+
+LINK NUMBER 732
+Not enough lines
+
+LINK NUMBER 733
+Not enough lines
+
+LINK NUMBER 734
+Not enough lines
+
+LINK NUMBER 735
+Not enough lines
+
+LINK NUMBER 736
+Error fetching diff
+
+LINK NUMBER 737
+Error fetching diff
+
+LINK NUMBER 738
+Error fetching diff
+
+LINK NUMBER 739
+
+File path: packages/zudoku/src/lib/oas/graphql/index.ts
+"const SchemaTag = builder.objectRef<
+  Omit<TagObject, ""name""> & { name?: string; slug?: string }
+>(""SchemaTag"");
+
+SchemaTag.implement({
+  fields: (t) => ({
+    name: t.exposeString(""name"", { nullable: true }),
+    slug: t.exposeString(""slug"", { nullable: true }),
+    isUntagged: t.field({ type: ""Boolean"", resolve: (parent) => !parent.name }),
+    description: t.exposeString(""description"", { nullable: true }),
+    operations: t.field({
+      type: [OperationItem],
+      resolve: (parent, _args, ctx) => {
+        const rootTags = ctx.tags.map((tag) => tag.name);
+
+        return ctx.operations
+          .filter((item) =>
+            parent.name
+              ? item.tags?.includes(parent.name)
+              : item.tags?.length === 0 ||
+                // If none of the tags are present in the root tags, then show them here
+                item.tags?.every((tag) => !rootTags.includes(tag)),
+          )
+          .map((item) => ({ ...item, parentTag: parent.name }));
+      },"
+
+LINK NUMBER 740
+Not enough lines
+
+LINK NUMBER 741
+
+File path: src/Repository/DiscountCodeRepository.php
+"
+    public function insertInBatch(int $discountId, array $codes): void
+    {
+        $values = implode(
+            separator: ',',
+            array: array_map(
+                callback: static fn (string $code) => sprintf(
+                    ""(nextval('discount_code_id_seq'), '%s', '%s', false)"",
+                    $discountId,
+                    $code
+                ),
+                array: $codes
+            )
+        );
+
+        $this->getEntityManager()->getConnection()->executeQuery(
+            ""INSERT INTO discount_code (id, discount_id, code, used) VALUES {$values} ON CONFLICT DO NOTHING""
+        );
+    }
+
+    public function countByDiscount(Discount $discount): int
+    {
+        return $this->createQueryBuilder('dc')
+            ->select('COUNT(dc.id)')
+            ->andWhere('dc.discount = :discount')
+            ->setParameter('discount', $discount)
+            ->getQuery()
+            ->getSingleScalarResult()
+        ;
+    }"
+
+LINK NUMBER 742
+Not enough lines
+
+LINK NUMBER 743
+Error fetching diff
+
+LINK NUMBER 744
+Error fetching diff
+
+LINK NUMBER 745
+Error fetching diff
+
+LINK NUMBER 746
+Not enough lines
+
+LINK NUMBER 747
+Not enough lines
+
+LINK NUMBER 748
+Not enough lines
+
+LINK NUMBER 749
+Not enough lines
+
+LINK NUMBER 750
+Error fetching diff
+
+LINK NUMBER 751
+Error fetching diff
+
+LINK NUMBER 752
+Error fetching diff
+
+LINK NUMBER 753
+
+File path: maps4fs/generator/component/texture.py
+"    def scale_textures(self) -> None:
+        """"""Resizes all the textures to the map output size.""""""
+        if not self.map.output_size:
+            self.logger.debug(""No output size defined, skipping scaling."")
+            return
+
+        for layer in tqdm(self.layers, desc=""Scaling textures"", unit=""layer""):
+            layer_paths = layer.paths(self._weights_dir)
+            layer_paths += [layer.path_preview(self._weights_dir)]
+
+            for layer_path in layer_paths:
+                if os.path.isfile(layer_path):
+                    self.logger.debug(""Scaling layer %s."", layer_path)
+                    img = cv2.imread(layer_path, cv2.IMREAD_UNCHANGED)
+                    img = cv2.resize(
+                        img,
+                        (self.map.output_size, self.map.output_size),
+                        interpolation=cv2.INTER_NEAREST,
+                    )
+                    cv2.imwrite(layer_path, img)
+                else:
+                    self.logger.debug(""Layer %s not found, skipping scaling."", layer_path)
+"
+
+LINK NUMBER 754
+
+File path: server/plugins/whg/whg_models.py
+"#!/usr/bin/env -S uv run --script
+
+# Source: https://whgazetteer.org/api/datasets
+# Docs: https://docs.whgazetteer.org/content/400-Technical.html
+
+# /// script
+# requires-python = "">=3.13""
+# dependencies = [
+#     ""httpx"",
+#     ""pydantic"",
+# ]
+# ///
+#
+# generated by datamodel-codegen:
+#   filename:  whg.json
+#   timestamp: 2025-04-28T10:31:22+00:00
+#
+# Generated with command:
+# uv tool run --from=datamodel-code-generator datamodel-codegen \
+#             --input whg.json --input-file-type json \
+#             --output whg_models.py
+
+from __future__ import annotations
+
+from typing import Any
+
+from pydantic import BaseModel
+
+
+class Feature(BaseModel):
+    id: int
+    place_count: int
+    owner: str
+    label: str
+    title: str
+    description: str
+    datatype: str
+    ds_status: str
+    create_date: str
+    public: bool
+    core: bool
+    creator: str | None
+    webpage: str | None
+    contributors: str | None
+
+
+class Model(BaseModel):
+    count: int
+    parameters: dict[str, Any]
+    features: list[Feature]
+
+
+if __name__ == ""__main__"":
+    import json
+    from pathlib import Path
+
+    from httpx import Client
+
+    here = Path(__file__).resolve().parent
+    # Conditionally create an whg.json file that should contain whg dataset items.
+    if not (json_path := here / ""whg.json"").exists():
+        with Client() as client:
+            response = client.get(""https://whgazetteer.org/api/datasets"")
+            response.raise_for_status()
+            json_path.write_text(response.text)
+    # Conditionally create an whg_item.json file that should contain only one item.
+    if not (json_item_path := here / ""whg_item.json"").exists():
+        json_payload = json.loads(json_path.read_text())[""features""][0]
+        json_item_path.write_text(json.dumps(json_payload, indent=2))
+
+    # The whg_item.json file should be in the same directory as this script.
+    model_instance = Model.model_validate_json(json_path.read_text())
+    print(f""{model_instance = }\n"")
+    print(f""{model_instance.count = }"")
+    print(f""{model_instance.parameters = }\n"")
+
+    # The whg_item.json file should be in the same directory as this script.
+    feature_instance = Feature.model_validate_json(json_item_path.read_text())
+    print(f""{feature_instance = }\n"")
+    print(f""{feature_instance.title = }"")
+    print(f""{feature_instance.creator = }"")
+    print(f""{feature_instance.description = }"")
+    print(f""{feature_instance.contributors = }"")"
+
+LINK NUMBER 755
+Not enough lines
+
+LINK NUMBER 756
+Not enough lines
+
+LINK NUMBER 757
+Error fetching diff
+
+LINK NUMBER 758
+Error fetching diff
+
+LINK NUMBER 759
+Error fetching diff
+
+LINK NUMBER 760
+
+File path: libs/bite-tribe/bite/page/src/lib/components/page/__specs__/bite.page.spec.ts
+"    // Save original console.error and mock it
+    originalConsoleError = console.error;
+    jest.spyOn(console, 'error').mockImplementation(() => {
+      console.log('error was thrown in test suite');
+    });
+"
+
+LINK NUMBER 761
+Not enough lines
+
+LINK NUMBER 762
+Not enough lines
+
+LINK NUMBER 763
+Not enough lines
+
+LINK NUMBER 764
+Error fetching diff
+
+LINK NUMBER 765
+Error fetching diff
+
+LINK NUMBER 766
+Error fetching diff
+
+LINK NUMBER 767
+Not enough lines
+
+LINK NUMBER 768
+Not enough lines
+
+LINK NUMBER 769
+Not enough lines
+
+LINK NUMBER 770
+Not enough lines
+
+LINK NUMBER 771
+Error fetching diff
+
+LINK NUMBER 772
+Error fetching diff
+
+LINK NUMBER 773
+Error fetching diff
+
+LINK NUMBER 774
+Not enough lines
+
+LINK NUMBER 775
+Not enough lines
+
+LINK NUMBER 776
+Not enough lines
+
+LINK NUMBER 777
+Not enough lines
+
+LINK NUMBER 778
+Error fetching diff
+
+LINK NUMBER 779
+Error fetching diff
+
+LINK NUMBER 780
+Error fetching diff
+
+LINK NUMBER 781
+Not enough lines
+
+LINK NUMBER 782
+
+File path: src/main.cpp
+"  if (argc == 2 && std::string(argv[1]) == ""--help"") {
+    usage();
+    return 0;
+  }
+"
+
+LINK NUMBER 783
+Not enough lines
+
+LINK NUMBER 784
+
+File path: sidebars.js
+"---
+title: ""Importing code with asyncio""
+---
+
+Determining when it is safe to import code when using asyncio can be tricky because two constraints need to be considered:
+
+- Importing code can do blocking I/O to load the files from the disk
+- Importing code in [cpython is not thread-safe](https://github.com/python/cpython/issues/83065)
+
+## Module level imports
+
+If your imports are at the **module level** (also called **top-level imports**) and all the necessary modules are imported in `__init__.py`, Home Assistant will load your integration either **before the event loop starts** or in a background thread using the **import executor**.
+
+In this scenario, your imports are generally handled safely, so you **don’t need to worry** about whether they’re event-loop safe.
+
+## Imports outside of module level
+
+If your imports are not happening at module level, you must carefully consider each import, as the import machinery has to read the module from disk which does blocking I/O. If possible, it's usually best to change to a module level import, as it avoids much complexity and the risk of mistakes. Importing modules is both CPU-intensive and involves blocking I/O, so it is crucial to ensure these operations are executed in the executor.
+
+If you can be sure that the modules have already been imported, using a bare [`import`](https://docs.python.org/3/reference/simple_stmts.html#import) statement is safe since Python will not load the modules again.
+
+If the integration will always use the module, it's usually best to include a module-level import in `__init__.py` to ensure the module is loaded. However, if this creates a circular import, one of the solutions below will need to be used instead.
+
+If the module is only used conditionally, and will only ever be imported in a single place, the standard executor calls can be used:
+
+- For imports inside of Home Assistant `hass.async_add_executor_job(_function_that_does_late_import)`
+- For imports outside of Home Assistant: [`loop.run_in_executor(None, _function_that_does_late_import)`](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.loop.run_in_executor)
+If the same module may be imported concurrently in different parts of the application, use the thread-safe `homeassistant.helpers.importlib.import_module` helper.
+
+If it's possible the module may be imported from multiple different paths, use `async_import_module`:
+Example:
+
+```python
+from homeassistant.helpers.importlib import async_import_module
+
+platform = await async_import_module(hass, f""homeassistant.components.homeassistant.triggers.{platform_name}"")
+```
+
+## Determining if a module is already loaded
+
+If you are unsure if a module is already loaded, you can check if the module is already in [`sys.modules`](https://docs.python.org/3/library/sys.html#sys.modules). You should know that the module will appear in `sys.modules` as soon as it begins loading, and [cpython imports are not thread-safe](https://github.com/python/cpython/issues/83065). For this reason, it's important to consider race conditions when code may be imported from multiple paths.
+
+## Avoiding imports that are only used for type-checking
+
+If an imported module is only used for type checking, it is recommended to guard it with an `if TYPE_CHECKING:` block to avoid it being imported at runtime.
+
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from some_module import SomeClass  # Only imported for type checking
+
+def some_function() -> SomeClass:
+    # Function implementation
+    pass
+```
+
+## Avoid importing code that is rarely used
+
+Importing modules can be both CPU and I/O intensive, so it’s important to avoid importing code that will rarely be used. While importing code outside the module level does add some runtime overhead, this approach is often more efficient when the code is only needed occasionally. By deferring imports, you ensure that resources are only used when necessary, reducing unnecessary processing and improving overall performance."
+
+LINK NUMBER 785
+Error fetching diff
+
+LINK NUMBER 786
+Error fetching diff
+
+LINK NUMBER 787
+Error fetching diff
+
+LINK NUMBER 788
+Not enough lines
+
+LINK NUMBER 789
+Not enough lines
+
+LINK NUMBER 790
+Not enough lines
+
+LINK NUMBER 791
+Not enough lines
+
+LINK NUMBER 792
+Error fetching diff
+
+LINK NUMBER 793
+Error fetching diff
+
+LINK NUMBER 794
+Error fetching diff
+
+LINK NUMBER 795
+Not enough lines
+
+LINK NUMBER 796
+Not enough lines
+
+LINK NUMBER 797
+Not enough lines
+
+LINK NUMBER 798
+Not enough lines
+
+LINK NUMBER 799
+Error fetching diff
+
+LINK NUMBER 800
+Error fetching diff
+
+LINK NUMBER 801
+Error fetching diff
+
+LINK NUMBER 802
+Not enough lines
+
+LINK NUMBER 803
+Not enough lines
+
+LINK NUMBER 804
+Not enough lines
+
+LINK NUMBER 805
+
+File path: pkg/middleware/ratelimit_test.go
+"// Package middleware provides a collection of HTTP middleware components for the SRouter framework.
+package middleware
+
+import (
+	""github.com/Suhaibinator/SRouter/pkg/common""
+)
+
+// Middleware is an alias for the common.Middleware type.
+// It represents a function that wraps an http.Handler to provide additional functionality.
+type Middleware = common.Middleware
+
+// Public middleware constructors exposed via variables.
+// The actual implementations are kept private within their respective files.
+var (
+	// From middleware.go
+	Recovery    = recovery
+	Logging     = logging
+	MaxBodySize = maxBodySize
+	Timeout     = timeout
+	CORS        = cors
+
+	// From ip.go
+	ClientIPMiddleware = clientIPMiddleware // Renamed from ClientIPMiddleware
+
+	// From trace.go
+	Trace           = traceMiddleware           // Renamed from TraceMiddleware
+	TraceWithConfig = traceMiddlewareWithConfig // Renamed from TraceMiddlewareWithConfig
+)
+
+// Note: Generic middleware constructors (Authentication*, New*Middleware, RateLimit, etc.)
+// remain public in their original files (auth.go, ip.go, ratelimit.go).
+// Supporting types like CORSOptions, AuthProvider, RateLimiter, IPConfig, etc.,
+// and helper functions like Chain, ClientIP, GetTraceID, etc., remain public
+// in their original files. Context-related functions in context.go and DB types
+// in db.go also remain public."
+
+LINK NUMBER 806
+Error fetching diff
+
+LINK NUMBER 807
+Error fetching diff
+
+LINK NUMBER 808
+Error fetching diff
+
+LINK NUMBER 809
+Not enough lines
+
+LINK NUMBER 810
+Not enough lines
+
+LINK NUMBER 811
+
+File path: src/bridge/settings/openedx/version_matrix.py
+"    ""teak"": {
+        ""mitx"": [
+            OpenEdxApplicationVersion(
+                application=""codejail"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""communications"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""authoring"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""discussions"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""edx-platform"",
+                application_type=""IDA"",
+                release=""teak"",
+                branch_override=""mitx/teak"",
+                origin_override=""https://github.com/mitodl/edx-platform"",
+                runtime_version_override=""3.11"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""edxapp_theme"",
+                application_type=""IDA"",
+                release=""teak"",
+                branch_override=""teak"",
+                origin_override=""https://github.com/mitodl/mitx-theme"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""forum"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""gradebook"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""learner-dashboard"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""learning"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""notes-api"",
+                application_type=""IDA"",
+                release=""master"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""ora-grading"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""xqueue"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""xqwatcher"",
+                application_type=""IDA"",
+                branch_override=""master"",
+                origin_override=""https://github.com/mitodl/xqueue-watcher"",
+                release=""teak"",
+            ),
+        ],
+        ""mitx-staging"": [
+            OpenEdxApplicationVersion(
+                application=""codejail"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""communications"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""authoring"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""discussions"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""edx-platform"",
+                application_type=""IDA"",
+                release=""teak"",
+                branch_override=""mitx/teak"",
+                origin_override=""https://github.com/mitodl/edx-platform"",
+                runtime_version_override=""3.11"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""edxapp_theme"",
+                application_type=""IDA"",
+                release=""teak"",
+                branch_override=""teak"",
+                origin_override=""https://github.com/mitodl/mitx-theme"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""forum"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""gradebook"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""learning"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""learner-dashboard"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""notes-api"",
+                application_type=""IDA"",
+                release=""master"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""ora-grading"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""xqueue"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""xqwatcher"",
+                application_type=""IDA"",
+                branch_override=""master"",
+                origin_override=""https://github.com/mitodl/xqueue-watcher"",
+                release=""teak"",
+            ),
+        ],
+        ""xpro"": [
+            OpenEdxApplicationVersion(
+                application=""codejail"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""authoring"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""discussions"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""edx-platform"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""edxapp_theme"",
+                application_type=""IDA"",
+                release=""teak"",
+                branch_override=""teak"",
+                origin_override=""https://github.com/mitodl/mitxpro-theme"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""forum"",
+                application_type=""IDA"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""gradebook"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""learning"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""notes-api"",
+                application_type=""IDA"",
+                release=""master"",
+            ),
+            OpenEdxApplicationVersion(
+                application=""ora-grading"",
+                application_type=""MFE"",
+                release=""teak"",
+            ),
+        ],
+    },"
+
+LINK NUMBER 812
+Not enough lines
+
+LINK NUMBER 813
+Error fetching diff
+
+LINK NUMBER 814
+Error fetching diff
+
+LINK NUMBER 815
+Error fetching diff
+
+LINK NUMBER 816
+Not enough lines
+
+LINK NUMBER 817
+Not enough lines
+
+LINK NUMBER 818
+
+File path: src/auth/roles.decorator.ts
+"import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
+
+interface JwtPayload {
+  sub: string;
+  username: string;
+  role: string;
+}
+
+interface UserPayload {
+  userId: string;
+  username: string;
+  role: string;
+}
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(private configService: ConfigService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>('JWT_SECRET')!,
+    });
+  }
+
+  validate(payload: JwtPayload): UserPayload {
+    return {
+      userId: payload.sub,
+      username: payload.username,
+      role: payload.role,
+    };
+  }
+}"
+
+LINK NUMBER 819
+Not enough lines
+
+LINK NUMBER 820
+Error fetching diff
+
+LINK NUMBER 821
+Error fetching diff
+
+LINK NUMBER 822
+Error fetching diff
+
+LINK NUMBER 823
+Not enough lines
+
+LINK NUMBER 824
+Not enough lines
+
+LINK NUMBER 825
+Not enough lines
+
+LINK NUMBER 826
+Not enough lines
+
+LINK NUMBER 827
+Error fetching diff
+
+LINK NUMBER 828
+Error fetching diff
+
+LINK NUMBER 829
+Error fetching diff
+
+LINK NUMBER 830
+
+File path: tests/unit/hardware/radio/manager/test_sx1280_manager.py
+"from busio import SPI
+from digitalio import DigitalInOut
+from proves_sx1280.sx1280 import SX1280
+
+from ....config.radio import RadioConfig
+from ....logger import Logger
+from ....nvm.flag import Flag
+from ..modulation import LoRa, RadioModulation
+from .base import BaseRadioManager
+
+# Type hinting only
+try:
+    from typing import Optional, Type
+except ImportError:
+    pass
+
+
+class SX1280Manager(BaseRadioManager):
+    """"""Manager class implementing RadioProto for SX1280 radios.""""""
+
+    _radio: SX1280
+
+    def __init__(
+        self,
+        logger: Logger,
+        radio_config: RadioConfig,
+        use_fsk: Flag,
+        spi: SPI,
+        chip_select: DigitalInOut,
+        reset: DigitalInOut,
+        busy: DigitalInOut,
+        frequency: float,
+        txen: DigitalInOut,
+        rxen: DigitalInOut,
+    ) -> None:
+        """"""Initialize the manager class and the underlying radio hardware.
+
+        :param Logger logger: Logger instance for logging messages.
+        :param RadioConfig radio_config: Radio configuration object.
+        :param Flag use_fsk: Flag to determine whether to use FSK or LoRa mode.
+        :param busio.SPI spi: The SPI bus connected to the chip. Ensure SCK, MOSI, and MISO are connected.
+        :param ~digitalio.DigitalInOut chip_select: Chip select pin.
+        :param ~digitalio.DigitalInOut busy: Interrupt request pin.
+        :param ~digitalio.DigitalInOut reset: Reset pin.
+        :param ~digitalio.DigitalInOut txen: Transmit enable pin.
+        :param ~digitalio.DigitalInOut rxen: Receive enable pin.
+
+        :raises HardwareInitializationError: If the radio fails to initialize after retries.
+        """"""
+        self._spi = spi
+        self._chip_select = chip_select
+        self._reset = reset
+        self._busy = busy
+        self._frequency = frequency
+        self._txen = txen
+        self._rxen = rxen
+
+        super().__init__(
+            logger=logger,
+            radio_config=radio_config,
+            use_fsk=use_fsk,
+        )
+
+    def _initialize_radio(self, modulation: Type[RadioModulation]) -> None:
+        """"""Initialize the specific SX1280 radio hardware.""""""
+        self._radio = SX1280(
+            self._spi,
+            self._chip_select,
+            self._reset,
+            self._busy,
+            frequency=self._frequency,
+            txen=self._txen,
+            rxen=self._rxen,
+        )
+
+    def _send_internal(self, payload: bytes) -> bool:
+        """"""Send data using the SX1280 radio.""""""
+        return bool(self._radio.send(payload))
+
+    def get_modulation(self) -> Type[RadioModulation]:
+        """"""Get the modulation mode from the initialized SX1280 radio.""""""
+        self._log.warning(""SX1280 library does not support FSK modulation, using LoRa"")
+        return LoRa
+
+    def receive(self, timeout: Optional[int] = None) -> bytes | None:
+        """"""Receive data from the radio.
+
+        :param int | None timeout: Optional receive timeout in seconds. If None, use the default timeout.
+        :return: The received data as bytes, or None if no data was received.
+        """"""
+        try:
+            msg = self._radio.receive(keep_listening=True)
+
+            if msg is None:
+                self._log.debug(""No message received"")
+                return None
+
+            return bytes(msg)
+        except Exception as e:
+            self._log.error(""Error receiving data"", e)
+            return None"
+
+LINK NUMBER 831
+Not enough lines
+
+LINK NUMBER 832
+Not enough lines
+
+LINK NUMBER 833
+
+File path: frontend/src/store/modules/v1/environment.ts
+"const getEnvironmentByIdMap = (
+  environments: Environment[]
+): Map<ResourceId, Environment> => {
+  return new Map(
+    environments.map((environment) => [environment.name, environment])
+  );
+};
+
+const convertToEnvironments = (
+  environments: EnvironmentSetting_Environment[]
+): Environment[] => {
+  return environments.map<Environment>((env, i) => {
+    return {
+      name: `${environmentNamePrefix}${env.id}`,
+      title: env.title,
+      order: i,
+      color: env.color,
+      tier: env.tags[""protected""] === ""protected""
+        ? EnvironmentTier.PROTECTED
+        : EnvironmentTier.UNPROTECTED,
+      state: State.ACTIVE,
+    };
+  });
+};
+
+const convertEnvironments = (
+  environments: Environment[]
+): EnvironmentSetting_Environment[] => {
+  return environments.map((env) => {
+    const res: EnvironmentSetting_Environment = {
+      id: env.name.replace(environmentNamePrefix, """"),
+      title: env.title,
+      color: env.color,
+      tags: {},
+    };
+    if (env.tier === EnvironmentTier.PROTECTED) {
+      res.tags.protected = ""protected"";
+    }
+    return res;
+  });
+};
+
+const getEnvironmentSetting = async (
+  silent = false
+): Promise<Environment[]> => {
+  const setting = await settingServiceClient.getSetting(
+    {
+      name: ""settings/bb.workspace.environment"",
+    },
+    { silent }
+  );
+  const settingEnvironments =
+    setting.value?.environmentSetting?.environments ?? [];
+  return convertToEnvironments(settingEnvironments);
+};
+
+const updateEnvironmentSetting = async (
+  environment: EnvironmentSetting
+): Promise<Environment[]> => {
+  const setting = await settingServiceClient.updateSetting({
+    setting: {
+      name: ""settings/bb.workspace.environment"",
+      value: {
+        environmentSetting: environment,
+      },
+    },
+    updateMask: [""environment_setting""],
+  });
+  const settingEnvironments =
+    setting.value?.environmentSetting?.environments ?? [];
+  return convertToEnvironments(settingEnvironments);
+};
+"
+
+LINK NUMBER 834
+Error fetching diff
+
+LINK NUMBER 835
+Error fetching diff
+
+LINK NUMBER 836
+Error fetching diff
+
+LINK NUMBER 837
+Not enough lines
+
+LINK NUMBER 838
+Not enough lines
+
+LINK NUMBER 839
+Not enough lines
+
+LINK NUMBER 840
+Not enough lines
+
+LINK NUMBER 841
+Error fetching diff
+
+LINK NUMBER 842
+Error fetching diff
+
+LINK NUMBER 843
+Error fetching diff
+
+LINK NUMBER 844
+Not enough lines
+
+LINK NUMBER 845
+
+File path: packages/taiko-client/driver/driver_test.go
+"func (s *DriverTestSuite) TestOnUnsafeL2PayloadWithInvalidPayload() {
+	s.ForkIntoPacaya(s.p, s.d.ChainSyncer().BlobSyncer())
+	// Propose some valid L2 blocks
+	s.ProposeAndInsertEmptyBlocks(s.p, s.d.ChainSyncer().BlobSyncer())
+
+	l2Head1, err := s.d.rpc.L2.HeaderByNumber(context.Background(), nil)
+	s.Nil(err)
+
+	b, err := utils.Compress(testutils.RandomBytes(32))
+	s.Nil(err)
+
+	baseFee, overflow := uint256.FromBig(common.Big256)
+	s.False(overflow)
+
+	payload := &eth.ExecutionPayload{
+		ParentHash:    l2Head1.Hash(),
+		FeeRecipient:  s.TestAddr,
+		PrevRandao:    eth.Bytes32(testutils.RandomHash()),
+		BlockNumber:   eth.Uint64Quantity(l2Head1.Number.Uint64() + 1),
+		GasLimit:      eth.Uint64Quantity(l2Head1.GasLimit),
+		Timestamp:     eth.Uint64Quantity(time.Now().Unix()),
+		ExtraData:     l2Head1.Extra,
+		BaseFeePerGas: eth.Uint256Quantity(*baseFee),
+		Transactions:  []eth.Data{b},
+		Withdrawals:   &types.Withdrawals{},
+	}
+
+	s.Nil(s.d.preconfBlockServer.OnUnsafeL2Payload(
+		context.Background(),
+		peer.ID(testutils.RandomBytes(32)),
+		&eth.ExecutionPayloadEnvelope{ExecutionPayload: payload},
+	))
+
+	l2Head2, err := s.d.rpc.L2.BlockByNumber(context.Background(), nil)
+	s.Nil(err)
+	s.Equal(l2Head1.Number.Uint64(), l2Head2.Number().Uint64())
+	s.Equal(l2Head1.Hash(), l2Head2.Hash())
+}
+
+func (s *DriverTestSuite) TestOnUnsafeL2PayloadWithMissingAncients() {
+	s.ForkIntoPacaya(s.p, s.d.ChainSyncer().BlobSyncer())
+	// Propose some valid L2 blocks
+	s.ProposeAndInsertEmptyBlocks(s.p, s.d.ChainSyncer().BlobSyncer())
+
+	l2Head1, err := s.d.rpc.L2.HeaderByNumber(context.Background(), nil)
+	s.Nil(err)
+
+	headL1Origin, err := s.RPCClient.L2.HeadL1Origin(context.Background())
+	s.Nil(err)
+	s.Equal(l2Head1.Number.Uint64(), headL1Origin.BlockID.Uint64())
+
+	snapshotID := s.SetL1Snapshot()
+
+	for i := 0; i < rand.Intn(6)+5; i++ {
+		s.ProposeAndInsertEmptyBlocks(s.p, s.d.ChainSyncer().BlobSyncer())
+	}
+
+	l2Head2, err := s.d.rpc.L2.HeaderByNumber(context.Background(), nil)
+	s.Nil(err)
+	s.Greater(l2Head2.Number.Uint64(), l2Head1.Number.Uint64())
+
+	blocks := []*types.Block{}
+	for i := l2Head1.Number.Uint64() + 1; i <= l2Head2.Number.Uint64(); i++ {
+		block, err := s.RPCClient.L2.BlockByNumber(context.Background(), new(big.Int).SetUint64(i))
+		s.Nil(err)
+		blocks = append(blocks, block)
+	}
+	s.Equal(l2Head2.Number.Uint64()-l2Head1.Number.Uint64(), uint64(len(blocks)))
+
+	s.RevertL1Snapshot(snapshotID)
+	s.Nil(rpc.SetHead(context.Background(), s.RPCClient.L2, l2Head1.Number))
+	_, err = s.RPCClient.L2Engine.SetHeadL1Origin(context.Background(), headL1Origin.BlockID)
+	s.Nil(err)
+
+	headL1Origin, err = s.RPCClient.L2.HeadL1Origin(context.Background())
+	s.Nil(err)
+	s.Equal(l2Head1.Number.Uint64(), headL1Origin.BlockID.Uint64())
+
+	l2Head3, err := s.d.rpc.L2.HeaderByNumber(context.Background(), nil)
+	s.Nil(err)
+	s.Equal(l2Head1.Number.Uint64(), l2Head3.Number.Uint64())
+
+	// Randomly gossip preconfirmation messages with missing ancients
+	blockNums := rand.Perm(len(blocks))
+	for i := range blockNums {
+		blockNums[i] += int(l2Head1.Number.Uint64() + 1)
+	}
+
+	getBlock := func(blockNum uint64) *types.Block {
+		for _, b := range blocks {
+			if b.Number().Uint64() == blockNum {
+				return b
+			}
+		}
+		return nil
+	}
+
+	insertPayloadFromBlock := func(block *types.Block, gossipRandom bool) {
+		baseFee, overflow := uint256.FromBig(block.BaseFee())
+		s.False(overflow)
+
+		b, err := utils.EncodeAndCompressTxList(block.Transactions())
+		s.Nil(err)
+		s.GreaterOrEqual(len(block.Transactions()), 1)
+
+		s.Nil(s.d.preconfBlockServer.OnUnsafeL2Payload(
+			context.Background(),
+			peer.ID(testutils.RandomBytes(32)),
+			&eth.ExecutionPayloadEnvelope{ExecutionPayload: &eth.ExecutionPayload{
+				BlockHash:     block.Hash(),
+				ParentHash:    block.ParentHash(),
+				FeeRecipient:  block.Coinbase(),
+				PrevRandao:    eth.Bytes32(block.MixDigest()),
+				BlockNumber:   eth.Uint64Quantity(block.Number().Uint64()),
+				GasLimit:      eth.Uint64Quantity(block.GasLimit()),
+				Timestamp:     eth.Uint64Quantity(block.Time()),
+				ExtraData:     block.Extra(),
+				BaseFeePerGas: eth.Uint256Quantity(*baseFee),
+				Transactions:  []eth.Data{b},
+				Withdrawals:   &types.Withdrawals{},
+			}},
+		))
+
+		if gossipRandom {
+			// Also gossip some random blocks
+			s.Nil(s.d.preconfBlockServer.OnUnsafeL2Payload(
+				context.Background(),
+				peer.ID(testutils.RandomBytes(32)),
+				&eth.ExecutionPayloadEnvelope{ExecutionPayload: &eth.ExecutionPayload{
+					BlockHash:     common.BytesToHash(testutils.RandomBytes(32)),
+					ParentHash:    common.BytesToHash(testutils.RandomBytes(32)),
+					FeeRecipient:  block.Coinbase(),
+					PrevRandao:    eth.Bytes32(common.BytesToHash(testutils.RandomBytes(32))),
+					BlockNumber:   eth.Uint64Quantity(block.Number().Uint64()),
+					GasLimit:      eth.Uint64Quantity(block.GasLimit()),
+					Timestamp:     eth.Uint64Quantity(block.Time()),
+					ExtraData:     block.Extra(),
+					BaseFeePerGas: eth.Uint256Quantity(*baseFee),
+					Transactions:  []eth.Data{b},
+					Withdrawals:   &types.Withdrawals{},
+				}},
+			))
+
+			s.Nil(s.d.preconfBlockServer.OnUnsafeL2Payload(
+				context.Background(),
+				peer.ID(testutils.RandomBytes(32)),
+				&eth.ExecutionPayloadEnvelope{ExecutionPayload: &eth.ExecutionPayload{
+					BlockHash:     common.BytesToHash(testutils.RandomBytes(32)),
+					ParentHash:    block.ParentHash(),
+					FeeRecipient:  block.Coinbase(),
+					PrevRandao:    eth.Bytes32(common.BytesToHash(testutils.RandomBytes(32))),
+					BlockNumber:   eth.Uint64Quantity(block.Number().Uint64()),
+					GasLimit:      eth.Uint64Quantity(block.GasLimit()),
+					Timestamp:     eth.Uint64Quantity(block.Time()),
+					ExtraData:     block.Extra(),
+					BaseFeePerGas: eth.Uint256Quantity(*baseFee),
+					Transactions:  []eth.Data{b},
+					Withdrawals:   &types.Withdrawals{},
+				}},
+			))
+		}
+	}
+
+	// Insert all blocks except the first one
+	for _, blockNum := range blockNums {
+		if blockNum == int(l2Head1.Number.Uint64()+1) {
+			continue
+		}
+
+		block := getBlock(uint64(blockNum))
+		s.NotNil(block)
+
+		insertPayloadFromBlock(block, true)
+	}
+
+	l2Head4, err := s.d.rpc.L2.BlockByNumber(context.Background(), nil)
+	s.Nil(err)
+	s.Equal(l2Head1.Number.Uint64(), l2Head4.Number().Uint64())
+
+	// Insert the only missing ancient block
+	block := getBlock(l2Head1.Number.Uint64() + 1)
+	s.NotNil(block)
+	insertPayloadFromBlock(block, false)
+
+	l2Head5, err := s.d.rpc.L2.BlockByNumber(context.Background(), nil)
+	s.Nil(err)
+	s.Equal(l2Head2.Number.Uint64(), l2Head5.Number().Uint64())
+}
+"
+
+LINK NUMBER 846
+
+File path: launcher/internal/controller/bcsconfig_controller.go
+"	err = createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
+	if err != nil {
+		log.Error(err, ""Failed to create resource"", ""resource"", mcmNamespace.GetObjectKind(), ""named"", mcmNamespace.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: ""mcm""})
+	if err != nil {
+		log.Error(err, ""Failed to create resource"", ""resource"", mcmAgentDeployment.GetObjectKind(), ""named"", mcmAgentDeployment.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace:""mcm""})
+	if err != nil {
+		log.Error(err, ""Failed to create resource"", ""resource"", mcmAgentService.GetObjectKind(), ""named"", mcmAgentService.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name, Namespace: ""mcm""})
+	if err != nil {	
+		log.Error(err, ""Failed to create resource"", ""resource"", mcmMediaProxyPv.GetObjectKind(), ""named"", mcmMediaProxyPv.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: ""mcm""})
+	if err != nil {
+		log.Error(err, ""Failed to create resource"", ""resource"", mcmMediaProxyPvc.GetObjectKind(), ""named"", mcmMediaProxyPvc.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: ""mcm""})
+    if err != nil {
+		log.Error(err, ""Failed to create resource"", ""resource"", mcmMediaProxyDs.GetObjectKind(), ""named"", mcmMediaProxyDs.Name)
+		return ctrl.Result{}, err
+	}
+	"
+
+LINK NUMBER 847
+Not enough lines
+
+LINK NUMBER 848
+Error fetching diff
+
+LINK NUMBER 849
+Error fetching diff
+
+LINK NUMBER 850
+Error fetching diff
+
+LINK NUMBER 851
+
+File path: utils/cli.py
+"    
+    args = parser.parse_args()
+    
+    # If query is not provided via command line, read from stdin
+    if args.query is None:
+        # Check if there's data available on stdin (e.g., from a pipe)
+        if not sys.stdin.isatty():
+            args.query = sys.stdin.read().strip()
+            # Validate that the input is not empty after stripping whitespace
+            if not args.query:
+                sys.stderr.write(""Error: Empty input provided via stdin. Please provide a non-empty query.\n"")
+                sys.exit(1)
+        else:
+            # Exit with error if no query is provided
+            sys.stderr.write(""Error: No query provided. Please provide a query via --query parameter or pipe input to stdin.\n"")
+            sys.exit(1)
+    
+    return args"
+
+LINK NUMBER 852
+Not enough lines
+
+LINK NUMBER 853
+
+File path: internal/genai/prompts.go
+"package genai
+
+import (
+	""context""
+	""encoding/json""
+	""fmt""
+	""strings""
+	""sync""
+
+	""github.com/5pirit5eal/swim-rag/internal/models""
+	""github.com/go-chi/httplog/v2""
+	""github.com/tmc/langchaingo/schema""
+	""google.golang.org/genai""
+)
+
+// GeneratePlan generates a plan using the LLM based on the provided query and documents.
+func (gc *GoogleGenAIClient) GeneratePlan(ctx context.Context, q string, docs []schema.Document) (*models.RAGResponse, error) {
+	logger := httplog.LogEntry(ctx)
+	ts, err := models.TableSchema()
+	if err != nil {
+		return nil, fmt.Errorf(""failed to get table schema: %w"", err)
+	}
+
+	var dc []string
+	for _, doc := range docs {
+		dc = append(dc, doc.PageContent)
+	}
+
+	// Create a RAG query for the LLM with the most relevant documents as context
+	query := fmt.Sprintf(ragTemplateStr, ts, q, strings.Join(dc, ""\n \n""))
+	genCfg := *gc.gcfg
+	genCfg.ResponseMIMEType = ""application/json""
+	answer, err := gc.gc.Models.GenerateContent(ctx, gc.cfg.Model, genai.Text(query), &genCfg)
+
+	if err != nil {
+		logger.Error(""Error when generating answer with LLM"", httplog.ErrAttr(err))
+		return nil, fmt.Errorf(""error generating answer: %w"", err)
+	}
+
+	// read description and table from the LLM response
+	var p models.RAGResponse
+	err = json.Unmarshal([]byte(answer.Text()), &p)
+	if err != nil {
+		logger.Error(""Error parsing LLM response"", httplog.ErrAttr(err), ""raw_response"", answer)
+		return nil, fmt.Errorf(""error parsing LLM response: %w"", err)
+	}
+	// Add the total to the table if it is not already present
+	if !strings.Contains(p.Table[len(p.Table)-1].Content, ""Total"") {
+		p.Table.AddSum()
+	}
+	// Recalculate the sums of the rows to be sure they are correct
+	p.Table.UpdateSum()
+
+	// Add the plan to the response
+	logger.Debug(""Plan generated successfully"")
+	return &p, nil
+}
+
+// ChoosePlan lets an LLM choose the best fitting plan from the given documents.
+// Returns the plan id of the chosen plan
+func (gc *GoogleGenAIClient) ChoosePlan(ctx context.Context, q string, docs []schema.Document) (string, error) {
+	logger := httplog.LogEntry(ctx)
+	var dc string
+	for i, doc := range docs {
+		dc += fmt.Sprintf(""%d: %s \n\n"", i, doc.PageContent)
+	}
+
+	// Create a RAG query for the LLM with the most relevant documents as context
+	query := fmt.Sprintf(choosePlanTemplateStr, q, dc)
+	genCfg := *gc.gcfg
+	genCfg.ResponseMIMEType = ""application/json""
+	answer, err := gc.gc.Models.GenerateContent(ctx, gc.cfg.Model, genai.Text(query), &genCfg)
+	if err != nil {
+		logger.Error(""Error when generating answer with LLM"", httplog.ErrAttr(err))
+		return """", fmt.Errorf(""error generating answer: %w"", err)
+	}
+	logger.Debug(""Successful answer from LLM"", ""answer"", answer)
+
+	var cr models.ChooseResponse
+	err = json.Unmarshal([]byte(answer.Text()), &cr)
+	if err != nil {
+		logger.Error(""Error parsing LLM response"", httplog.ErrAttr(err), ""raw_response"", answer)
+		return """", fmt.Errorf(""error parsing LLM response: %w"", err)
+	}
+	planID, ok := docs[cr.Idx].Metadata[""plan_id""]
+	if !ok {
+		return """", fmt.Errorf(""plan_id not found in Metadata for document at index %d"", cr.Idx)
+	}
+	planIDStr, ok := planID.(string)
+	if !ok {
+		return """", fmt.Errorf(""plan_id is not a string in Metadata for document at index %d"", cr.Idx)
+	}
+	return planIDStr, nil
+}
+
+func (gc *GoogleGenAIClient) ImprovePlan(ctx context.Context, plan models.Planable, syncGroup *sync.WaitGroup, c chan<- models.Document, ec chan<- error) {
+	if syncGroup != nil {
+		defer syncGroup.Done()
+	}
+	logger := httplog.LogEntry(ctx)
+	meta, err := gc.GenerateMetadata(ctx, plan)
+	if err != nil {
+		logger.Error(""Error when generating metadata with LLM"", httplog.ErrAttr(err))
+		ec <- fmt.Errorf(""error generating metadata: %w"", err)
+		return
+	}
+
+	// Create request body by converting the plans into documents
+	c <- models.Document{
+		Plan: plan,
+		Meta: meta,
+	}
+}
+
+func (gc *GoogleGenAIClient) DescribeTable(ctx context.Context, table *models.Table) (*models.Description, error) {
+	logger := httplog.LogEntry(ctx)
+	ds, err := models.DescriptionSchema()
+	if err != nil {
+		logger.Error(""Failed in retrieving Schema"", httplog.ErrAttr(err))
+		return nil, fmt.Errorf(""models.MetadataSchema: %w"", err)
+	}
+	// Create a description of the table
+	query := fmt.Sprintf(describeTemplateStr, ds, table.String())
+	genCfg := *gc.gcfg
+	genCfg.ResponseMIMEType = ""application/json""
+	answer, err := gc.gc.Models.GenerateContent(ctx, gc.cfg.Model, genai.Text(query), &genCfg)
+	if err != nil {
+		return nil, fmt.Errorf(""Models.GenerateContent: %w"", err)
+	}
+	var desc models.Description
+	err = json.Unmarshal([]byte(answer.Text()), &desc)
+	if err != nil {
+		logger.Error(""Error parsing LLM response"", httplog.ErrAttr(err), ""raw_response"", answer.Text())
+		return nil, fmt.Errorf(""error parsing LLM response: %w"", err)
+	}
+	return &desc, nil
+}
+
+func (gc *GoogleGenAIClient) GenerateMetadata(ctx context.Context, plan models.Planable) (*models.Metadata, error) {
+	logger := httplog.LogEntry(ctx)
+	ms, err := models.MetadataSchema()
+	if err != nil {
+		logger.Error(""Failed in retrieving Schema"", httplog.ErrAttr(err))
+		return nil, fmt.Errorf(""models.MetadataSchema: %w"", err)
+	}
+	// Enhance scraped documents with gemini and create meaningful metadata
+	genericPlan := plan.Plan()
+	query := fmt.Sprintf(metadataTemplateStr, genericPlan.Title, genericPlan.Description, genericPlan.Table.String(), ms)
+	genCfg := *gc.gcfg
+	genCfg.ResponseMIMEType = ""application/json""
+	answer, err := gc.gc.Models.GenerateContent(ctx, gc.cfg.Model, genai.Text(query), &genCfg)
+	if err != nil {
+		logger.Error(""Error when generating answer with LLM"", httplog.ErrAttr(err))
+		return nil, fmt.Errorf(""Models.GenerateContent: %w"", err)
+	}
+	logger.Debug(""Successful answer from LLM"", ""answer"", answer.Text())
+
+	// Parse the answer as JSON
+	var metadata models.Metadata
+	err = json.Unmarshal([]byte(answer.Text()), &metadata)
+	if err != nil {
+		logger.Error(""Error parsing LLM response"", httplog.ErrAttr(err), ""raw_response"", answer.Text())
+		return nil, fmt.Errorf(""JSON unmarshal error: %w with raw response %s"", err, answer.Text())
+	}
+
+	return &metadata, nil
+}"
+
+LINK NUMBER 854
+Not enough lines
+
+LINK NUMBER 855
+Error fetching diff
+
+LINK NUMBER 856
+Error fetching diff
+
+LINK NUMBER 857
+Error fetching diff
+
+LINK NUMBER 858
+Not enough lines
+
+LINK NUMBER 859
+Not enough lines
+
+LINK NUMBER 860
+
+File path: apps/workflows/src/checker/index.ts
+"          .update(schema.monitor)
+          .set({ status: ""active"" })
+          .where(eq(schema.monitor.id, monitor.id));
+
+        // we can't have a monitor in error without an incident
+        if (monitor.status === ""error"") {
+          const incident = await db
+            .select()
+            .from(incidentTable)
+            .where(
+              and(
+                eq(incidentTable.monitorId, Number(monitorId)),
+                isNull(incidentTable.resolvedAt),
+                isNull(incidentTable.acknowledgedAt),
+              ),
+            )
+            .get();
+
+          if (!incident) {
+            // it was just a single failure not a proper incident
+            break;
+          }
+          if (incident?.resolvedAt) {
+            // incident is already resolved
+            break;
+          }
+
+          console.log(`🤓 recovering incident ${incident.id}`);
+          await db
+            .update(incidentTable)
+            .set({
+              resolvedAt: new Date(cronTimestamp),
+              autoResolved: true,
+            })
+            .where(eq(incidentTable.id, incident.id))
+            .run();
+        }"
+
+LINK NUMBER 861
+
+File path: src/environment.ts
+"#!/bin/sh
+
+while :
+do
+  pnpm start || true
+
+  # wait 10 minutes
+  echo Waiting 10 minutes...
+  sleep 600
+done"
+
+LINK NUMBER 862
+Error fetching diff
+
+LINK NUMBER 863
+Error fetching diff
+
+LINK NUMBER 864
+Error fetching diff
+
+LINK NUMBER 865
+
+File path: e2e/test/file_operations_test.go
+"
+// TestSimulatedFaultTolerance tests the system's behavior during simulated failure scenarios
+func TestSimulatedFaultTolerance(t *testing.T) {
+	// Skip in short mode as these tests take time
+	if testing.Short() {
+		t.Skip(""Skipping fault tolerance tests in short mode"")
+	}
+
+	// Test file path with timestamp to ensure uniqueness
+	testFilePath := fmt.Sprintf(""/fault-test-file-%d.txt"", time.Now().UnixNano())
+
+	// Test file content (larger than usual)
+	testContent := bytes.Repeat([]byte(""DFS Fault Tolerance Test Data Block ""), 100)
+
+	// Setup: Create file and write data
+	t.Run(""Setup"", func(t *testing.T) {
+		err := dfsClient.CreateFile(testFilePath)
+		assert.NoError(t, err, ""Failed to create file for fault test"")
+
+		seq, err := dfsClient.WriteFile(testFilePath, testContent)
+		assert.NoError(t, err, ""Failed to write to file for fault test"")
+		assert.Greater(t, uint64(seq), uint64(0), ""Expected sequence number greater than 0"")
+	})
+
+	// Test: Simulate node failure and recovery by recreating the client
+	// and verifying data is still accessible
+	t.Run(""SimulatedNodeFailure"", func(t *testing.T) {
+		// Save the current state of the mock client (before ""failure"")
+		oldClient := dfsClient
+
+		// Create a new client instance to simulate node restart
+		// In a real environment, this would correspond to a node failure and recovery
+		t.Log(""Simulating node server failure and recovery..."")
+		dfsClient = NewMockDFSClient()
+
+		// Copy data from old client to new client to simulate persistence (in a real system, data would be on disk)
+		// This is just for the mock - in a real system, we would just reconnect to the servers
+		copyMockData(oldClient, dfsClient, testFilePath)
+
+		// Verify we can still read the file
+		sequences, err := dfsClient.GetSequences(testFilePath)
+		assert.NoError(t, err, ""Failed to get sequences after simulated node restart"")
+		assert.NotEmpty(t, sequences, ""Expected at least one sequence after simulated node restart"")
+
+		// Read the sequence data
+		var seq uint64
+		for s := range sequences {
+			seq = uint64(s)
+			break
+		}
+
+		data, err := dfsClient.ReadSequence(testFilePath, client.SequenceNumber(seq))
+		assert.NoError(t, err, ""Failed to read sequence after simulated node restart"")
+		assert.True(t, bytes.Equal(data, testContent), ""Content mismatch after simulated node restart"")
+	})
+
+	// Test multiple writes after simulated recovery
+	t.Run(""WriteAfterRecovery"", func(t *testing.T) {
+		// Try to write more data after recovery
+		additionalContent := []byte(""Additional data after recovery"")
+		seq, err := dfsClient.WriteFile(testFilePath, additionalContent)
+		assert.NoError(t, err, ""Failed to write additional data after recovery"")
+
+		// Read back the new data
+		data, err := dfsClient.ReadSequence(testFilePath, seq)
+		assert.NoError(t, err, ""Failed to read additional data after recovery"")
+		assert.Equal(t, additionalContent, data, ""Additional content mismatch"")
+	})
+
+	// Cleanup
+	t.Run(""Cleanup"", func(t *testing.T) {
+		err := dfsClient.DeleteFile(testFilePath)
+		assert.NoError(t, err, ""Failed to delete test file during cleanup"")
+	})
+}
+
+// TestFileDeletion tests file deletion including edge cases
+func TestFileDeletion(t *testing.T) {
+	// Create test files
+	testFile1 := fmt.Sprintf(""/test-delete-file1-%d.txt"", time.Now().UnixNano())
+	testFile2 := fmt.Sprintf(""/test-delete-file2-%d.txt"", time.Now().UnixNano())
+	testDir := fmt.Sprintf(""/test-delete-dir-%d"", time.Now().UnixNano())
+
+	// Setup test files and directories
+	t.Run(""Setup"", func(t *testing.T) {
+		// Create first file with content
+		err := dfsClient.CreateFile(testFile1)
+		assert.NoError(t, err, ""Failed to create test file 1"")
+
+		_, err = dfsClient.WriteFile(testFile1, []byte(""Test content for file 1""))
+		assert.NoError(t, err, ""Failed to write to test file 1"")
+
+		// Create second file with multiple writes
+		err = dfsClient.CreateFile(testFile2)
+		assert.NoError(t, err, ""Failed to create test file 2"")
+
+		_, err = dfsClient.WriteFile(testFile2, []byte(""First block for file 2""))
+		assert.NoError(t, err, ""Failed to write first block to test file 2"")
+
+		_, err = dfsClient.WriteFile(testFile2, []byte(""Second block for file 2""))
+		assert.NoError(t, err, ""Failed to write second block to test file 2"")
+
+		// Create directory
+		err = dfsClient.CreateDirectory(testDir)
+		assert.NoError(t, err, ""Failed to create test directory"")
+	})
+
+	// Test deleting and checking if the file is gone
+	t.Run(""DeleteFile1"", func(t *testing.T) {
+		// Verify file exists
+		entries, err := dfsClient.ListFiles(""/"")
+		assert.NoError(t, err, ""Failed to list files"")
+
+		found := false
+		for _, entry := range entries {
+			if entry.Path == testFile1 {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, ""File 1 should exist before deletion"")
+
+		// Delete the file
+		err = dfsClient.DeleteFile(testFile1)
+		assert.NoError(t, err, ""Failed to delete file 1"")
+
+		// Verify file no longer exists
+		entries, err = dfsClient.ListFiles(""/"")
+		assert.NoError(t, err, ""Failed to list files after deletion"")
+
+		found = false
+		for _, entry := range entries {
+			if entry.Path == testFile1 {
+				found = true
+				break
+			}
+		}
+		assert.False(t, found, ""File 1 should not exist after deletion"")
+
+		// Try to get sequences for deleted file
+		_, err = dfsClient.GetSequences(testFile1)
+		assert.Error(t, err, ""Expected error when getting sequences for deleted file"")
+
+		// Try to read from deleted file
+		_, err = dfsClient.ReadSequence(testFile1, client.SequenceNumber(1))
+		assert.Error(t, err, ""Expected error when reading from deleted file"")
+
+		// Try to write to deleted file
+		_, err = dfsClient.WriteFile(testFile1, []byte(""New content""))
+		assert.Error(t, err, ""Expected error when writing to deleted file"")
+	})
+
+	// Test deleting file with multiple blocks
+	t.Run(""DeleteMultiBlockFile"", func(t *testing.T) {
+		// Delete the file
+		err := dfsClient.DeleteFile(testFile2)
+		assert.NoError(t, err, ""Failed to delete file 2 with multiple blocks"")
+
+		// Verify file no longer exists
+		entries, err := dfsClient.ListFiles(""/"")
+		assert.NoError(t, err, ""Failed to list files after deletion"")
+
+		found := false
+		for _, entry := range entries {
+			if entry.Path == testFile2 {
+				found = true
+				break
+			}
+		}
+		assert.False(t, found, ""File 2 should not exist after deletion"")
+	})
+
+	// Test recreating a file after deletion
+	t.Run(""RecreateAfterDeletion"", func(t *testing.T) {
+		// Create a new file with the same name as the deleted file
+		err := dfsClient.CreateFile(testFile1)
+		assert.NoError(t, err, ""Failed to recreate file after deletion"")
+
+		// Write new content
+		newContent := []byte(""New content after recreation"")
+		seq, err := dfsClient.WriteFile(testFile1, newContent)
+		assert.NoError(t, err, ""Failed to write to recreated file"")
+
+		// Read back the content
+		readData, err := dfsClient.ReadSequence(testFile1, seq)
+		assert.NoError(t, err, ""Failed to read from recreated file"")
+		assert.Equal(t, newContent, readData, ""Content mismatch in recreated file"")
+	})
+
+	// Test directory deletion
+	t.Run(""DeleteDirectory"", func(t *testing.T) {
+		err := dfsClient.DeleteDirectory(testDir)
+		assert.NoError(t, err, ""Failed to delete directory"")
+
+		// Verify directory no longer exists
+		entries, err := dfsClient.ListFiles(""/"")
+		assert.NoError(t, err, ""Failed to list root directory after deletion"")
+
+		found := false
+		for _, entry := range entries {
+			if entry.Path == testDir {
+				found = true
+				break
+			}
+		}
+		assert.False(t, found, ""Directory should not exist after deletion"")
+	})
+
+	// Cleanup
+	t.Run(""Cleanup"", func(t *testing.T) {
+		// Delete the recreated file
+		err := dfsClient.DeleteFile(testFile1)
+		assert.NoError(t, err, ""Failed to clean up recreated file"")
+	})
+}
+
+// TestComprehensiveErrorHandling tests how the system handles various error conditions (renamed from TestErrorHandling)
+func TestComprehensiveErrorHandling(t *testing.T) {
+	// Create unique test paths using a timestamp
+	timestamp := time.Now().UnixNano()
+	testDir := fmt.Sprintf(""/error-test-dir-comp-%d"", timestamp)
+	testFile := fmt.Sprintf(""/error-test-file-comp-%d.txt"", timestamp)
+	nonExistentFile := fmt.Sprintf(""/non-existent-file-comp-%d.txt"", timestamp)
+	nonExistentDir := fmt.Sprintf(""/non-existent-dir-comp-%d"", timestamp)
+
+	// Setup: Create test directory and file
+	t.Run(""Setup"", func(t *testing.T) {
+		err := dfsClient.CreateDirectory(testDir)
+		assert.NoError(t, err, ""Failed to create test directory"")
+
+		err = dfsClient.CreateFile(testFile)
+		assert.NoError(t, err, ""Failed to create test file"")
+
+		_, err = dfsClient.WriteFile(testFile, []byte(""Initial content""))
+		assert.NoError(t, err, ""Failed to write to test file"")
+	})
+
+	// Test reading from non-existent file
+	t.Run(""ReadNonExistentFile"", func(t *testing.T) {
+		_, err := dfsClient.ReadSequence(nonExistentFile, client.SequenceNumber(1))
+		assert.Error(t, err, ""Expected error when reading from non-existent file"")
+	})
+
+	// Test listing non-existent directory
+	t.Run(""ListNonExistentDirectory"", func(t *testing.T) {
+		_, err := dfsClient.ListFiles(nonExistentDir)
+		assert.Error(t, err, ""Expected error when listing non-existent directory"")
+	})
+
+	// Test creating duplicate file
+	t.Run(""CreateDuplicateFile"", func(t *testing.T) {
+		err := dfsClient.CreateFile(testFile)
+		assert.Error(t, err, ""Expected error when creating duplicate file"")
+	})
+
+	// Test creating duplicate directory
+	t.Run(""CreateDuplicateDirectory"", func(t *testing.T) {
+		err := dfsClient.CreateDirectory(testDir)
+		assert.Error(t, err, ""Expected error when creating duplicate directory"")
+	})
+
+	// Test creating file with same name as directory
+	t.Run(""CreateFileWithDirName"", func(t *testing.T) {
+		err := dfsClient.CreateFile(testDir)
+		assert.Error(t, err, ""Expected error when creating file with same name as directory"")
+	})
+
+	// Test creating directory with same name as file
+	t.Run(""CreateDirWithFileName"", func(t *testing.T) {
+		err := dfsClient.CreateDirectory(testFile)
+		assert.Error(t, err, ""Expected error when creating directory with same name as file"")
+	})
+
+	// Test deleting non-existent file
+	t.Run(""DeleteNonExistentFile"", func(t *testing.T) {
+		err := dfsClient.DeleteFile(nonExistentFile)
+		assert.Error(t, err, ""Expected error when deleting non-existent file"")
+	})
+
+	// Test deleting non-existent directory
+	t.Run(""DeleteNonExistentDirectory"", func(t *testing.T) {
+		err := dfsClient.DeleteDirectory(nonExistentDir)
+		assert.Error(t, err, ""Expected error when deleting non-existent directory"")
+	})
+
+	// Test reading invalid sequence
+	t.Run(""ReadInvalidSequence"", func(t *testing.T) {
+		sequences, err := dfsClient.GetSequences(testFile)
+		assert.NoError(t, err, ""Failed to get sequences"")
+
+		// Get highest sequence number and add 1000 to ensure it's invalid
+		var highestSeq client.SequenceNumber
+		for seq := range sequences {
+			if seq > highestSeq {
+				highestSeq = seq
+			}
+		}
+		invalidSeq := highestSeq + 1000
+
+		_, err = dfsClient.ReadSequence(testFile, invalidSeq)
+		assert.Error(t, err, ""Expected error when reading invalid sequence"")
+	})
+
+	// Test deleting directory with files (should fail)
+	t.Run(""DeleteNonEmptyDirectory"", func(t *testing.T) {
+		// Create a file inside the test directory
+		nestedFile := fmt.Sprintf(""%s/nested-file.txt"", testDir)
+		err := dfsClient.CreateFile(nestedFile)
+		assert.NoError(t, err, ""Failed to create nested file"")
+
+		// Try to delete the directory
+		err = dfsClient.DeleteDirectory(testDir)
+		assert.Error(t, err, ""Expected error when deleting non-empty directory"")
+
+		// Clean up the nested file
+		err = dfsClient.DeleteFile(nestedFile)
+		assert.NoError(t, err, ""Failed to clean up nested file"")
+	})
+
+	// Test path validation (invalid paths)
+	t.Run(""InvalidPaths"", func(t *testing.T) {
+		invalidPaths := []string{
+			"""",                             // Empty path
+			""no-leading-slash"",             // Missing leading slash
+			""/path/with/trailing/slash/"",   // Trailing slash
+			""/name\\with\\backslashes"",     // Backslashes
+			""/path//with//double//slashes"", // Double slashes
+		}
+
+		for _, path := range invalidPaths {
+			// Try to create file with invalid path
+			err := dfsClient.CreateFile(path)
+			assert.Error(t, err, ""Expected error when creating file with invalid path: %s"", path)
+
+			// Try to create directory with invalid path
+			err = dfsClient.CreateDirectory(path)
+			assert.Error(t, err, ""Expected error when creating directory with invalid path: %s"", path)
+		}
+	})
+
+	// Clean up
+	t.Run(""Cleanup"", func(t *testing.T) {
+		err := dfsClient.DeleteDirectory(testDir)
+		assert.NoError(t, err, ""Failed to delete test directory"")
+
+		err = dfsClient.DeleteFile(testFile)
+		assert.NoError(t, err, ""Failed to delete test file"")
+	})
+}"
+
+LINK NUMBER 866
+
+File path: tickets-app-backend/src/main/java/com/umg/ticket_app_backend/services/AuthUserDetailsService.java
+"package com.umg.ticket_app_backend.services;
+
+import com.umg.ticket_app_backend.dtos.auth.AuthRegister;
+import com.umg.ticket_app_backend.entities.User;
+import com.umg.ticket_app_backend.repositories.UserRepository;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import com.umg.ticket_app_backend.dtos.auth.AuthRequest;
+import com.umg.ticket_app_backend.dtos.auth.AuthResponse;
+
+@Service
+public class AuthService {
+    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+
+    public AuthService(
+            AuthenticationManager authenticationManager,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            UserRepository userRepository
+    ) {
+        this.authenticationManager = authenticationManager;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+        this.userRepository = userRepository;
+    }
+
+    public AuthResponse authenticate(AuthRequest authRequest) {
+        final var token = new UsernamePasswordAuthenticationToken(authRequest.username(), authRequest.password());
+        final var authentication = authenticationManager.authenticate(token);
+        final var jwtToken = jwtService.generateToken(authentication);
+        final var expiresAt = jwtService.extractExpirationTime(jwtToken);
+        return new AuthResponse(jwtToken, authentication.getName(), expiresAt);
+    }
+
+    public Boolean register(AuthRegister authRequest) {
+        try {
+            final var newUser = new User();
+            newUser.setUsername(authRequest.username());
+            newUser.setPassword(passwordEncoder.encode(authRequest.password()));
+            newUser.setFirstName(authRequest.firstName());
+            newUser.setLastName(authRequest.lastName());
+
+            userRepository.save(newUser);
+
+            return true; // Registration successful
+        } catch (Exception e) {
+            logger.error(""Error occurred during user registration: {}"", e.getMessage(), e);
+            return false; // Registration failed
+        }
+    }
+}"
+
+LINK NUMBER 867
+Not enough lines
+
+LINK NUMBER 868
+Not enough lines
+
+LINK NUMBER 869
+Error fetching diff
+
+LINK NUMBER 870
+Error fetching diff
+
+LINK NUMBER 871
+Error fetching diff
+
+LINK NUMBER 872
+Not enough lines
+
+LINK NUMBER 873
+Error fetching diff
+
+LINK NUMBER 874
+Not enough lines
+
+LINK NUMBER 875
+Not enough lines
+
+LINK NUMBER 876
+Error fetching diff
+
+LINK NUMBER 877
+Error fetching diff
+
+LINK NUMBER 878
+Error fetching diff
+
+LINK NUMBER 879
+
+File path: app/get_tides.py
+"        lines = file.readlines()
+        if len(lines) < 2:
+            logging.error(f""File {downloaded_filename} does not contain enough data."")
+            exit(1)
+        second_line = lines[1]"
+
+LINK NUMBER 880
+Not enough lines
+
+LINK NUMBER 881
+
+File path: cmd/mcp_dbmem/action/direct/direct.go
+"	uptrace.ConfigureOpentelemetry(
+		uptrace.WithServiceName(""mcp-dbmem""),
+		uptrace.WithServiceVersion(viper.GetString(config.Keys.SoftwareVersion)),
+	)
+"
+
+LINK NUMBER 882
+
+File path: src/test/test_simple.c
+"#include <musica/version.hpp>
+#include <stdio.h>
+
+int main()
+{
+    printf(""Musica version: %s\n"", GetMusicaVersion());        
+    return 0;
+}"
+
+LINK NUMBER 883
+Error fetching diff
+
+LINK NUMBER 884
+Error fetching diff
+
+LINK NUMBER 885
+Error fetching diff
+
+LINK NUMBER 886
+
+File path: tests/v2/test_v2_homewizard_energy.py
+"### Batteries tests ###
+
+
+async def test_batteries_without_authentication():
+    """"""Test batteries request is rejected when no authentication is provided.""""""
+
+    async with HomeWizardEnergyV2(""example.com"") as api:
+        with pytest.raises(UnauthorizedError):
+            await api.batteries()
+
+
+async def test_batteries_with_invalid_authentication(aresponses):
+    """"""Test batteries request is unsuccessful when invalid authentication is provided.""""""
+
+    aresponses.add(
+        ""example.com"",
+        ""/api/batteries"",
+        ""GET"",
+        aresponses.Response(
+            status=401,
+            headers={""Content-Type"": ""application/json""},
+            text='{""error"": ""user:unauthorized""}',
+        ),
+    )
+
+    async with HomeWizardEnergyV2(""example.com"", token=""token"") as api:
+        with pytest.raises(UnauthorizedError):
+            await api.batteries()
+
+
+@pytest.mark.parametrize(
+    (""model"", ""fixtures""),
+    [
+        (""HWE-P1"", [""batteries""]),
+    ],
+)
+async def test_batteries_with_valid_authentication(
+    model: str, fixtures: list[str], snapshot: SnapshotAssertion, aresponses
+):
+    """"""Test batteries request is successful when valid authentication is provided.""""""
+
+    for fixture in fixtures:
+        aresponses.add(
+            ""example.com"",
+            ""/api/batteries"",
+            ""GET"",
+            aresponses.Response(
+                text=load_fixtures(f""{model}/{fixture}.json""),
+                status=200,
+                headers={""Content-Type"": ""application/json""},
+            ),
+        )
+
+        async with HomeWizardEnergyV2(""example.com"", token=""token"") as api:
+            batteries = await api.batteries()
+            assert batteries is not None
+            assert batteries == snapshot
+
+
+async def test_batteries_returns_unexpected_response(aresponses):
+    """"""Test batteries request is successful when valid authentication is provided.""""""
+
+    aresponses.add(
+        ""example.com"",
+        ""/api/batteries"",
+        ""GET"",
+        aresponses.Response(
+            status=500,
+            headers={""Content-Type"": ""application/json""},
+            text='{""error"": ""server:error""}',
+        ),
+    )
+
+    async with HomeWizardEnergyV2(""example.com"", token=""token"") as api:
+        with pytest.raises(RequestError) as e:
+            await api.batteries()
+            assert str(e.value) == ""server:error""
+
+
+async def test_batteries_put_without_authentication():
+    """"""Test batteries request is rejected when no authentication is provided.""""""
+
+    async with HomeWizardEnergyV2(""example.com"") as api:
+        with pytest.raises(UnauthorizedError):
+            await api.batteries(mode=Batteries.Mode.STANDBY)
+
+
+async def test_batteries_put_with_invalid_authentication(aresponses):
+    """"""Test batteries request is unsuccessful when invalid authentication is provided.""""""
+
+    aresponses.add(
+        ""example.com"",
+        ""/api/batteries"",
+        ""PUT"",
+        aresponses.Response(
+            status=401,
+            headers={""Content-Type"": ""application/json""},
+            text='{""error"": ""user:unauthorized""}',
+        ),
+    )
+
+    async with HomeWizardEnergyV2(""example.com"", token=""token"") as api:
+        with pytest.raises(UnauthorizedError):
+            await api.batteries(mode=Batteries.Mode.STANDBY)
+
+
+@pytest.mark.parametrize(
+    (""model""),
+    [
+        (""HWE-P1""),
+    ],
+)
+async def test_batteries_put_with_valid_authentication(
+    model: str, snapshot: SnapshotAssertion, aresponses
+):
+    """"""Test batteries request is successful when valid authentication is provided.""""""
+
+    aresponses.add(
+        ""example.com"",
+        ""/api/batteries"",
+        ""PUT"",
+        aresponses.Response(
+            text=load_fixtures(f""{model}/batteries.json""),
+            status=200,
+            headers={""Content-Type"": ""application/json""},
+        ),
+    )
+
+    async with HomeWizardEnergyV2(""example.com"", token=""token"") as api:
+        batteries = await api.batteries(mode=Batteries.Mode.STANDBY)
+        assert batteries is not None
+        assert batteries == snapshot
+
+"
+
+LINK NUMBER 887
+Not enough lines
+
+LINK NUMBER 888
+Not enough lines
+
+LINK NUMBER 889
+Not enough lines
+
+LINK NUMBER 890
+Error fetching diff
+
+LINK NUMBER 891
+Error fetching diff
+
+LINK NUMBER 892
+Error fetching diff
+
+LINK NUMBER 893
+Not enough lines
+
+LINK NUMBER 894
+
+File path: packages/plugin-network-capture-browser/test/setup.ts
+"// make a test class that implements NetworkRequestEvent
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import {
+  BrowserClient,
+  BrowserConfig,
+  CookieStorage,
+  FetchTransport,
+  Logger,
+  LogLevel,
+  NetworkEventCallback,
+  networkObserver,
+  NetworkRequestEvent,
+} from '@amplitude/analytics-core';
+import { shouldTrackNetworkEvent } from '../../src/track-network-event';
+import { NetworkTrackingOptions } from '@amplitude/analytics-core/lib/esm/types/network-tracking';
+import { AmplitudeBrowser } from '@amplitude/analytics-browser';
+import { BrowserEnrichmentPlugin, networkCapturePlugin } from '../../src/network-capture-plugin';
+import { AMPLITUDE_NETWORK_REQUEST_EVENT } from '../../src/constants';
+import { VERSION } from '../../src/version';
+
+class MockNetworkRequestEvent implements NetworkRequestEvent {
+  constructor(
+    public url: string = 'https://example.com',
+    public type: string = 'fetch',
+    public method: string = 'GET',
+    public status: number = 200,
+    public duration: number = 100,
+    public responseBodySize: number = 100,
+    public requestBodySize: number = 100,
+    public requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    },
+    public startTime: number = Date.now(),
+    public timestamp: number = Date.now(),
+    public endTime: number = Date.now() + 100,
+  ) {
+    this.type = 'fetch';
+  }
+}
+
+const baseBrowserConfig: BrowserConfig = {
+  apiKey: '<FAKE_API_KEY>',
+  flushIntervalMillis: 0,
+  flushMaxRetries: 0,
+  flushQueueSize: 0,
+  logLevel: LogLevel.None,
+  loggerProvider: new Logger(),
+  offline: false,
+  optOut: false,
+  serverUrl: undefined,
+  transportProvider: new FetchTransport(),
+  useBatch: false,
+  cookieOptions: {
+    domain: '.amplitude.com',
+    expiration: 365,
+    sameSite: 'Lax',
+    secure: false,
+    upgrade: true,
+  },
+  cookieStorage: new CookieStorage(),
+  sessionTimeout: 30 * 60 * 1000,
+  trackingOptions: {
+    ipAddress: true,
+    language: true,
+    platform: true,
+  },
+};
+
+describe('track-network-event', () => {
+  let networkEvent: MockNetworkRequestEvent;
+  let localConfig: BrowserConfig;
+  beforeEach(() => {
+    localConfig = {
+      ...baseBrowserConfig,
+      autocapture: {
+        networkTracking: true,
+      },
+      networkTrackingOptions: {},
+    } as BrowserConfig;
+    networkEvent = new MockNetworkRequestEvent();
+  });
+
+  describe('trackNetworkEvent()', () => {
+    let client: BrowserClient;
+    let trackSpy: jest.SpyInstance;
+    let eventCallbacks: any[] = [];
+    const subscribe = jest.fn((cb: NetworkEventCallback) => {
+      eventCallbacks.push(cb);
+      return () => {
+        eventCallbacks = [];
+      };
+    });
+
+    let plugin: BrowserEnrichmentPlugin;
+
+    beforeEach(async () => {
+      client = new AmplitudeBrowser();
+      trackSpy = jest.spyOn(client, 'track');
+      client.init('<FAKE_API_KEY>', undefined, localConfig);
+      jest.spyOn(networkObserver, 'subscribe').mockImplementation(subscribe);
+      plugin = networkCapturePlugin();
+      await plugin.setup?.(localConfig, client);
+    });
+
+    afterEach(async () => {
+      await plugin?.teardown?.();
+    });
+
+    test('should track a network request event with status=500', async () => {
+      eventCallbacks.forEach((cb: NetworkEventCallback) => {
+        cb.callback({
+          url: 'https://example.com/track?hello=world#hash',
+          type: 'fetch',
+          method: 'POST',
+          status: 500,
+          duration: 100,
+          responseBodySize: 100,
+          requestBodySize: 100,
+          requestHeaders: {
+            'Content-Type': 'application/json',
+          },
+          startTime: Date.now(),
+          timestamp: Date.now(),
+          endTime: Date.now() + 100,
+        });
+      });
+      const networkEventCall = trackSpy.mock.calls.find((call) => {
+        return call[0] === AMPLITUDE_NETWORK_REQUEST_EVENT;
+      });
+      const [eventName, eventProperties] = networkEventCall;
+      expect(eventName).toBe(AMPLITUDE_NETWORK_REQUEST_EVENT);
+      expect(eventProperties).toEqual({
+        '[Amplitude] URL': 'https://example.com/track?hello=world#hash',
+        '[Amplitude] URL Query': 'hello=world',
+        '[Amplitude] URL Fragment': 'hash',
+        '[Amplitude] Request Method': 'POST',
+        '[Amplitude] Status Code': 500,
+        '[Amplitude] Start Time': expect.any(String),
+        '[Amplitude] Completion Time': expect.any(String),
+        '[Amplitude] Duration': expect.any(Number),
+        '[Amplitude] Request Body Size': 100,
+        '[Amplitude] Response Body Size': 100,
+      });
+    });
+
+    test('should track a network request event with status=500 and network request missing attributes', async () => {
+      eventCallbacks.forEach((cb: NetworkEventCallback) => {
+        cb.callback({
+          url: 'https://example.com/track?hello=world#hash',
+          type: 'fetch',
+          method: 'POST',
+          status: 500,
+          duration: 100,
+          requestHeaders: {
+            'Content-Type': 'application/json',
+          },
+          timestamp: Date.now(),
+        });
+      });
+      const networkEventCall = trackSpy.mock.calls.find((call) => {
+        return call[0] === AMPLITUDE_NETWORK_REQUEST_EVENT;
+      });
+      const [eventName, eventProperties] = networkEventCall;
+      expect(eventName).toBe(AMPLITUDE_NETWORK_REQUEST_EVENT);
+      expect(eventProperties).toEqual({
+        '[Amplitude] URL': 'https://example.com/track?hello=world#hash',
+        '[Amplitude] URL Query': 'hello=world',
+        '[Amplitude] URL Fragment': 'hash',
+        '[Amplitude] Request Method': 'POST',
+        '[Amplitude] Status Code': 500,
+        '[Amplitude] Start Time': undefined,
+        '[Amplitude] Completion Time': undefined,
+        '[Amplitude] Duration': expect.any(Number),
+        '[Amplitude] Request Body Size': undefined,
+        '[Amplitude] Response Body Size': undefined,
+      });
+    });
+
+    test('should not track a network request event with status=200', async () => {
+      eventCallbacks.forEach((cb: NetworkEventCallback) => {
+        cb.callback({
+          url: 'https://example.com/track?hello=world#hash',
+          type: 'fetch',
+          method: 'POST',
+          status: 200,
+          duration: 100,
+          responseBodySize: 100,
+          requestBodySize: 100,
+          requestHeaders: {
+            'Content-Type': 'application/json',
+          },
+          startTime: Date.now(),
+          timestamp: Date.now(),
+          endTime: Date.now() + 100,
+        });
+      });
+      const networkEventCall = trackSpy.mock.calls.find((call) => {
+        return call[0] === AMPLITUDE_NETWORK_REQUEST_EVENT;
+      });
+      expect(networkEventCall).toBeUndefined();
+    });
+  });
+
+  describe('shouldTrackNetworkEvent returns false when', () => {
+    test('domain is amplitude.com', () => {
+      networkEvent.url = 'https://api.amplitude.com/track';
+      expect(shouldTrackNetworkEvent(networkEvent)).toBe(false);
+    });
+
+    test('domain is in ignoreHosts', () => {
+      localConfig.networkTrackingOptions = { ignoreHosts: ['example.com'] };
+      networkEvent.url = 'https://example.com/track';
+      expect(shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions)).toBe(false);
+    });
+
+    test('domain matches a wildcard in ignoreHosts', () => {
+      localConfig.networkTrackingOptions = { ignoreHosts: ['*.example.com', 'dummy.url'] };
+      networkEvent.url = 'https://sub.example.com/track';
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(false);
+    });
+
+    test('host is not in one of the captureRules', () => {
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['example.com'],
+          },
+        ],
+      };
+      networkEvent.url = 'https://otherexample.com/apicall';
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(false);
+    });
+
+    test('status code is 403 and 400 is in the forbidden status codes', () => {
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['example.com'],
+            statusCodeRange: '404-599',
+          },
+        ],
+      };
+      networkEvent.url = 'https://example.com/track';
+      networkEvent.status = 403;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(false);
+    });
+
+    test('status code is 400 and no status code range is defined', () => {
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['example.com'],
+          },
+        ],
+      };
+      networkEvent.url = 'https://example.com/track';
+      networkEvent.status = 400;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(false);
+    });
+
+    test('status code is 200 and no captureRules are defined', () => {
+      networkEvent.url = 'https://notamplitude.com/track';
+      networkEvent.status = 200;
+      const result = shouldTrackNetworkEvent(
+        networkEvent,
+        localConfig.networkTrackingOptions as NetworkTrackingOptions,
+      );
+      expect(result).toBe(false);
+    });
+
+    test('status code is 0 and no captureRules are defined', () => {
+      networkEvent.url = 'https://notamplitude.com/track';
+      networkEvent.status = 0;
+      const result = shouldTrackNetworkEvent(
+        networkEvent,
+        localConfig.networkTrackingOptions as NetworkTrackingOptions,
+      );
+      expect(result).toBe(false);
+    });
+
+    test('host matches in captureRules but status code is not in the range', () => {
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['*'],
+            statusCodeRange: '200-299',
+          },
+          {
+            hosts: ['example.com'],
+            statusCodeRange: '500-599',
+          },
+        ],
+      };
+      networkEvent.url = 'https://example.com/track';
+      networkEvent.status = 200;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('shouldTrackNetworkEvent returns true when', () => {
+    test('domain is api.amplitude.com and ignoreAmplitudeRequests is false', () => {
+      localConfig.networkTrackingOptions = { ignoreAmplitudeRequests: false };
+      networkEvent.url = 'https://api.amplitude.com/track';
+      networkEvent.status = 500;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(true);
+    });
+
+    test('domain is amplitude.com and ignoreAmplitudeRequests is false', () => {
+      localConfig.networkTrackingOptions = { ignoreAmplitudeRequests: false };
+      networkEvent.url = 'https://amplitude.com/track';
+      networkEvent.status = 500;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(true);
+    });
+
+    test('status code is 500', () => {
+      networkEvent.url = 'https://notamplitude.com/track';
+      networkEvent.status = 500;
+      const result = shouldTrackNetworkEvent(
+        networkEvent,
+        localConfig.networkTrackingOptions as NetworkTrackingOptions,
+      );
+      expect(result).toBe(true);
+    });
+
+    test('status code is 0', () => {
+      networkEvent.url = 'https://notamplitude.com/track';
+      networkEvent.status = 0;
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['notamplitude.com'],
+            statusCodeRange: '0,400-499',
+          },
+        ],
+      };
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(true);
+    });
+
+    test('status code is 200 and 200 is allowed in captureRules', () => {
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['example.com'],
+            statusCodeRange: '200',
+          },
+        ],
+      };
+      networkEvent.url = 'https://example.com/track';
+      networkEvent.status = 200;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(true);
+    });
+
+    test('status code is 403 and 400 is within the statusCodeRange', () => {
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['example.com'],
+            statusCodeRange: '402-599',
+          },
+        ],
+      };
+      networkEvent.url = 'https://example.com/track';
+      networkEvent.status = 403;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(true);
+    });
+
+    test('host does not match with second capture rule but matches with first', () => {
+      localConfig.networkTrackingOptions = {
+        captureRules: [
+          {
+            hosts: ['*.example.com'],
+            statusCodeRange: '400-499',
+          },
+          {
+            hosts: ['otherexample.com'],
+            statusCodeRange: '400-599',
+          },
+        ],
+      };
+      networkEvent.url = 'https://some.example.com/track';
+      networkEvent.status = 403;
+      const result = shouldTrackNetworkEvent(networkEvent, localConfig.networkTrackingOptions);
+      expect(result).toBe(true);
+    });
+  });
+});
+
+describe('version', () => {
+  test('should return the plugin version', () => {
+    expect(VERSION != null).toBe(true);
+  });
+});"
+
+LINK NUMBER 895
+Not enough lines
+
+LINK NUMBER 896
+Not enough lines
+
+LINK NUMBER 897
+Error fetching diff
+
+LINK NUMBER 898
+Error fetching diff
+
+LINK NUMBER 899
+Error fetching diff
+
+LINK NUMBER 900
+Not enough lines
+
+LINK NUMBER 901
+Not enough lines
+
+LINK NUMBER 902
+Too many lines
+
+LINK NUMBER 903
+Too many lines
+
+LINK NUMBER 904
+Error fetching diff
+
+LINK NUMBER 905
+Error fetching diff
+
+LINK NUMBER 906
+Error fetching diff
+
+LINK NUMBER 907
+
+File path: src/internal/data-gathering/docker.go
+"func handleStats(jsonStats string) models.InfluxDbFields {
+	jsonLine := strings.Split(strings.TrimSpace(jsonStats), ""\n"")
+
+	fields := models.InfluxDbFields{}
+
+	for _, line := range jsonLine {
+		var DockerStat models.DockerStat
+
+		if err := json.Unmarshal([]byte(line), &DockerStat); err != nil {
+			log.Printf(""Error parsing JSON text '%s': %s\n"", line, err)
+			continue
+		}
+
+		parsedCPUPercentage, cpuParsingErr := parsePercentage(DockerStat.CPUPercentage)
+		parsedMemPercentage, memParsingErr := parsePercentage(DockerStat.MemoryPercentage)
+		parsedPidCount, pidParsingErr := strconv.Atoi(DockerStat.PIDs)
+
+		if cpuParsingErr != nil {
+			log.Printf(""Error parsing CPU percentage: %s\n"", cpuParsingErr)
+			continue
+		}
+
+		if memParsingErr != nil {
+			log.Printf(""Error parsing Memory percentage: %s\n"", memParsingErr)
+			continue
+		}
+
+		if pidParsingErr != nil {
+			log.Printf(""Error parsing PID count: %s\n"", pidParsingErr)
+			continue
+		}
+
+		if _, exists := fields[""cpu_usage_percentage""]; !exists {
+			fields[""cpu_usage_percentage""] = make([]models.InfluxDbTaggedValue, 0)
+		}
+		fields[""cpu_usage_percentage""] = append(fields[""cpu_usage_percentage""], models.InfluxDbTaggedValue{
+			Value: parsedCPUPercentage,
+			Tags: map[string]string{
+				""container_name"": DockerStat.Name,"
+
+LINK NUMBER 908
+Not enough lines
+
+LINK NUMBER 909
+Not enough lines
+
+LINK NUMBER 910
+Error fetching diff
+
+LINK NUMBER 911
+Error fetching diff
+
+LINK NUMBER 912
+Not enough lines
+
+LINK NUMBER 913
+Not enough lines
+
+LINK NUMBER 914
+
+File path: src/joystick_control/src/ArmIKMode.cpp
+"#include ""ArmIKMode.hpp""
+
+#include ""ArmHelpers.hpp""
+
+ArmIKMode::ArmIKMode(rclcpp::Node* node) : Mode(""IK Arm"", node) {
+  RCLCPP_INFO(node_->get_logger(), ""IK Arm Mode"");
+  loadParameters();
+
+  servo_client_ =
+      node_->create_client<interfaces::srv::MoveServo>(""servo_service"");
+  twist_pub_ = node_->create_publisher<geometry_msgs::msg::TwistStamped>(
+      ""/servo_node/delta_twist_cmds"", 10);
+  if (!ArmHelpers::start_moveit_servo(node_)) {
+    return;
+  }
+  frame_to_publish_ = CAM_FRAME_ID;
+  kServoMin = 0;
+  kServoMax = 180;
+  kClawMax = 62;
+  kClawMin = 8;
+  servoPos_ = kClawMax;
+  servoRequest(kServoPort, servoPos_, kServoMin, kServoMax);
+  buttonPressed_ = false;
+  swapButton_ = false;
+}
+
+void ArmIKMode::processJoystickInput(
+    std::shared_ptr<sensor_msgs::msg::Joy> joystickMsg) {
+  handleTwist(joystickMsg);
+}
+
+void ArmIKMode::handleTwist(
+    std::shared_ptr<sensor_msgs::msg::Joy> joystickMsg) {
+  geometry_msgs::msg::TwistStamped twist_msg;
+  twist_msg.header.stamp = node_->now();
+  twist_msg.header.frame_id = frame_to_publish_;
+
+  twist_msg.twist.linear.x = joystickMsg->axes[kxAxis];
+  twist_msg.twist.linear.y = -joystickMsg->axes[kyAxis];
+  twist_msg.twist.linear.z =
+      joystickMsg->buttons[kUpBut] - joystickMsg->buttons[kDownBut];
+  twist_msg.twist.angular.x = joystickMsg->axes[kAroundX];
+  twist_msg.twist.angular.y = joystickMsg->axes[kAroundY];
+  twist_msg.twist.angular.z = joystickMsg->axes[kAroundZ];
+
+  if (joystickMsg->buttons[kBase] == 1 && !swapButton_) {
+    frame_to_publish_ = BASE_FRAME_ID;
+    swapButton_ = true;
+  } else if (joystickMsg->buttons[kEEF] == 1 && !swapButton_) {
+    frame_to_publish_ = CAM_FRAME_ID;
+    swapButton_ = true;
+  } else if (!joystickMsg->buttons[kEEF] == 1 &&
+             joystickMsg->buttons[kBase] == 1) {
+    swapButton_ = false;
+  }
+  twist_pub_->publish(twist_msg);
+}
+void ArmIKMode::handleGripper(
+    std::shared_ptr<sensor_msgs::msg::Joy> joystickMsg) {
+  // Gripper. Will cycle between open, half open, and close on button release.
+  if (joystickMsg->buttons[kClawOpen] == 1 && !buttonPressed_) {
+    if (servoPos_ + ((kClawMax - kClawMin) / 2) < kClawMax + 1) {
+      buttonPressed_ = true;
+      servoPos_ = servoPos_ + ((kClawMax - kClawMin) / 2);
+      servoRequest(kServoPort, servoPos_, kClawMin, kClawMax);
+    } else {
+      buttonPressed_ = true;
+      RCLCPP_INFO(node_->get_logger(), ""Max Open"");
+      RCLCPP_INFO(node_->get_logger(), ""%d"", servoPos_);
+    }
+  } else if (joystickMsg->buttons[kClawClose] == 1 && !buttonPressed_) {
+    if (servoPos_ - ((kClawMax - kClawMin) / 2) > kClawMin - 1) {
+      buttonPressed_ = true;
+      servoPos_ = servoPos_ - ((kClawMax - kClawMin) / 2);
+      servoRequest(kServoPort, servoPos_, kClawMin, kClawMax);
+    } else {
+      buttonPressed_ = true;
+      RCLCPP_INFO(node_->get_logger(), ""Max Close"");
+      RCLCPP_INFO(node_->get_logger(), ""%d"", servoPos_);
+    }
+  } else if ((joystickMsg->buttons[kClawClose] == 0) &&
+             (joystickMsg->buttons[kClawOpen] == 0)) {
+    buttonPressed_ = false;
+  }
+}
+
+void ArmIKMode::declareParameters(rclcpp::Node* node) {
+  node->declare_parameter(""arm_ik_mode.x_axis"", 0);
+  node->declare_parameter(""arm_ik_mode.y_axis"", 1);
+  node->declare_parameter(""arm_ik_mode.up_button"", 2);
+  node->declare_parameter(""arm_ik_mode.down_button"", 3);
+  node->declare_parameter(""arm_ik_mode.rotate_around_y"", 4);
+  node->declare_parameter(""arm_ik_mode.rotate_around_x"", 5);
+  node->declare_parameter(""arm_ik_mode.rotate_around_z"", 6);
+  node->declare_parameter(""arm_ik_mode.open_claw"", 7);
+  node->declare_parameter(""arm_ik_mode.close_claw"", 8);
+  node->declare_parameter(""arm_ik_mode.base_frame"", 9);
+  node->declare_parameter(""arm_ik_mode.eef_frame"", 10);
+}
+
+void ArmIKMode::loadParameters() {
+  node_->get_parameter(""arm_ik_mode.x_axis"", kxAxis);
+  node_->get_parameter(""arm_ik_mode.y_axis"", kyAxis);
+  node_->get_parameter(""arm_ik_mode.up_button"", kUpBut);
+  node_->get_parameter(""arm_ik_mode.down_button"", kDownBut);
+  node_->get_parameter(""arm_ik_mode.rotate_around_y"", kAroundY);
+  node_->get_parameter(""arm_ik_mode.rotate_around_x"", kAroundX);
+  node_->get_parameter(""arm_ik_mode.rotate_around_z"", kAroundZ);
+  node_->get_parameter(""arm_ik_mode.open_claw"", kClawOpen);
+  node_->get_parameter(""arm_ik_mode.close_claw"", kClawClose);
+  node_->get_parameter(""arm_ik_mode.base_frame"", kBase);
+  node_->get_parameter(""arm_ik_mode.eef_frame"", kEEF);
+}
+
+interfaces::srv::MoveServo::Response ArmIKMode::sendRequest(int port, int pos,
+                                                            int min,
+                                                            int max) const {
+  auto request = std::make_shared<interfaces::srv::MoveServo::Request>();
+  request->port = port;
+  request->pos = pos;
+  request->min = min;
+  request->max = max;
+
+  // Wait for the service to be available
+  if (!servo_client_->wait_for_service(std::chrono::seconds(1))) {
+    RCLCPP_WARN(node_->get_logger(), ""Service not available after waiting"");
+    return interfaces::srv::MoveServo::Response();
+  }
+
+  auto future = servo_client_->async_send_request(request);
+
+  // Wait for the result (with timeout)
+  if (rclcpp::spin_until_future_complete(node_->get_node_base_interface(),
+                                         future, std::chrono::seconds(1)) !=
+      rclcpp::FutureReturnCode::SUCCESS) {
+    RCLCPP_ERROR(node_->get_logger(), ""Service call failed"");
+    return interfaces::srv::MoveServo::Response();
+  }
+
+  return *future.get();
+}
+
+void ArmIKMode::servoRequest(int req_port, int req_pos, int req_min,
+                             int req_max) const {
+  auto request = std::make_shared<interfaces::srv::MoveServo::Request>();
+  request->port = req_port;
+  request->pos = req_pos;
+  request->min = req_min;
+  request->max = req_max;
+
+  if (!servo_client_->wait_for_service(std::chrono::seconds(1))) {
+    RCLCPP_WARN(node_->get_logger(), ""Service not available"");
+    return;
+  }
+
+  // Simple callback that just logs errors
+  auto callback =
+      [this](rclcpp::Client<interfaces::srv::MoveServo>::SharedFuture future) {
+        try {
+          auto response = future.get();
+          if (!response->status) {
+            RCLCPP_ERROR(node_->get_logger(), ""Servo move failed"");
+          }
+        } catch (const std::exception& e) {
+          RCLCPP_ERROR(node_->get_logger(), ""Service call failed: %s"",
+                       e.what());
+        }
+      };
+
+  servo_client_->async_send_request(request, callback);
+}"
+
+LINK NUMBER 915
+
+File path: app/static/js/pit-scouting/list.js
+"
+    const searchInput = document.getElementById('teamSearchInput');
+    const tableRows = document.querySelectorAll('tbody tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = searchInput.value.trim();
+        
+        tableRows.forEach(row => {
+            const teamNumberCell = row.querySelector('td:first-child');
+            if (teamNumberCell) {
+                const teamNumberText = teamNumberCell.textContent.trim();
+                
+                // Show/hide the row based on whether the team number contains the search term
+                row.style.display = searchTerm === '' || teamNumberText.includes(searchTerm) ? '' : 'none';
+            }
+        });
+    });"
+
+LINK NUMBER 916
+Error fetching diff
+
+LINK NUMBER 917
+Error fetching diff
+
+LINK NUMBER 918
+Error fetching diff
+
+LINK NUMBER 919
+Not enough lines
+
+LINK NUMBER 920
+Not enough lines
+
+LINK NUMBER 921
+
+File path: src/app/app.component.spec.ts
+"interface MockSignal {
+  (): any; // Callable signature
+  set: jasmine.Spy<(val: any) => void>;
+  update: jasmine.Spy<() => void>;
+  mutate: jasmine.Spy<() => void>;
+}
+"
+
+LINK NUMBER 922
+Not enough lines
+
+LINK NUMBER 923
+Error fetching diff
+
+LINK NUMBER 924
+Error fetching diff
+
+LINK NUMBER 925
+Error fetching diff
+
+LINK NUMBER 926
+
+File path: website/campaign/scripts/test-vector-search.ts
+"import { searchKnowledgeEmbeddings, enhancedSearchKnowledgeEmbeddings, KnowledgeEmbeddingWithSimilarity, } from '../src/app/services/vectorStore';
+
+// 用于存储测试开始时间
+const testStartTime = Date.now();
+
+interface SearchResult {
+  query: string;
+  threshold?: number;
+  results: KnowledgeEmbeddingWithSimilarity[];
+  duration: number;
+}
+
+/**
+ * Test vector search functionality with various queries
+ */
+async function testVectorSearch() {
+  console.log('=== Testing Vector Search Functionality ===');
+  console.log(`🕒 Test started at: ${new Date().toISOString()}`);
+  
+  // Test queries - include both English and Chinese variants
+  const queries = [
+    // English queries
+    { query: 'What is Prompt is law?', threshold: 0.3, limit: 3 },
+    { query: 'Prompt is law', threshold: 0.3, limit: 3 },
+    { query: 'Prompt is law', threshold: 0.3, limit: 3 }, // Lower threshold
+    
+    // Chinese queries
+    { query: '什么是 Prompt is law?', threshold: 0.3, limit: 3 },
+    { query: '什么是 Prompt is law?', threshold: 0.3, limit: 3 }, // Lower threshold
+    { query: 'Prompt is law 是什么?', threshold: 0.3, limit: 3 },
+    
+    // Additional variations
+    { query: 'prompt engineering', threshold: 0.3, limit: 3 },
+    { query: '提示工程', threshold: 0.3, limit: 3 },
+    
+    // 新增测试用例 - 特定领域问题
+    { query: 'How to use prompts effectively?', threshold: 0.5, limit: 5 },
+    { query: '如何有效地使用提示词？', threshold: 0.5, limit: 5 },
+    { query: 'Examples of good prompts', threshold: 0.6, limit: 3 },
+    { query: '好的提示词例子', threshold: 0.6, limit: 3 },
+    
+    // 边缘情况测试
+    { query: '', threshold: 0.5, limit: 3 }, // 空查询
+    { query: '          ', threshold: 0.5, limit: 3 }, // 只有空格
+    { query: 'abcdefghijklmnopqrstuvwxyz', threshold: 0.4, limit: 3 }, // 随机字符
+    { query: '!@#$%^&*()', threshold: 0.4, limit: 3 }, // 特殊字符
+    
+    // 多语言混合查询
+    { query: 'Prompt engineering 提示工程 best practices', threshold: 0.5, limit: 3 },
+    { query: '如何使用 prompt engineering to improve results', threshold: 0.5, limit: 3 },
+  ];
+  
+  // 存储结果用于比较
+  const allResults = {
+    standard: [] as SearchResult[],
+    enhanced: [] as SearchResult[]
+  };
+  
+  // First test standard search
+  console.log('\n🔍 STANDARD SEARCH TEST');
+  
+  // Run searches for each query
+  for (const { query, threshold, limit } of queries) {
+    console.log(`\n--- Testing query: ""${query}"" (threshold: ${threshold}) ---`);
+    
+    try {
+      console.log(`🕒 Search started at: ${new Date().toISOString()}`);
+      const startTime = Date.now();
+      
+      // 记录查询参数
+      console.log(`Query parameters: { query: ""${query}"", threshold: ${threshold}, limit: ${limit} }`);
+      
+      const results = await searchKnowledgeEmbeddings(query, limit, threshold);
+      const duration = Date.now() - startTime;
+      // 保存结果用于后续比较
+      allResults.standard.push({
+        query,
+        threshold,
+        results,
+        duration
+      });
+      
+      if (results.length === 0) {
+        console.log(`❌ No results found for query: ""${query}"" (search took ${duration}ms)`);
+      } else {
+        console.log(`✅ Found ${results.length} results in ${duration}ms:`);
+        
+        results.forEach((result, index) => {
+          console.log(`\nResult #${index + 1} (similarity: ${(result.similarity * 100).toFixed(2)}%)`);
+          console.log(`Title: ${result.title}`);
+          console.log(`Description: ${result.description?.substring(0, 100)}${result.description && result.description.length > 100 ? '...' : ''}`);
+          console.log(`Tags: ${result.tags?.join(', ') || 'none'}`);
+          console.log(`ID: ${result.airtable_id}`);
+          
+          // 添加内容长度信息
+          if (result.content) {
+            console.log(`Content length: ${result.content.length} characters`);
+          }
+          
+          // 添加结果对象的调试信息
+          console.log('Debug - Result keys:', Object.keys(result));
+        });
+      }
+    } catch (error) {
+      console.error(`Error searching for query ""${query}"":`, error);
+      console.error(`Stack trace:`, error instanceof Error ? error.stack : String(error));
+    }
+  }
+  
+  // Then test enhanced search
+  console.log('\n\n🔍 ENHANCED SEARCH TEST');
+  
+  // Test enhanced search with the same queries
+  for (const { query, limit } of queries) {
+    console.log(`\n--- Testing enhanced query: ""${query}"" ---`);
+    
+    try {
+      console.log(`🕒 Enhanced search started at: ${new Date().toISOString()}`);
+      const startTime = Date.now();
+      
+      // 记录查询参数
+      console.log(`Query parameters: { query: ""${query}"", limit: ${limit} }`);
+      
+      const results = await enhancedSearchKnowledgeEmbeddings(query, limit);
+      const duration = Date.now() - startTime;
+      
+      // 保存结果用于后续比较
+      allResults.enhanced.push({
+        query,
+        results,
+        duration
+      });
+      
+      if (results.length === 0) {
+        console.log(`❌ No results found for enhanced query: ""${query}"" (search took ${duration}ms)`);
+      } else {
+        console.log(`✅ Found ${results.length} results in ${duration}ms:`);
+        
+        results.forEach((result, index) => {
+          console.log(`\nResult #${index + 1} (similarity: ${(result.similarity * 100).toFixed(2)}%)`);
+          console.log(`Title: ${result.title}`);
+          console.log(`Description: ${result.description?.substring(0, 100)}${result.description && result.description.length > 100 ? '...' : ''}`);
+          console.log(`Tags: ${result.tags?.join(', ') || 'none'}`);
+          console.log(`ID: ${result.airtable_id}`);
+          
+          // 添加内容长度信息
+          if (result.content) {
+            console.log(`Content length: ${result.content.length} characters`);
+          }
+          
+          // 添加结果对象的调试信息
+          console.log('Debug - Result keys:', Object.keys(result));
+        });
+      }
+    } catch (error) {
+      console.error(`Error searching for enhanced query ""${query}"":`, error);
+      console.error(`Stack trace:`, error instanceof Error ? error.stack : String(error));
+    }
+  }
+  
+  // 比较标准搜索和增强搜索结果
+  console.log('\n\n🔄 COMPARING STANDARD VS ENHANCED SEARCH RESULTS');
+  
+  for (let i = 0; i < queries.length; i++) {
+    const query = queries[i].query;
+    const standardResults = allResults.standard[i];
+    const enhancedResults = allResults.enhanced[i];
+    
+    console.log(`\n--- Comparison for query: ""${query}"" ---`);
+    console.log(`Standard search: ${standardResults.results.length} results in ${standardResults.duration}ms`);
+    console.log(`Enhanced search: ${enhancedResults.results.length} results in ${enhancedResults.duration}ms`);
+    
+    // 比较顶部结果
+    if (standardResults.results.length > 0 && enhancedResults.results.length > 0) {
+      console.log('\nTop result comparison:');
+      console.log(`Standard top result: ""${standardResults.results[0].title}"" (${(standardResults.results[0].similarity * 100).toFixed(2)}%)`);
+      console.log(`Enhanced top result: ""${enhancedResults.results[0].title}"" (${(enhancedResults.results[0].similarity * 100).toFixed(2)}%)`);
+      
+      // 检查顶部结果是否相同
+      const sameTopResult = standardResults.results[0].airtable_id === enhancedResults.results[0].airtable_id;
+      console.log(`Same top result: ${sameTopResult ? '✅ Yes' : '❌ No'}`);
+      
+      // 查找独有结果
+      const standardIds = new Set(standardResults.results.map(r => r.airtable_id));
+      const enhancedIds = new Set(enhancedResults.results.map(r => r.airtable_id));
+      
+      const uniqueToStandard = [...standardIds].filter(id => !enhancedIds.has(id));
+      const uniqueToEnhanced = [...enhancedIds].filter(id => !standardIds.has(id));
+      
+      console.log(`Results unique to standard search: ${uniqueToStandard.length}`);
+      console.log(`Results unique to enhanced search: ${uniqueToEnhanced.length}`);
+    }
+    
+    // 性能比较
+    const perfDiff = enhancedResults.duration - standardResults.duration;
+    console.log(`Performance difference: ${perfDiff}ms (${perfDiff > 0 ? 'enhanced is slower' : 'enhanced is faster'})`);
+  }
+  
+  // 生成统计摘要
+  console.log('\n\n📊 SUMMARY STATISTICS');
+  
+  const standardTotalTime = allResults.standard.reduce((sum, item) => sum + item.duration, 0);
+  const enhancedTotalTime = allResults.enhanced.reduce((sum, item) => sum + item.duration, 0);
+  
+  const standardAvgTime = (standardTotalTime / allResults.standard.length).toFixed(2);
+  const enhancedAvgTime = (enhancedTotalTime / allResults.enhanced.length).toFixed(2);
+  
+  console.log(`Average standard search time: ${standardAvgTime}ms`);
+  console.log(`Average enhanced search time: ${enhancedAvgTime}ms`);
+  
+  const standardTotalResults = allResults.standard.reduce((sum, item) => sum + item.results.length, 0);
+  const enhancedTotalResults = allResults.enhanced.reduce((sum, item) => sum + item.results.length, 0);
+  
+  console.log(`Total standard search results: ${standardTotalResults}`);
+  console.log(`Total enhanced search results: ${enhancedTotalResults}`);
+  
+  // 记录没有结果的查询
+  const queriesWithNoStandardResults = allResults.standard
+    .filter(item => item.results.length === 0)
+    .map(item => item.query);
+  
+  const queriesWithNoEnhancedResults = allResults.enhanced
+    .filter(item => item.results.length === 0)
+    .map(item => item.query);
+  
+  console.log(`\nQueries with no standard results: ${queriesWithNoStandardResults.length > 0 ? queriesWithNoStandardResults.join(', ') : 'None'}`);
+  console.log(`Queries with no enhanced results: ${queriesWithNoEnhancedResults.length > 0 ? queriesWithNoEnhancedResults.join(', ') : 'None'}`);
+  
+  console.log('\n=== Vector Search Testing Complete ===');
+  console.log(`🕒 Test finished at: ${new Date().toISOString()}`);
+  console.log(`🕒 Total test duration: ${(Date.now() - testStartTime) / 1000}s`);
+}
+
+/**
+ * 使用单个查询进行详细调试测试
+ * @param query 测试的查询字符串
+ * @param threshold 相似度阈值
+ * @param limit 最大结果数量
+ */
+async function testSingleQuery(query: string, threshold: number = 0.5, limit: number = 5) {
+  console.log(`=== Detailed Test for Query: ""${query}"" ===`);
+  
+  try {
+    console.log('\n🔍 STANDARD SEARCH:');
+    console.log(`Parameters: threshold=${threshold}, limit=${limit}`);
+    
+    const startTime = Date.now();
+    const results = await searchKnowledgeEmbeddings(query, limit, threshold);
+    const duration = Date.now() - startTime;
+    
+    console.log(`Search completed in ${duration}ms, found ${results.length} results`);
+    
+    if (results.length === 0) {
+      console.log('❌ No results found');
+    } else {
+      console.log('\nResults:');
+      results.forEach((result, index) => {
+        console.log(`\n--- Result #${index + 1} ---`);
+        console.log(`Similarity: ${(result.similarity * 100).toFixed(2)}%`);
+        console.log(`Title: ${result.title}`);
+        console.log(`ID: ${result.airtable_id}`);
+        console.log(`Description: ${result.description?.substring(0, 150)}${result.description && result.description.length > 150 ? '...' : ''}`);
+        console.log(`Tags: ${result.tags?.join(', ') || 'none'}`);
+        
+        // 显示完整内容用于详细调试
+        console.log(`\nFull Content (${result.content?.length || 0} chars):`);
+        console.log(result.content || '[No content]');
+        
+        // 显示所有属性
+        console.log('\nAll properties:');
+        for (const [key, value] of Object.entries(result)) {
+          const displayValue = typeof value === 'string' 
+            ? value.substring(0, 50) + (value.length > 50 ? '...' : '')
+            : value;
+          console.log(`- ${key}: ${displayValue}`);
+        }
+      });
+    }
+    
+    // 为同一查询尝试增强搜索
+    console.log('\n\n🔍 ENHANCED SEARCH:');
+    
+    const enhancedStartTime = Date.now();
+    const enhancedResults = await enhancedSearchKnowledgeEmbeddings(query, limit);
+    const enhancedDuration = Date.now() - enhancedStartTime;
+    
+    console.log(`Enhanced search completed in ${enhancedDuration}ms, found ${enhancedResults.length} results`);
+    
+    if (enhancedResults.length === 0) {
+      console.log('❌ No enhanced results found');
+    } else {
+      console.log('\nEnhanced Results:');
+      enhancedResults.forEach((result, index) => {
+        console.log(`\n--- Result #${index + 1} ---`);
+        console.log(`Similarity: ${(result.similarity * 100).toFixed(2)}%`);
+        console.log(`Title: ${result.title}`);
+        console.log(`ID: ${result.airtable_id}`);
+        console.log(`Description: ${result.description?.substring(0, 150)}${result.description && result.description.length > 150 ? '...' : ''}`);
+        console.log(`Tags: ${result.tags?.join(', ') || 'none'}`);
+      });
+    }
+    
+  } catch (error) {
+    console.error(`Error during detailed test:`, error);
+    console.error(`Stack trace:`, error instanceof Error ? error.stack : String(error));
+  }
+}
+
+// 选择要运行的测试
+const testMode = process.env.TEST_MODE || 'full';
+const testQuery = process.env.TEST_QUERY || 'What is Prompt is law?';
+const testThreshold = parseFloat(process.env.TEST_THRESHOLD || '0.5');
+const testLimit = parseInt(process.env.TEST_LIMIT || '5');
+
+// 运行选定的测试
+if (testMode === 'single') {
+  console.log(`Running single query test with: ""${testQuery}""`);
+  testSingleQuery(testQuery, testThreshold, testLimit)
+    .then(() => {
+      console.log('Single query test completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Single query test failed:', error);
+      process.exit(1);
+    });
+} else {
+  // 运行完整测试套件
+  testVectorSearch()
+    .then(() => {
+      console.log('Testing completed successfully');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Testing failed:', error);
+      process.exit(1);
+    });
+}"
+
+LINK NUMBER 927
+Too many lines
+
+LINK NUMBER 928
+Not enough lines
+
+LINK NUMBER 929
+
+File path: scripts/readme-gen.ts
+"// This script generates two JSON files: packages-list.json and categories-list.json, which serve as collections for package and category data.
+// It reads category configurations from a predefined file and iterates through each category.
+// For each category, it recursively scans the corresponding directory for JSON files, validates them using the MCPServerPackageConfigSchema, and adds them to the packages list.
+// It also associates the packages with their respective categories and ensures no duplicate keys exist.
+// Finally, it writes the generated data to the specified output files in the collections directory.
+
+import * as fs from 'fs';
+import * as path from 'path';
+import { MCPServerPackageConfigSchema, type CategoryConfig } from '@toolsdk.ai/registry/types';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const categoryConfigs: CategoryConfig[] = require('../config/categories').default;
+
+const packagesDir = './packages';
+const pacakgesListFile = './indexes/packages-list.json';
+const categoriesListFile = './indexes/categories-list.json';
+
+async function generatePackagesList() {
+  const packagesList: Record<string, { path: string }> = {};
+  const categoriesList: Record<string, { config: CategoryConfig; packagesList: string[] }> = {};
+
+  function traverseDirectory(directory: string, categoryName: string) {
+    const entries = fs.readdirSync(directory);
+
+    for (const entry of entries) {
+      const entryPath = path.join(directory, entry);
+      if (fs.statSync(entryPath).isFile() && entry.endsWith('.json')) {
+        const fileContent = fs.readFileSync(entryPath, 'utf-8');
+        const parsedContent = MCPServerPackageConfigSchema.parse(JSON.parse(fileContent));
+        if (parsedContent.name) {
+          const key = parsedContent.key || parsedContent.name;
+          if (key in packagesList) {
+            throw new Error(`Duplicate key detected: ""${key}"" in file ""${entryPath}""`);
+          }
+          const relativePath = path.relative(packagesDir, entryPath);
+          packagesList[key] = { path: relativePath };
+
+          // Add to the category's packages list
+          if (!categoriesList[categoryName]) {
+            throw new Error(`Category ""${categoryName}"" not found in categories list.`);
+          }
+          categoriesList[categoryName].packagesList.push(key);
+        }
+      } else if (fs.statSync(entryPath).isDirectory()) {
+        traverseDirectory(entryPath, categoryName);
+      }
+    }
+  }
+
+  // const categoryConfigs: CategoryConfig[] = (await import(categoryCfg)).default;
+
+  for (const category of categoryConfigs) {
+    categoriesList[category.key] = { config: category, packagesList: [] };
+
+    const categoryDir = path.join(packagesDir, category.key);
+    if (fs.existsSync(categoryDir)) {
+      traverseDirectory(categoryDir, category.key);
+    }
+  }
+
+  fs.writeFileSync(pacakgesListFile, JSON.stringify(packagesList, null, 2), 'utf-8');
+  fs.writeFileSync(categoriesListFile, JSON.stringify(categoriesList, null, 2), 'utf-8');
+  console.log(`Generated packages list at ${pacakgesListFile}`);
+  console.log(`Generated categories list at ${categoriesListFile}`);
+}
+
+generatePackagesList();"
+
+LINK NUMBER 930
+Error fetching diff
+
+LINK NUMBER 931
+Error fetching diff
+
+LINK NUMBER 932
+Error fetching diff
+
+LINK NUMBER 933
+Not enough lines
+
+LINK NUMBER 934
+Not enough lines
+
+LINK NUMBER 935
+Not enough lines
+
+LINK NUMBER 936
+
+File path: Mentor-Matching-Platform/server/routes/sessions.js
+"    const { role } = req.body;
+    const allowedRoles = ['mentor', 'mentee'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Allowed values are ""mentor"" or ""mentee"".' });
+    }"
+
+LINK NUMBER 937
+Error fetching diff
+
+LINK NUMBER 938
+Error fetching diff
+
+LINK NUMBER 939
+Error fetching diff
+
+LINK NUMBER 940
+Not enough lines
+
+LINK NUMBER 941
+
+File path: main.py
+"    """"""Laravel 원본 문서를 현재 프로젝트에 덮어쓰고, 변경사항을 번역 및 동기화하는 함수
+    
+    주요 기능:
+        1. Laravel 원본 문서를 클론하여 현재 프로젝트에 덮어씀.
+        2. 변경된 마크다운 파일을 자동으로 번역.
+        3. Git을 사용하여 변경사항을 동기화.
+    """""""
+
+LINK NUMBER 942
+Not enough lines
+
+LINK NUMBER 943
+Not enough lines
+
+LINK NUMBER 944
+Error fetching diff
+
+LINK NUMBER 945
+Error fetching diff
+
+LINK NUMBER 946
+Error fetching diff
+
+LINK NUMBER 947
+Not enough lines
+
+LINK NUMBER 948
+Not enough lines
+
+LINK NUMBER 949
+
+File path: src/hooks/useStreamingFetch.ts
+"import { ReactNode, useEffect, useState } from ""react"";
+import { DataContext } from ""./DataContext"";
+import { useStreamingFetch } from ""./hooks/useStreamingFetch"";
+import { DataContextType, LogItemDataWithId } from ""./type"";
+
+/**
+ * DataProvider component that fetches log data from a given URL and provides it to its children.
+ * It uses the useStreamingFetch hook to handle the fetching logic.
+ *
+ * @param {ReactNode} children - The child components that will have access to the fetched data.
+ * @param {string} url - The URL from which to fetch the log data. Defaults to a specific S3 URL.
+ */
+export const DataProvider: React.FC<{ children: ReactNode; url?: string }> = ({
+  children,
+  url = ""https://s3.amazonaws.com/io.cribl.c021.takehome/cribl.log"",
+}) => {
+  // TODO: Add delayBetweenRead to the useStreamingFetch hook
+  // TODO: Use requestIdleCallback to parse the data when the items is not empty
+  // TODO: Add useDeferredValue to the items state
+  const [items, setItmes] = useState<DataContextType[""items""]>([]);
+  const [parsedIndex, setParsedIndex] = useState(0);
+
+  const { data, loading, error, lastModified, refetch } = useStreamingFetch(url);
+
+  useEffect(() => {
+    if (parsedIndex < data.length) {
+      const newItems = data
+        .slice(parsedIndex)
+        .map((item, index): LogItemDataWithId | null => {
+          try {
+            return {
+              data: JSON.parse(item),
+              id: `${lastModified}-${index + parsedIndex}`,
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean) as LogItemDataWithId[];
+      setItmes((prev) => [...prev, ...newItems]);
+      setParsedIndex(data.length);
+    }
+  }, [data, lastModified, parsedIndex]);
+
+  const value: DataContextType = {
+    items,
+    loading,
+    error,
+    refetch,
+  };
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+};"
+
+LINK NUMBER 950
+Not enough lines
+
+LINK NUMBER 951
+Error fetching diff
+
+LINK NUMBER 952
+Error fetching diff
+
+LINK NUMBER 953
+Error fetching diff
+
+LINK NUMBER 954
+Not enough lines
+
+LINK NUMBER 955
+Not enough lines
+
+LINK NUMBER 956
+Not enough lines
+
+LINK NUMBER 957
+Not enough lines
+
+LINK NUMBER 958
+Error fetching diff
+
+LINK NUMBER 959
+Error fetching diff
+
+LINK NUMBER 960
+Error fetching diff
+
+LINK NUMBER 961
+Not enough lines
+
+LINK NUMBER 962
+Not enough lines
+
+LINK NUMBER 963
+Not enough lines
+
+LINK NUMBER 964
+Not enough lines
+
+LINK NUMBER 965
+Error fetching diff
+
+LINK NUMBER 966
+Error fetching diff
+
+LINK NUMBER 967
+Error fetching diff
+
+LINK NUMBER 968
+Not enough lines
+
+LINK NUMBER 969
+
+File path: apps/web/src/assets/get-started/index.ts
+"/**
+ * A collection of web-compatible face/character emojis
+ */
+export const emojis = [
+    '😀',
+    '😃',
+    '😄',
+    '😁',
+    '😆',
+    '😅',
+    '😂',
+    '🤣',
+    '🥲',
+    '🥹',
+    '☺️',
+    '😊',
+    '😇',
+    '🙂',
+    '🙃',
+    '😉',
+    '😌',
+    '😍',
+    '🥰',
+    '😘',
+    '😗',
+    '😙',
+    '😚',
+    '😋',
+    '😛',
+    '😝',
+    '😜',
+    '🤪',
+    '🤨',
+    '🧐',
+    '🤓',
+    '😎',
+    '🥸',
+    '🤩',
+    '🥳',
+    '🙂‍↕️',
+    '😏',
+    '😒',
+    '🙂‍↔️',
+    '😞',
+    '😔',
+    '😟',
+    '😕',
+    '🙁',
+    '☹️',
+    '😣',
+    '😖',
+    '😫',
+    '😩',
+    '🥺',
+    '😢',
+    '😭',
+    '😮‍💨',
+    '😤',
+    '😠',
+    '😡',
+    '🤬',
+    '🤯',
+    '😳',
+    '🥵',
+    '🥶',
+    '😱',
+    '😨',
+    '😰',
+    '😥',
+    '😓',
+    '🫣',
+    '🤗',
+    '🫡',
+    '🤔',
+    '🫢',
+    '🤭',
+    '🤫',
+    '🤥',
+    '😶',
+    '😶‍🌫️',
+    '😐',
+    '😑',
+    '😬',
+    '🫨',
+    '🫠',
+    '🙄',
+    '😯',
+    '😦',
+    '😧',
+    '😮',
+    '😲',
+    '🥱',
+    '😴',
+    '🤤',
+    '😪',
+    '😵',
+    '😵‍💫',
+    '🫥',
+    '🤐',
+    '🥴',
+    '🤢',
+    '🤮',
+    '🤧',
+    '😷',
+    '🤒',
+    '🤕',
+    '🤑',
+    '🤠',
+    '😈',
+    '👿',
+    '👹',
+    '👺',
+    '🤡',
+    '💩',
+    '👻',
+    '💀',
+    '☠️',
+    '👽',
+    '👾',
+    '🤖',
+    '🎃',
+    '😺',
+    '😸',
+    '😹',
+    '😻',
+    '😼',
+    '😽',
+    '🙀',
+    '😿'
+];
+
+
+export default emojis;"
+
+LINK NUMBER 970
+Not enough lines
+
+LINK NUMBER 971
+
+File path: src/main/java/com/caroadmap/FirebaseDatabase.java
+"import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+
+import java.util.ArrayList;"
+
+LINK NUMBER 972
+Error fetching diff
+
+LINK NUMBER 973
+Error fetching diff
+
+LINK NUMBER 974
+Error fetching diff
+
+LINK NUMBER 975
+
+File path: src/any_agent/tracing/exporter.py
+"    def print_to_console(self, span_kind: str, interaction: Mapping[str, Any]) -> None:
+        """"""Print the span to the console.""""""
+        if not self.console:
+            msg = ""Console is not initialized""
+            raise RuntimeError(msg)
+        style = getattr(self.tracing_config, span_kind.lower(), None)
+        if not style or interaction == {}:
+            return
+
+        self.console.rule(span_kind, style=style)
+
+        for key, value in interaction.items():
+            if key == ""output"":
+                self.console.print(
+                    Panel(
+                        Markdown(str(value or """")),
+                        title=""Output"",
+                    ),
+                )
+            else:
+                self.console.print(f""{key}: {value}"")
+
+        self.console.rule(style=style)
+"
+
+LINK NUMBER 976
+Not enough lines
+
+LINK NUMBER 977
+
+File path: web/service/fetch.ts
+"    fetch(resource: RequestInfo | URL, options?: RequestInit) {
+      if (resource instanceof Request && options) {
+        const mergedHeaders = new Headers(options.headers || {})
+        resource.headers.forEach((value, key) => {
+          mergedHeaders.append(key, value)
+        })
+        options.headers = mergedHeaders
+      }
+      return globalThis.fetch(resource, options)
+    },"
+
+LINK NUMBER 978
+
+File path: services/121-service/src/exchange-rates/exchange-rates.controller.ts
+"      .catch((error) => {
+        console.error(
+          'Error: Exchange-Rates - retrieveAndStoreAllExchangeRates',
+          error,
+        );
+      })"
+
+LINK NUMBER 979
+Error fetching diff
+
+LINK NUMBER 980
+Error fetching diff
+
+LINK NUMBER 981
+Error fetching diff
+
+LINK NUMBER 982
+Not enough lines
+
+LINK NUMBER 983
+Not enough lines
+
+LINK NUMBER 984
+
+File path: src/tests/integration/utils.py
+"from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+import pytest
+from pyk.proof import ProofStatus
+
+from kriscv.symtools import SymTools
+
+from .utils import TEST_DATA_DIR
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import Final
+
+
+SPEC_DIR: Final = TEST_DATA_DIR / 'specs'
+
+
+@dataclass
+class SpecLoader:
+    temp_dir: Path
+
+    def __call__(self, file_name: str) -> Path:
+        import shutil
+
+        res = self.temp_dir / file_name
+        shutil.copy(SPEC_DIR / file_name, res)
+        return res
+
+
+@pytest.fixture
+def load_spec(tmp_path: Path) -> SpecLoader:
+    return SpecLoader(temp_dir=tmp_path)
+
+
+@pytest.fixture
+def symtools(tmp_path: Path) -> SymTools:
+    return SymTools.default(proof_dir=tmp_path)
+
+
+def test_add(
+    load_spec: SpecLoader,
+    symtools: SymTools,
+) -> None:
+    # Given
+    spec_file = load_spec('add-spec.k')
+
+    # When
+    proof = symtools.prove(
+        spec_file=spec_file,
+        spec_module='ADD-SPEC',
+        claim_id='ADD-SPEC.add',
+    )
+
+    # Then
+    assert proof.status == ProofStatus.PASSED"
+
+LINK NUMBER 985
+
+File path: src/web/static/js/walletManager.js
+"            // Get current ETH price with safety check
+            const ethPrice = window.walletBalances.ethusd || 0;
+            if (ethPrice <= 0 && document.querySelector('[data-recommended-action=""SELL""]')) {
+                showNotification('Cannot test SELL notification: ETH price data not available', 'warning');
+                return;
+            }
+            "
+
+LINK NUMBER 986
+Error fetching diff
+
+LINK NUMBER 987
+Error fetching diff
+
+LINK NUMBER 988
+Error fetching diff
+
+LINK NUMBER 989
+Not enough lines
+
+LINK NUMBER 990
+
+File path: systemd/tray.go
+"package systemd
+
+import (
+	""errors""
+	""testing""
+
+	""github.com/ParetoSecurity/agent/shared""
+)
+
+func TestIsTimerEnabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		mocks    []shared.RunCommandMock
+		expected bool
+	}{
+		{
+			name: ""both services enabled"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     ""enabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     ""enabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.service""},
+					Err:     nil,
+				},
+			},
+			expected: true,
+		},
+		{
+			name: ""timer disabled"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     ""disabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     ""enabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.service""},
+					Err:     nil,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: ""service disabled"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     ""enabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     ""disabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.service""},
+					Err:     nil,
+				},
+			},
+			expected: false,
+		},
+		{
+			name: ""both services disabled"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     ""disabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     ""disabled"",
+					Args:    []string{""--user"", ""is-enabled"", ""paretosecurity-user.service""},
+					Err:     nil,
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mocks
+			shared.RunCommandMocks = tt.mocks
+
+			// Run test
+			result := IsTimerEnabled()
+
+			// Check result
+			if result != tt.expected {
+				t.Errorf(""IsTimerEnabled() = %v, want %v"", result, tt.expected)
+			}
+		})
+	}
+}
+func TestEnableTimer(t *testing.T) {
+	tests := []struct {
+		name          string
+		mocks         []shared.RunCommandMock
+		expectedError bool
+	}{
+		{
+			name: ""successfully enable both"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""enable"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""enable"", ""paretosecurity-user.service""},
+					Err:     nil,
+				},
+			},
+			expectedError: false,
+		},
+		{
+			name: ""error enabling timer"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""enable"", ""paretosecurity-user.timer""},
+					Err:     errors.New(""failed to enable timer""),
+				},
+			},
+			expectedError: true,
+		},
+		{
+			name: ""error enabling service"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""enable"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""enable"", ""paretosecurity-user.service""},
+					Err:     errors.New(""failed to enable service""),
+				},
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mocks
+			shared.RunCommandMocks = tt.mocks
+
+			// Run test
+			err := EnableTimer()
+
+			// Check result
+			if (err != nil) != tt.expectedError {
+				t.Errorf(""EnableTimer() error = %v, expectedError %v"", err, tt.expectedError)
+			}
+		})
+	}
+}
+
+func TestDisableTimer(t *testing.T) {
+	tests := []struct {
+		name          string
+		mocks         []shared.RunCommandMock
+		expectedError bool
+	}{
+		{
+			name: ""successfully disable both"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""disable"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""disable"", ""paretosecurity-user.service""},
+					Err:     nil,
+				},
+			},
+			expectedError: false,
+		},
+		{
+			name: ""error disabling timer"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""disable"", ""paretosecurity-user.timer""},
+					Err:     errors.New(""failed to disable timer""),
+				},
+			},
+			expectedError: true,
+		},
+		{
+			name: ""error disabling service"",
+			mocks: []shared.RunCommandMock{
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""disable"", ""paretosecurity-user.timer""},
+					Err:     nil,
+				},
+				{
+					Command: ""systemctl"",
+					Out:     """",
+					Args:    []string{""--user"", ""disable"", ""paretosecurity-user.service""},
+					Err:     errors.New(""failed to disable service""),
+				},
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mocks
+			shared.RunCommandMocks = tt.mocks
+
+			// Run test
+			err := DisableTimer()
+
+			// Check result
+			if (err != nil) != tt.expectedError {
+				t.Errorf(""DisableTimer() error = %v, expectedError %v"", err, tt.expectedError)
+			}
+		})
+	}
+}"
+
+LINK NUMBER 991
+Not enough lines
+
+LINK NUMBER 992
+Not enough lines
+
+LINK NUMBER 993
+Error fetching diff
+
+LINK NUMBER 994
+Error fetching diff
+
+LINK NUMBER 995
+Error fetching diff
+
+LINK NUMBER 996
+Not enough lines

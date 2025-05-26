@@ -1,0 +1,1064 @@
+LINK NUMBER 1
+Not enough lines
+
+LINK NUMBER 2
+Error fetching diff
+
+LINK NUMBER 3
+Error fetching diff
+
+LINK NUMBER 4
+Error fetching diff
+
+LINK NUMBER 5
+Not enough lines
+
+LINK NUMBER 6
+Not enough lines
+
+LINK NUMBER 7
+Not enough lines
+
+LINK NUMBER 8
+Not enough lines
+
+LINK NUMBER 9
+Error fetching diff
+
+LINK NUMBER 10
+Error fetching diff
+
+LINK NUMBER 11
+Error fetching diff
+
+LINK NUMBER 12
+Not enough lines
+
+LINK NUMBER 13
+
+File path: app.js
+"    let gameBoard = Array(9).fill(null);
+    let currentPlayer = 'X';
+    let gameOver = false;
+    let winner = null;
+    let moveCount = 0;
+    const winningCombinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6] // Diagonals
+    ];
+    const players = {
+        X: { name: 'Player 1', symbol: 'X' },
+        O: { name: 'Player 2', symbol: 'O' }
+    };
+    const gameStatus = {
+        getCurrentPlayer: () => currentPlayer,
+        getGameOver: () => gameOver,
+        getWinner: () => winner,
+        getMoveCount: () => moveCount,
+        getGameBoard: () => gameBoard.slice(),
+        getPlayers: () => players
+    };
+    const gameActions = {
+        makeMove: (index) => {
+            if (gameOver || gameBoard[index] !== null) return false;
+            gameBoard[index] = currentPlayer;
+            moveCount++;
+            if (checkWinner()) {
+                gameOver = true;
+            } else if (moveCount === 9) {
+                gameOver = true; // Draw
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            }
+            return true;
+        },
+        resetGame: () => {
+            gameBoard.fill(null);
+            currentPlayer = 'X';
+            gameOver = false;
+            winner = null;
+            moveCount = 0;
+        }
+    };
+    function checkWinner() {
+        for (const combination of winningCombinations) {
+            const [a, b, c] = combination;
+            if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+                winner = gameBoard[a];
+                return true;
+            }
+        }
+        return false;
+    }
+    return { gameStatus, gameActions }; 
+}
+
+// Example usage:
+const ticTacToe = createGame();
+console.log(ticTacToe.gameStatus.getGameBoard()); // Initial empty board
+ticTacToe.gameActions.makeMove(0); // Player X makes a move     
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after move
+ticTacToe.gameActions.makeMove(1); // Player O makes a move
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after move
+ticTacToe.gameActions.makeMove(3); // Player X makes a move
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after move
+ticTacToe.gameActions.makeMove(4); // Player O makes a move
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after move
+ticTacToe.gameActions.makeMove(6); // Player X makes a move
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after move
+ticTacToe.gameActions.makeMove(7); // Player O makes a move
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after move
+ticTacToe.gameActions.makeMove(8); // Player X makes a move
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after move
+console.log(ticTacToe.gameStatus.getWinner()); // Check winner
+console.log(ticTacToe.gameStatus.getGameOver()); // Check if game is over
+ticTacToe.gameActions.resetGame(); // Reset the game
+console.log(ticTacToe.gameStatus.getGameBoard()); // Board after reset
+console.log(ticTacToe.gameStatus.getCurrentPlayer()); // Check current player after reset
+console.log(ticTacToe.gameStatus.getMoveCount()); // Check move count after reset
+console.log(ticTacToe.gameStatus.getPlayers()); // Check players information
+// This code implements a simple Tic Tac Toe game using factory functions.
+// It allows two players to take turns making moves, checks for a winner, and provides methods to reset the game."
+
+LINK NUMBER 14
+Not enough lines
+
+LINK NUMBER 15
+Not enough lines
+
+LINK NUMBER 16
+Error fetching diff
+
+LINK NUMBER 17
+Error fetching diff
+
+LINK NUMBER 18
+Error fetching diff
+
+LINK NUMBER 19
+
+File path: main.py
+"#!/usr/bin/env python3
+from ics import Calendar, Event
+from datetime import datetime
+import argparse
+import pytz
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Create an ICS file for an event.')
+    parser.add_argument('event_name', type=str, help='Name of the event')
+    parser.add_argument('event_begin', type=str, help='Start time of the event (YYYY-MM-DD HH:MM)')
+    parser.add_argument('event_end', type=str, help='End time of the event (YYYY-MM-DD HH:MM)')
+    parser.add_argument('file_name', type=str, help='Name of the output ICS file')
+    return parser.parse_args()
+
+def create_ics_file(event_name, event_begin, event_end, file_name):
+    
+
+    # Create a new calendar
+    calendar = Calendar()
+
+    # Create a new event
+    event = Event()
+    event.name = event_name
+    event.begin = event_begin  # CET is UTC+1
+    event.end = event_end  # CET is UTC+1
+    event.organizer = ""Alan Francke:mailto:alan@francke-iot.com""
+    event.location = ""Microsoft Teams""
+
+    # Add the event to the calendar
+    calendar.events.add(event)
+
+    # Prompt user to enter meeting description
+
+    event.description = input(""Enter the description for the event: "")
+
+    # Write the calendar to a file
+    with open(file_name, 'w') as f:
+        f.writelines(calendar)
+
+if __name__ == ""__main__"":
+    args = parse_arguments()
+    cet = pytz.timezone('CET')
+    event_begin = cet.localize(datetime.strptime(args.event_begin, '%Y-%m-%d %H:%M'))
+    event_end = cet.localize(datetime.strptime(args.event_end, '%Y-%m-%d %H:%M'))
+    create_ics_file(args.event_name, event_begin, event_end, args.file_name)
+
+# Example usage
+# event_name = ""Meeting with Bob""
+# event_begin = datetime(2023, 10, 25, 10, 0)
+# event_end = datetime(2023, 10, 25, 11, 0)
+# file_name = ""meeting.ics""
+
+#create_ics_file(event_name, event_begin, event_end, file_name)"
+
+LINK NUMBER 20
+
+File path: F24S2DiscussionSolutionSandreth/DiscussionMvcSandreth/Controllers/OfficerController.cs
+"        public IActionResult CreateTestData()
+        {
+            Officer testOfficer7 = new Officer
+            {
+                Id = ""7"",
+                Firstname = ""Test"",
+                Lastname = ""Officer7"",
+                PhoneNumber = ""123-456-7890"",
+                Email = ""testofficer7@example.com"",
+                SupervisorsOfOfficer = new List<Supervises>()
+            };
+
+            Officer testOfficer8 = new Officer
+            {
+                Id = ""8"",
+                Firstname = ""Test"",
+                Lastname = ""Officer8"",
+                PhoneNumber = ""123-456-7891"",
+                Email = ""testofficer8@example.com"",
+                SupervisorsOfOfficer = new List<Supervises>()
+            };
+
+            Supervisor testSupervisor9 = new Supervisor
+            {
+                Id = ""9"",
+                Firstname = ""Test"",
+                Lastname = ""Supervisor9"",
+                PhoneNumber = ""123-456-7892"",
+                Email = ""testsupervisor9@example.com"",
+                OfficersSupervised = new List<Supervises>()
+            };
+
+            Supervisor testSupervisor10 = new Supervisor
+            {
+                Id = ""10"",
+                Firstname = ""Test"",
+                Lastname = ""Supervisor10"",
+                PhoneNumber = ""123-456-7893"",
+                Email = ""testsupervisor10@example.com"",
+                OfficersSupervised = new List<Supervises>()
+            };
+
+            // Establish the relationship between Officer 7 and Supervisor 9
+            Supervises supervises = new Supervises
+            {
+                Officer = testOfficer7,
+                Supervisor = testSupervisor9,
+                StartDate = DateTime.Now
+            };
+
+            testOfficer7.SupervisorsOfOfficer.Add(supervises);
+            testSupervisor9.OfficersSupervised.Add(supervises);
+
+            // Add the test data to the database
+            _database.Officer.Add(testOfficer7);
+            _database.Officer.Add(testOfficer8);
+            _database.Supervisor.Add(testSupervisor9);
+            _database.Supervisor.Add(testSupervisor10);
+            _database.Supervises.Add(supervises);
+            _database.SaveChanges();
+
+            return RedirectToAction(""Index"");
+        }"
+
+LINK NUMBER 21
+Not enough lines
+
+LINK NUMBER 22
+Not enough lines
+
+LINK NUMBER 23
+Error fetching diff
+
+LINK NUMBER 24
+Error fetching diff
+
+LINK NUMBER 25
+Error fetching diff
+
+LINK NUMBER 26
+Not enough lines
+
+LINK NUMBER 27
+Not enough lines
+
+LINK NUMBER 28
+Not enough lines
+
+LINK NUMBER 29
+Not enough lines
+
+LINK NUMBER 30
+Error fetching diff
+
+LINK NUMBER 31
+Error fetching diff
+
+LINK NUMBER 32
+Error fetching diff
+
+LINK NUMBER 33
+Not enough lines
+
+LINK NUMBER 34
+Not enough lines
+
+LINK NUMBER 35
+Not enough lines
+
+LINK NUMBER 36
+Not enough lines
+
+LINK NUMBER 37
+Error fetching diff
+
+LINK NUMBER 38
+Error fetching diff
+
+LINK NUMBER 39
+Error fetching diff
+
+LINK NUMBER 40
+Not enough lines
+
+LINK NUMBER 41
+Not enough lines
+
+LINK NUMBER 42
+Not enough lines
+
+LINK NUMBER 43
+Not enough lines
+
+LINK NUMBER 44
+Error fetching diff
+
+LINK NUMBER 45
+Error fetching diff
+
+LINK NUMBER 46
+Error fetching diff
+
+LINK NUMBER 47
+Not enough lines
+
+LINK NUMBER 48
+Not enough lines
+
+LINK NUMBER 49
+Not enough lines
+
+LINK NUMBER 50
+Not enough lines
+
+LINK NUMBER 51
+Error fetching diff
+
+LINK NUMBER 52
+Error fetching diff
+
+LINK NUMBER 53
+Error fetching diff
+
+LINK NUMBER 54
+Not enough lines
+
+LINK NUMBER 55
+Not enough lines
+
+LINK NUMBER 56
+Not enough lines
+
+LINK NUMBER 57
+Not enough lines
+
+LINK NUMBER 58
+Error fetching diff
+
+LINK NUMBER 59
+Error fetching diff
+
+LINK NUMBER 60
+Error fetching diff
+
+LINK NUMBER 61
+Not enough lines
+
+LINK NUMBER 62
+Not enough lines
+
+LINK NUMBER 63
+Not enough lines
+
+LINK NUMBER 64
+Not enough lines
+
+LINK NUMBER 65
+Error fetching diff
+
+LINK NUMBER 66
+Error fetching diff
+
+LINK NUMBER 67
+Error fetching diff
+
+LINK NUMBER 68
+Not enough lines
+
+LINK NUMBER 69
+Not enough lines
+
+LINK NUMBER 70
+
+File path: wordle/game.js
+"class Game {
+    constructor() {
+        this.currentWord = '';
+        this.maxAttempts = 6;
+        this.currentAttempts = 0;
+        this.guessedWords = [];
+    }
+
+    startGame() {
+        this.currentWord = WordChecker.giveNewWord()
+        console.log(this.currentWord)
+        this.currentAttempts = 0;
+        this.guessedWords = [];
+        this.updateUI();
+        this.setFeedback('New game started. Guess the word!');
+    }
+
+    guessWord(word) {
+        if (this.currentAttempts >= this.maxAttempts) {
+            this.setFeedback('No more attempts left!');
+            return;
+        }
+
+        if (!WordChecker.isValidWord(word)) {
+            this.setFeedback('Invalid word. Try again.');
+            return;
+        }
+
+        this.guessedWords.push(this.generateFeedbackHTML(word));
+        this.currentAttempts++;
+
+        if (this.checkWin(word)) {
+            this.updateUI();
+            this.setFeedback('Congratulations! You guessed the word!');
+        } else if (this.checkLoss()) {
+            this.updateUI();
+            this.setFeedback(`Game over! The word was ${this.currentWord}.`);
+        } else {
+            this.updateUI();
+        }
+    }
+
+    checkWin(word) {
+        if (word === this.currentWord) {
+            document.getElementById('guessInput').style.display = 'none';
+            document.getElementById('makeGuess').style.display = 'none';
+            return true;
+        }
+        return false;
+    }
+
+    checkLoss() {
+        if (this.currentAttempts >= this.maxAttempts) {
+            document.getElementById('guessInput').style.display = 'none';
+            document.getElementById('makeGuess').style.display = 'none';
+            return true;
+        }
+        return false;
+    }
+
+    setFeedback(message) {
+        document.getElementById('feedback').innerText = message;
+    }
+
+    updateUI() {
+        document.getElementById('attemptsLeft').innerText = `${this.maxAttempts - this.currentAttempts} attempts left.`;
+        document.getElementById('guessedWords').innerHTML = `Guessed Words:<br>${this.guessedWords.join('<br>')}`;
+    }
+
+    generateFeedbackHTML(word) {
+        const feedback = WordChecker.compareWords(word, this.currentWord);
+        let feedbackHTML = '';
+
+        for (let i = 0; i < word.length; i++) {
+            if (feedback[i] === word[i].toUpperCase()) {
+                feedbackHTML += `<span class=""correct"">${word[i]}</span>`;
+            } else if (feedback[i] === word[i].toLowerCase()) {
+                feedbackHTML += `<span class=""misplaced"">${word[i]}</span>`;
+            } else {
+                feedbackHTML += `<span class=""incorrect"">${word[i]}</span>`;
+            }
+        }
+
+        return feedbackHTML;
+    }
+}
+
+class Player {
+    constructor(name) {
+        this.name = name;
+        this.score = 0;
+    }
+
+    makeGuess(game, word) {
+        game.guessWord(word);
+    }
+}
+
+class WordChecker {
+    constructor(wordList) {
+        this.wordList = wordList;
+    }
+
+    static async loadWords() {
+        try {
+            const response = await fetch('words.txt');
+            const text = await response.text();
+            this.wordList = text.split('\n').map(word => word.trim()).filter(word => word.length === 5);
+        } catch (error) {
+            console.error('Error loading words:', error);
+        }
+    }
+
+    static giveNewWord() {
+        return this.wordList[Math.floor(Math.random() * this.wordList.length)];
+    }
+
+    static isValidWord(word) {
+        if (this.wordList.includes(word)) {
+            return true
+        }
+        return false;
+    }
+
+    static compareWords(guess, target) {
+        let feedback = '';
+
+        for (let i = 0; i < guess.length; i++) {
+            if (guess[i] === target[i]) {
+                feedback += guess[i].toUpperCase();
+            } else if (target.includes(guess[i])) {
+                feedback += guess[i].toLowerCase();
+            } else {
+                feedback += '_';
+            }
+        }
+
+        return feedback;
+    }
+}
+
+const game = new Game();
+const wordList = new WordChecker()
+const player = new Player('John');
+
+function makeGuess() {
+    const guessInput = document.getElementById('guessInput').value.toLowerCase();
+    if (guessInput.length === 5) {
+        player.makeGuess(game, guessInput);
+        document.getElementById('guessInput').value = '';
+    } else {
+        game.setFeedback('Please enter a 5-letter word.');
+    }
+}
+
+function resetGame() {
+    document.getElementById('guessInput').style.display = 'inline';
+    document.getElementById('guessInput').value = '';
+    document.getElementById('makeGuess').style.display = 'inline';
+    game.startGame();
+}
+
+window.onload = async () => {
+    await WordChecker.loadWords();
+    game.startGame();
+}
+
+document.getElementById('guessInput').addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        makeGuess();
+    }
+});"
+
+LINK NUMBER 71
+
+File path: apps/api/src/domains/document/schema.ts
+"import { ingestDocument, searchDocuments } from '@workspace/use-cases'
+import {
+  IngestDocumentRequestSchema,
+  SearchDocumentsRequestSchema,
+  DocumentListSchema,
+  SearchResultsSchema,
+  BaseResponseSchema,
+  DataResponseSchema,
+  DataResponse,
+  SearchResults,
+} from '@workspace/api'
+import { getDocumentRepository } from '@/repositories'
+import { langchain } from '@workspace/integrations'
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
+import { RoutesProvider } from '@/index'
+import { DocumentSchema } from '@workspace/domains'
+import z from 'zod'
+import config from '@workspace/env'
+
+const docParam = z.object({
+  id: z.string().uuid('Invalid document ID'),
+})
+
+/**
+ * Document domain routes for the API
+ */
+export async function documentRoutes(routes: RoutesProvider): Promise<void> {
+  // Initialize dependencies
+  const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000,
+    chunkOverlap: 200,
+  })
+  const documentRepository = getDocumentRepository()
+  const vectorStore = new langchain.QdrantVectorStore(config.vectorDb.qdrantUrl, 'documents')
+
+  // Get a list of all documents
+  routes.get('/', {
+    schema: {
+      tags: ['documents'],
+      response: {
+        200: DataResponseSchema(DocumentListSchema),
+      },
+    },
+    handler: async () => {
+      const documents = await documentRepository.listDocuments()
+      return {
+        success: true,
+        timestamp: new Date().toISOString(),
+        data: { documents },
+      }
+    },
+  })
+
+  // Get a single document by ID
+  routes.get('/:id', {
+    schema: {
+      tags: ['documents'],
+      params: docParam,
+      response: {
+        200: DataResponseSchema(DocumentSchema),
+        404: BaseResponseSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const { id } = request.params
+      const document = await documentRepository.getDocument(id)
+
+      if (!document) {
+        return reply.code(404).send({
+          success: false,
+          message: 'Document not found',
+          timestamp: new Date().toISOString(),
+        })
+      }
+
+      return {
+        success: true,
+        timestamp: new Date().toISOString(),
+        data: document,
+      }
+    },
+  })
+
+  // Ingest a new document
+  routes.post('/', {
+    schema: {
+      tags: ['documents'],
+      body: IngestDocumentRequestSchema,
+      response: {
+        200: DataResponseSchema(DocumentSchema),
+        500: BaseResponseSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      try {
+        const { content, metadata, chunkingOptions } = request.body as {
+          content: string
+          metadata?: Record<string, unknown>
+          chunkingOptions?: { chunkSize: number; chunkOverlap: number }
+        }
+
+        const document = await ingestDocument(
+          content,
+          metadata || {},
+          chunkingOptions || { chunkSize: 1000, chunkOverlap: 200 },
+          { documentRepository, textSplitter, vectorStore }
+        )
+
+        return {
+          success: true,
+          timestamp: new Date().toISOString(),
+          data: document,
+        }
+      } catch (error) {
+        routes.log.error(error)
+        return reply.code(500).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Failed to ingest document',
+          timestamp: new Date().toISOString(),
+        })
+      }
+    },
+  })
+
+  // Delete a document
+  routes.delete('/:id', {
+    schema: {
+      tags: ['documents'],
+      params: docParam,
+      response: {
+        200: BaseResponseSchema,
+        404: BaseResponseSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const { id } = request.params
+      const document = await documentRepository.getDocument(id)
+
+      if (!document) {
+        return reply.code(404).send({
+          success: false,
+          message: 'Document not found',
+          timestamp: new Date().toISOString(),
+        })
+      }
+
+      await documentRepository.deleteDocument(id)
+      return {
+        success: true,
+        message: 'Document deleted successfully',
+        timestamp: new Date().toISOString(),
+      }
+    },
+  })
+
+  // Search documents
+  routes.post('/search', {
+    schema: {
+      tags: ['documents'],
+      body: SearchDocumentsRequestSchema,
+      response: {
+        200: DataResponseSchema(SearchResultsSchema),
+        500: BaseResponseSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      try {
+        const {
+          query,
+          limit = 10,
+          threshold = 0.5,
+        } = request.body as {
+          query: string
+          limit?: number
+          threshold?: number
+        }
+
+        const results = await searchDocuments(query, { limit, threshold }, { vectorStore })
+        const response: DataResponse<SearchResults> = {
+          success: true,
+          timestamp: new Date().toISOString(),
+          data: {
+            results,
+            count: results.length,
+          },
+        }
+
+        return response
+      } catch (error) {
+        routes.log.error(error)
+        return reply.code(500).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Failed to search documents',
+          timestamp: new Date().toISOString(),
+        })
+      }
+    },
+  })
+}"
+
+LINK NUMBER 72
+Error fetching diff
+
+LINK NUMBER 73
+Error fetching diff
+
+LINK NUMBER 74
+Error fetching diff
+
+LINK NUMBER 75
+Not enough lines
+
+LINK NUMBER 76
+Not enough lines
+
+LINK NUMBER 77
+Not enough lines
+
+LINK NUMBER 78
+Not enough lines
+
+LINK NUMBER 79
+Error fetching diff
+
+LINK NUMBER 80
+Error fetching diff
+
+LINK NUMBER 81
+Error fetching diff
+
+LINK NUMBER 82
+Not enough lines
+
+LINK NUMBER 83
+Not enough lines
+
+LINK NUMBER 84
+
+File path: src/components/ItemView/ItemView.js
+"// Internal imports
+import styles from ""./ItemView.styles"";
+import ChooseAmount from '../ChooseAmount/ChooseAmount';
+
+// Constants
+const DEFAULT_UNIT = ""יח'"";
+const WEIGHTED_UNITS = [""100 גרם"", '100 מ""ל'];
+
+// Assets
+const delete_image = require(""../../assets/images/delete.png"");
+
+/**
+ * ItemView Component
+ * Displays an item card with name, amount selector, and delete button
+ *
+ * @param {Object} item - The item to display
+ * @param {Function} handleDelete - Callback for delete action
+ * @param {Function} addAmount - Callback for amount changes
+ */
+const ItemView = ({ item, handleDelete, addAmount }) => {
+    // Unit calculations if type is addItem
+
+    const unit = item.measurementUnit.replace('ק""ג', ""100 גרם"").replace(""ליטר"", '100 מ""ל');
+    const weighted = item.weighted && WEIGHTED_UNITS.includes(unit);
+
+    const finalUnit = weighted ? unit.replace(""100 "", """") : DEFAULT_UNIT;
+    const unitCalcResults = {
+        step: weighted ? 100 : 1,
+        maxAmount: finalUnit == ""יח'"" ? 10000 : 100000,
+        finalUnit: finalUnit,
+        weighted: weighted,
+    };
+
+
+    return (
+        <View style={[styles.card, styles.shadow]}>
+            {/* Item name */}
+            <Text
+                style={[styles.right, styles.text]}
+                numberOfLines={2}
+                adjustsFontSizeToFit={true}
+            >
+                {item.name}
+            </Text>
+
+            {/* Amount selector and delete button container */}
+            <View style={styles.alignLeft}>
+                {/* Amount selector */}
+                <ChooseAmount
+                    unitCalcResults={unitCalcResults}
+                    onAmountChange={(amount) => addAmount(amount)}
+                    item={item}
+                    displayReset={false}
+                    small={true}
+                />
+
+                {/* Delete button */}
+                <TouchableOpacity onPress={handleDelete} activeOpacity={1}>
+                    <Image style={styles.delete} source={delete_image} />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+};
+
+export default ItemView;"
+
+LINK NUMBER 85
+Not enough lines
+
+LINK NUMBER 86
+Error fetching diff
+
+LINK NUMBER 87
+Error fetching diff
+
+LINK NUMBER 88
+Error fetching diff
+
+LINK NUMBER 89
+Not enough lines
+
+LINK NUMBER 90
+Not enough lines
+
+LINK NUMBER 91
+Not enough lines
+
+LINK NUMBER 92
+Not enough lines
+
+LINK NUMBER 93
+Error fetching diff
+
+LINK NUMBER 94
+Error fetching diff
+
+LINK NUMBER 95
+Error fetching diff
+
+LINK NUMBER 96
+Not enough lines
+
+LINK NUMBER 97
+Not enough lines
+
+LINK NUMBER 98
+Not enough lines
+
+LINK NUMBER 99
+Not enough lines
+
+LINK NUMBER 100
+Error fetching diff
+
+LINK NUMBER 101
+Error fetching diff
+
+LINK NUMBER 102
+Error fetching diff
+
+LINK NUMBER 103
+Not enough lines
+
+LINK NUMBER 104
+Not enough lines
+
+LINK NUMBER 105
+Not enough lines
+
+LINK NUMBER 106
+Not enough lines
+
+LINK NUMBER 107
+Error fetching diff
+
+LINK NUMBER 108
+Error fetching diff
+
+LINK NUMBER 109
+Error fetching diff
+
+LINK NUMBER 110
+Not enough lines
+
+LINK NUMBER 111
+Not enough lines
+
+LINK NUMBER 112
+Not enough lines
+
+LINK NUMBER 113
+Not enough lines
+
+LINK NUMBER 114
+Error fetching diff
+
+LINK NUMBER 115
+Error fetching diff
+
+LINK NUMBER 116
+Error fetching diff
+
+LINK NUMBER 117
+Not enough lines
+
+LINK NUMBER 118
+Not enough lines
+
+LINK NUMBER 119
+Not enough lines
+
+LINK NUMBER 120
+Not enough lines
+
+LINK NUMBER 121
+Error fetching diff
+
+LINK NUMBER 122
+Error fetching diff
+
+LINK NUMBER 123
+Error fetching diff
+
+LINK NUMBER 124
+Not enough lines
+
+LINK NUMBER 125
+Not enough lines
+
+LINK NUMBER 126
+Not enough lines
+
+LINK NUMBER 127
+Not enough lines
+
+LINK NUMBER 128
+Error fetching diff
+
+LINK NUMBER 129
+Error fetching diff
+
+LINK NUMBER 130
+Error fetching diff
+
+LINK NUMBER 131
+Not enough lines
+
+LINK NUMBER 132
+Not enough lines
+
+LINK NUMBER 133
+Not enough lines
+
+LINK NUMBER 134
+Not enough lines
+
+LINK NUMBER 135
+Error fetching diff
+
+LINK NUMBER 136
+Error fetching diff
+
+LINK NUMBER 137
+Error fetching diff
+
+LINK NUMBER 138
+Not enough lines
+
+LINK NUMBER 139
+Not enough lines
+
+LINK NUMBER 140
+Not enough lines
+
+LINK NUMBER 141
+Not enough lines

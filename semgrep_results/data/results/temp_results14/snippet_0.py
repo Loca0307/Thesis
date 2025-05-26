@@ -1,0 +1,76 @@
+LINK NUMBER 1
+
+File path: src/components/SignUp.js
+"    <div className=""signup-container"">
+      <div className=""signup-card p-card"">
+        <div className=""p-card-title"">Create Your Account</div>
+        <div className=""p-card-body"">
+          <div className=""p-field"">
+            <label htmlFor=""name"">Name</label>
+            <input
+              id=""name""
+              type=""text""
+              className=""p-inputtext p-component""
+              placeholder=""Enter your name""
+              value={signUpInfo.name}
+              onChange={(e) =>
+                setSignUpInfo({ ...signUpInfo, name: e.target.value })
+              }
+            />
+            {errors.name && <p style={{ color: ""red"" }}>{errors.name}</p>}
+          </div>
+          <div className=""p-field"">
+            <label htmlFor=""email"">Email</label>
+            <input
+              id=""email""
+              type=""email""
+              className=""p-inputtext p-component""
+              placeholder=""Enter your email""
+              value={signUpInfo.email}
+              onChange={(e) =>
+                setSignUpInfo({ ...signUpInfo, email: e.target.value })
+              }
+            />
+            {errors.email && <p style={{ color: ""red"" }}>{errors.email}</p>}
+          </div>
+          <div className=""p-field"">
+            <label htmlFor=""password"">Password</label>
+            <input
+              id=""password""
+              type=""password""
+              className=""p-inputtext p-component""
+              placeholder=""Enter your password""
+              value={signUpInfo.password}
+              onChange={(e) =>
+                setSignUpInfo({ ...signUpInfo, password: e.target.value })
+              }
+            />
+            {errors.password && <p style={{ color: ""red"" }}>{errors.password}</p>}
+          </div>
+          <div className=""p-field"">
+            <label htmlFor=""mobileNumber"">Mobile Number</label>
+            <input
+              id=""mobileNumber""
+              type=""text""
+              className=""p-inputtext p-component""
+              placeholder=""Enter your mobile number""
+              value={signUpInfo.mobileNumber}
+              onChange={(e) =>
+                setSignUpInfo({ ...signUpInfo, mobileNumber: e.target.value })
+              }
+            />
+            {errors.mobileNumber && (
+              <p style={{ color: ""red"" }}>{errors.mobileNumber}</p>
+            )}
+          </div>
+          {errors.server && <p style={{ color: ""red"" }}>{errors.server}</p>}
+          <button className=""signup-button p-button"" onClick={handleSignUp}>
+            Sign Up
+          </button>
+          <p style={{ textAlign: ""center"", marginTop: ""1rem"" }}>
+            Already have an account?{"" ""}
+            <Link to=""/login"" className=""text-primary no-underline"">
+              Login
+            </Link>
+          </p>
+        </div>"

@@ -1,0 +1,5 @@
+            (Query().simulation_id == self.simulation_id)
+            & (Query().x_1 <= location[0])
+            & (Query().x_2 >= location[0])
+            & (Query().y_1 <= location[1])
+            & (Query().y_2 >= location[1])
