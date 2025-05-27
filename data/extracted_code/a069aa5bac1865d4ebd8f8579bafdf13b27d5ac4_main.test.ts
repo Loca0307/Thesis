@@ -1,0 +1,9 @@
+    expect(setOutputMock).toHaveBeenNthCalledWith(
+      2,
+      'release-status',
+      'success'
+    )
+    expect(setOutputMock).toHaveBeenNthCalledWith(
+      3,
+      'target-url',
+      'https://example.com'

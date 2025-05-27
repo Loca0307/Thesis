@@ -30,18 +30,20 @@ VALID_EXTENSIONS = {
 MIN_LINES = 5
 MAX_LINES = 500
 
+#print(NOW STARTING AI COMMITS EXTRACTION)
 #run_commit_mining_pipeline(META_DATA, PATHS)
-#print("💾 🔍NOW STARTING STATS EXTRACTION")
+
+#print("NOW STARTING STATS EXTRACTION")
 #process_all_links_files(PATHS, META_DATA, MIN_LINES,MAX_LINES, VALID_EXTENSIONS)
 
-#print("💾 🔍NOW STARTING RANDOM COMMIT COLLECTION")
+#print("NOW STARTING HUMAN COMMIT COLLECTION")
 #collect_random_commits(META_DATA, OUTPUT_JSONL, CSV_OUTPUT_PATH, MIN_LINES, MAX_LINES, VALID_EXTENSIONS, max_commits=20)
 
-#print (NOW STARTING EXTRACTING PYTHON FILES)
-#run_python_commit_extraction_pipeline("data/stats.jsonl", "data/python_commits")
+#print(NOW STARTING EXTRACTING ALL CODE FILES FROM STATS.JSONL)
+#extract_code_snippets("data/stats.jsonl", "data/extracted_code")
 
-#print("💾 🔍NOW STARTING SEMGREP ANALYSIS")
-#run_python_commit_semgrep_analysis("data/python_commits", "semgrep_results", "python_commits_analysis.json")
+#print("NOW STARTING SEMGREP ANALYSIS")
+#run_multilang_semgrep_analysis("data/extracted_code", "semgrep_results", "AI_commits_analysis.json")
 
 #print(NOW STARTING EXTRACTING SEMGREP STATISTICS)
-extract_semgrep_summary("semgrep_results/python_commits_analysis.json", "semgrep_results/semgrep_stats.csv")
+#extract_semgrep_summary("semgrep_results/all_semgrep_results.json", "semgrep_results/semgrep_stats.csv")

@@ -1,20 +1,29 @@
 Metric,Item,Count
-Severity,WARNING,8
-Severity,ERROR,10
+Severity,WARNING,29
+Severity,ERROR,16
 Severity,CRITICAL,2
-Severity,INFO,1
-CWE,CWE-798: Use of Hard-coded Credentials,1
+Severity,INFO,8
+CWE,CWE-798: Use of Hard-coded Credentials,4
 CWE,CWE-611: Improper Restriction of XML External Entity Reference,1
 CWE,CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection'),3
 CWE,CWE-939: Improper Authorization in Handler for Custom URL Scheme,1
-CWE,CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection'),6
-CWE,CWE-489: Active Debug Code,2
+CWE,CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection'),8
+CWE,CWE-489: Active Debug Code,3
 CWE,CWE-502: Deserialization of Untrusted Data,3
-CWE,CWE-676: Use of Potentially Dangerous Function,1
-CWE,CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting'),2
-Technology,mysql,1
-Technology,sql,1
-Technology,secrets,1
+CWE,CWE-676: Use of Potentially Dangerous Function,2
+CWE,CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting'),7
+CWE,CWE-319: Cleartext Transmission of Sensitive Information,4
+CWE,CWE-1333: Inefficient Regular Expression Complexity,1
+CWE,CWE-352: Cross-Site Request Forgery (CSRF),2
+CWE,CWE-522: Insufficiently Protected Credentials,6
+CWE,CWE-134: Use of Externally-Controlled Format String,4
+CWE,CWE-330: Use of Insufficiently Random Values,1
+CWE,CWE-116: Improper Encoding or Escaping of Output,1
+CWE,CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal'),2
+CWE,CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG),1
+Technology,mysql,3
+Technology,sql,3
+Technology,secrets,4
 Technology,python,11
 Technology,flask,6
 Technology,flask-wtf,2
@@ -23,12 +32,70 @@ Technology,web,2
 Technology,wtforms,2
 Technology,pytorch,3
 Technology,sqlalchemy,3
-Vulnerability Class,Hard-coded Secrets,1
+Technology,node.js,4
+Technology,javascript,11
+Technology,firebase,1
+Technology,nodejs,3
+Technology,browser,5
+Technology,typescript,2
+Technology,express,9
+Technology,mysql2,2
+Technology,java,3
+Technology,go,2
+Technology,csharp,1
+Technology,c,1
+Vulnerability Class,Hard-coded Secrets,4
 Vulnerability Class,XML Injection,1
 Vulnerability Class,Command Injection,3
 Vulnerability Class,Improper Authorization,1
-Vulnerability Class,SQL Injection,6
-Vulnerability Class,Active Debug Code,2
+Vulnerability Class,SQL Injection,8
+Vulnerability Class,Active Debug Code,3
 Vulnerability Class,Insecure Deserialization ,3
-Vulnerability Class,Dangerous Method or Function,1
-Vulnerability Class,Cross-Site-Scripting (XSS),2
+Vulnerability Class,Dangerous Method or Function,2
+Vulnerability Class,Cross-Site-Scripting (XSS),7
+Vulnerability Class,Mishandled Sensitive Information,4
+Vulnerability Class,Denial-of-Service (DoS),1
+Vulnerability Class,Cross-Site Request Forgery (CSRF),2
+Vulnerability Class,Cryptographic Issues,8
+Vulnerability Class,Improper Validation,4
+Vulnerability Class,Improper Encoding,1
+Vulnerability Class,Path Traversal,2
+---,---,---
+Finding Stats,Minimum,1
+Finding Stats,Maximum,8
+Finding Stats,Median,1.0
+Finding Stats,Average,1.72
+---,---,---
+File-level Finding Summary,Filename,Finding Count & Positions
+File,temp_lang_folders/py/14471928be88bc86dba264bc503799b6ac31720f_multi_file_xml_loader.py,"2 findings at (start: 9, end: 14); (start: 77, end: 77)"
+File,temp_lang_folders/py/1b65474c1152dfe2ad10ad5ddf5a7d9f36d40bcd_tutorial_manager.py,"1 findings at (start: 194, end: 194)"
+File,temp_lang_folders/py/4cae4de72281c3507da0ca7040558aac8578094b_openweatheraqi.py,"1 findings at (start: 45, end: 45)"
+File,temp_lang_folders/py/4f6180c95e8d710eb68d779c741d4eaeab8556e6_app.py,"4 findings at (start: 61, end: 61); (start: 61, end: 61); (start: 113, end: 113); (start: 113, end: 113)"
+File,temp_lang_folders/py/603c685a0319cf47f40b12f2146a647712fff5c8_train.py,"2 findings at (start: 42, end: 42); (start: 85, end: 90)"
+File,temp_lang_folders/py/b9aa320028e42c748712590a7f71d46292d4a428_load_fallbacks.py,"1 findings at (start: 4, end: 4)"
+File,temp_lang_folders/py/c8793b87d397052fbab1a6b5157e61c297c77fdb_test_misc.py,"2 findings at (start: 16, end: 16); (start: 17, end: 17)"
+File,temp_lang_folders/py/d96c37504dc7124da9f9f43c69989ce4b2ac37a4_VAEs_code_by_chatgpt.py,"1 findings at (start: 98, end: 98)"
+File,temp_lang_folders/py/dc3a59929640bc9ddaed8d8c9566ce7849a961fb_test_network_simplifier.py,"2 findings at (start: 15, end: 15); (start: 15, end: 15)"
+File,temp_lang_folders/py/df9e0c1457b9e921b205344fcce5c6e3f87decc3_app_tab_service.py,"2 findings at (start: 57, end: 57); (start: 108, end: 108)"
+File,temp_lang_folders/py/e1649c55808f536cad5e2e0e3d67b0cf8eb0ddb9_utils.py,"1 findings at (start: 81, end: 81)"
+File,temp_lang_folders/py/ee2001f04fc85adc074fca7e97a65f92a9574607_ha-tower-discovery.py,"2 findings at (start: 41, end: 41); (start: 61, end: 61)"
+File,temp_lang_folders/js/01adcb98584b1087e2ec705df07475a4f53cbe17_server.js,"1 findings at (start: 6, end: 6)"
+File,temp_lang_folders/js/15b0b92ca94a8c6ac2b6f92d09a9dd084993dd6b_app_11.js,"1 findings at (start: 280, end: 280)"
+File,temp_lang_folders/js/2083a2279ffd9f39593e6cc095edc51844200d51_firebase.js,"1 findings at (start: 15, end: 15)"
+File,temp_lang_folders/js/a2ce3941a6bda7ac3e0bbd079aa08e6afd322b05_timers.js,"1 findings at (start: 10, end: 18)"
+File,temp_lang_folders/js/a7a400bd9c3cb22b96a04b5e3b77e14b11e1fdd8_server.js,"8 findings at (start: 6, end: 6); (start: 17, end: 22); (start: 17, end: 22); (start: 17, end: 22); (start: 17, end: 22); (start: 17, end: 22); (start: 17, end: 22); (start: 18, end: 18)"
+File,temp_lang_folders/js/a8abcf9bdb4c5b82e385e0a401447e7a74924f7c_user.js,"3 findings at (start: 7, end: 12); (start: 29, end: 29); (start: 50, end: 50)"
+File,temp_lang_folders/js/d83ee4c7ecf02fcdcd0360776dcb661982aad542_comments.js,"1 findings at (start: 5, end: 5)"
+File,temp_lang_folders/js/dee3bb63b4a5032b30620ac6196cc0c6d7ab46c0_create_data.js,"1 findings at (start: 344, end: 344)"
+File,temp_lang_folders/js/ed32f763ee6552a697378249363ae74a2c58f6cd_main.js,"3 findings at (start: 74, end: 74); (start: 78, end: 78); (start: 92, end: 92)"
+File,temp_lang_folders/js/ee23d26fb63239989d05977278db7b36bcf84a9d_game.js,"1 findings at (start: 67, end: 67)"
+File,temp_lang_folders/java/353e63d6df5a93cd51c66808f62f68349c3b85c0_Pipe.java,"1 findings at (start: 45, end: 45)"
+File,temp_lang_folders/java/a03dd95856e5f3cb40e35f26e68f8a034d83f87b_ZeroConfService.java,"2 findings at (start: 39, end: 39); (start: 254, end: 254)"
+File,temp_lang_folders/ts/3ba6f21fef3b66850d488caa80b5a7b5e853d563_test-vector-search.ts,"2 findings at (start: 105, end: 105); (start: 156, end: 156)"
+File,temp_lang_folders/ts/9ee37827dd7c6668a88a684d67ea5629198053bc_issue.ts,"1 findings at (start: 63, end: 63)"
+File,temp_lang_folders/ts/a3446c12003afda48b27570699dae3ced36c9435_day8.ts,"1 findings at (start: 13, end: 13)"
+File,temp_lang_folders/ts/bc880d810fbc0e49cdf0456243d6d5b11dee7a66_readme-gen.ts,"2 findings at (start: 26, end: 26); (start: 26, end: 26)"
+File,temp_lang_folders/go/3c52bb3d12ebab6fb55e07e454d29c758887f860_repository.go,"1 findings at (start: 19, end: 19)"
+File,temp_lang_folders/go/d59640921f7afa02c2c4abb4fc212962c0d4f108_notificationserver.go,"1 findings at (start: 9, end: 9)"
+File,temp_lang_folders/cs/f3588323668fef37276b6990d4325b037becc09b_DBFacade.cs,"1 findings at (start: 9, end: 9)"
+File,temp_lang_folders/c/e4629cd959f420c717b73f3a122945873db3f8ed_wordguess.c,"1 findings at (start: 10, end: 10)"
