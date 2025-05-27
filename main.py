@@ -3,6 +3,7 @@ from github_operations import *
 from manual_mining_restapi import *
 from semgrep_analysis import *
 from file_extraction import *
+from extract_semgrep_stats import *
 
 GITHUB_TOKEN = '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'
 GITHUB_API_URL = "https://api.github.com"
@@ -40,4 +41,7 @@ MAX_LINES = 500
 #run_python_commit_extraction_pipeline("data/stats.jsonl", "data/python_commits")
 
 #print("💾 🔍NOW STARTING SEMGREP ANALYSIS")
-run_python_commit_semgrep_analysis("data/python_commits", "semgrep_results", "python_commits_analysis.json")
+#run_python_commit_semgrep_analysis("data/python_commits", "semgrep_results", "python_commits_analysis.json")
+
+#print(NOW STARTING EXTRACTING SEMGREP STATISTICS)
+extract_semgrep_summary("semgrep_results/python_commits_analysis.json", "semgrep_results/semgrep_stats.csv")

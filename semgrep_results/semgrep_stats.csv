@@ -1,0 +1,34 @@
+Metric,Item,Count
+Severity,WARNING,8
+Severity,ERROR,10
+Severity,CRITICAL,2
+Severity,INFO,1
+CWE,CWE-798: Use of Hard-coded Credentials,1
+CWE,CWE-611: Improper Restriction of XML External Entity Reference,1
+CWE,CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection'),3
+CWE,CWE-939: Improper Authorization in Handler for Custom URL Scheme,1
+CWE,CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection'),6
+CWE,CWE-489: Active Debug Code,2
+CWE,CWE-502: Deserialization of Untrusted Data,3
+CWE,CWE-676: Use of Potentially Dangerous Function,1
+CWE,CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting'),2
+Technology,mysql,1
+Technology,sql,1
+Technology,secrets,1
+Technology,python,11
+Technology,flask,6
+Technology,flask-wtf,2
+Technology,prestodb,2
+Technology,web,2
+Technology,wtforms,2
+Technology,pytorch,3
+Technology,sqlalchemy,3
+Vulnerability Class,Hard-coded Secrets,1
+Vulnerability Class,XML Injection,1
+Vulnerability Class,Command Injection,3
+Vulnerability Class,Improper Authorization,1
+Vulnerability Class,SQL Injection,6
+Vulnerability Class,Active Debug Code,2
+Vulnerability Class,Insecure Deserialization ,3
+Vulnerability Class,Dangerous Method or Function,1
+Vulnerability Class,Cross-Site-Scripting (XSS),2
