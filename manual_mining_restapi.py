@@ -24,11 +24,13 @@ def wait_if_rate_limited(headers):
 
 def collect_random_commits(headers, output_jsonl_path, csv_output_path, min_lines, max_lines, valid_extensions, max_commits=20):
     """Colleziona commit casuali pre-2020 con metadati strutturati e salva sia JSONL che CSV."""
+
     search_url = f"{headers[1]}/search/commits"
     collected = 0
     page = 1
 
-    csv_output_path = "data/random_commmits_results.csv"
+    # Ensure directories exist
+    os.makedirs(os.path.dirname(output_jsonl_path), exist_ok=True)
     os.makedirs(os.path.dirname(csv_output_path), exist_ok=True)
 
     commit_labels = [
